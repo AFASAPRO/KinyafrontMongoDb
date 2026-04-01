@@ -98,7 +98,7 @@
     <div class="auth-right">
       <div class="hero-content">
         <h2 class="hero-headline">Your AI,<br /><span class="g-text">Always Ready.</span></h2>
-        <p class="hero-desc">Powered by advanced AI to answer anything, generate code, images, and more — in Kinyarwanda and beyond.</p>
+        <p class="hero-desc">Powered by advanced AI to answer anything, generate code, images, and more — in English and beyond.</p>
         <div class="hero-stats">
           <div class="stat"><span class="stat-num">10K+</span><span class="stat-lbl">Users</span></div>
           <div class="stat-divider"></div>

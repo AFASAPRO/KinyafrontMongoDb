@@ -208,7 +208,16 @@ const starters = [
   { id:'write',     icon:'fas fa-pen-nib',      title:'Write Content',      sub:'Draft any document',      color:'#86efac', bg:'rgba(34,197,94,.12)',   border:'rgba(34,197,94,.25)',  prompt:'Help me write a compelling cover letter for a software engineering position at a tech startup.' },
   { id:'analyze',   icon:'fas fa-chart-bar',   title:'Analyze Data',       sub:'Make sense of numbers',   color:'#fcd34d', bg:'rgba(245,158,11,.12)',  border:'rgba(245,158,11,.25)', prompt:'Explain the key metrics I should track to measure the success of a SaaS product launch.' },
   { id:'image',     icon:'fas fa-image',       title:'Generate Image',     sub:'Create visuals with AI',  color:'#f9a8d4', bg:'rgba(236,72,153,.12)',  border:'rgba(236,72,153,.25)', prompt:'/image a futuristic African city at night with neon lights and flying cars, cinematic style, 4K' },
-  { id:'kinyarwanda',icon:'fas fa-globe-africa',title:'Chat in Kinyarwanda',sub:'Speak your language',     color:'#6ee7b7', bg:'rgba(16,185,129,.12)',  border:'rgba(16,185,129,.25)', prompt:'Muraho! Nshaka kumenya uko KinyaBot ishobora gufasha mu gikorwa cya buri munsi, harimo gukora code no kwandika inyandiko.' },
+{ 
+  id: 'kinyarwanda',
+  icon: 'fas fa-globe-africa',
+  title: 'Discussion en Français',
+  sub: 'Parlez votre langue',
+  color: '#6ee7b7',
+  bg: 'rgba(16,185,129,.12)',
+  border: 'rgba(16,185,129,.25)',
+  prompt: 'Bonjour ! Je veux savoir comment KinyaBot peut aider dans les tâches quotidiennes, y compris la création de code et la rédaction de documents.' 
+},
 ]
 
 async function finish() {

@@ -46,7 +46,7 @@
     <div class="auth-right">
       <div class="hero-content">
         <h2 class="hero-headline">Join KinyaBot.<br /><span class="g-text">Think Bigger.</span></h2>
-        <p class="hero-desc">Your intelligent AI companion for conversations, code, creativity, and more — in Kinyarwanda and beyond.</p>
+        <p class="hero-desc">Your intelligent AI companion for conversations, code, creativity, and more — in English and beyond.</p>
         <div class="feature-list">
           <div class="feature-item" v-for="f in features" :key="f.text">
             <div class="feat-icon"><i :class="f.icon"></i></div>
@@ -76,7 +76,7 @@ const isLight = computed(() => document.documentElement.classList.contains('ligh
 const features = [
   { icon:'fas fa-comments', text:'Context-aware multi-turn conversations' },
   { icon:'fas fa-code', text:'Code generation & debugging' },
-  { icon:'fas fa-language', text:'Kinyarwanda & multilingual support' },
+  { icon:'fas fa-language', text:'English & multilingual support' },
   { icon:'fas fa-history', text:'Persistent chat history' },
 ]
 const strength = computed(() => {

@@ -298,14 +298,12 @@
         <div class="footer-brand">
           <div class="brand-icon sm"><img src="/logo.png" alt=""/></div>
           <span class="brand-name">KinyaBot</span>
-          <span class="powered-pill">POWERED BY AFASA</span>
         </div>
         <div class="footer-links">
           <a @click.prevent="scrollTo('features')">Features</a>
           <a @click.prevent="scrollTo('pricing')">Pricing</a>
           <router-link to="/login">Sign In</router-link>
           <router-link to="/register">Register</router-link>
-          <router-link to="#">AFASA COMPANY</router-link>
         </div>
         <div class="footer-copy">© 2024 KinyaBot AI · POWERED BY AFASA · All rights reserved.</div>
       </div>
@@ -379,7 +377,7 @@ const features = [
   { title:'Persistent Memory',    desc:'KinyaBot remembers your name, role, and preferences across all conversations automatically.',             icon:'fas fa-brain',        color:'#a855f7', bg:'rgba(168,85,247,.15)'  },
   { title:'Code Highlighting',    desc:'Beautiful syntax-highlighted code blocks with copy and download buttons for every language.',              icon:'fas fa-code',         color:'#34a853', bg:'rgba(52,168,83,.15)'   },
   { title:'Knowledge Base (RAG)', desc:'Upload your documents to build a custom AI knowledge base — get answers from your own data.',             icon:'fas fa-database',     color:'#f59e0b', bg:'rgba(245,158,11,.15)'  },
-  { title:'Kinyarwanda Support',  desc:'Chat in Kinyarwanda and many other languages. KinyaBot understands your language natively.',              icon:'fas fa-globe-africa', color:'#ec4899', bg:'rgba(236,72,153,.15)'  },
+  { title:'Language Support',  desc:'Chat in  more than one languages. KinyaBot understands your language natively.',              icon:'fas fa-globe-africa', color:'#ec4899', bg:'rgba(236,72,153,.15)'  },
 ]
 
 const steps = [
@@ -396,17 +394,17 @@ const stats = [
 ]
 
 const testimonials = [
-  { name:'Sarah K.', role:'Full-stack Developer',  color:'#6366f1', text:'KinyaBot is hands-down the best AI assistant I\'ve used. The streaming responses feel incredibly natural and the code highlighting is perfect.' },
-  { name:'Mugisha A.',role:'Student, University of Rwanda', color:'#06b6d4', text:'I can ask questions in Kinyarwanda and get perfect answers. This is amazing for Rwandan students like me!' },
-  { name:'James T.',  role:'Startup Founder',       color:'#a855f7', text:'The knowledge base feature is incredible. I uploaded our company docs and now the AI answers questions about our product perfectly.' },
-  { name:'Emma D.',   role:'Data Scientist',        color:'#34a853', text:'File analysis saved me hours of work. I uploaded a CSV and KinyaBot gave me insights I would have spent all day figuring out.' },
+  { name:'Chretien T.', role:'Full-stack Developer',  color:'#6366f1', text:'KinyaBot is hands-down the best AI assistant I\'ve used. The streaming responses feel incredibly natural and the code highlighting is perfect.' },
+  { name:'Azah K.',role:'Student, University of Rwanda', color:'#06b6d4', text:'I can ask questions in Spanish and get perfect answers. This is amazing for All students like me!' },
+  { name:'Sonia K.',  role:'Startup Founder',       color:'#a855f7', text:'The knowledge base feature is incredible. I uploaded our company docs and now the AI answers questions about our product perfectly.' },
+  { name:'Fania A.',   role:'Data Scientist',        color:'#34a853', text:'File analysis saved me hours of work. I uploaded a CSV and KinyaBot gave me insights I would have spent all day figuring out.' },
   { 
-  name:'Olive K.', 
+  name:'Afifah A.', 
   role:'Product Manager', 
   color:'#10b981', 
   text:'The platform is incredibly intuitive. I can easily track performance, manage features, and make adjustments without any technical hassle.' 
 },
-  { name:'Lisa P.',   role:'Product Manager',       color:'#ec4899', text:'Dead simple to use, powerful when you need it. The memory feature means it actually remembers my preferences every time.' },
+  { name:'Aisha K.',   role:'Product Manager',       color:'#ec4899', text:'Dead simple to use, powerful when you need it. The memory feature means it actually remembers my preferences every time.' },
 ]
 
 const plans = [
