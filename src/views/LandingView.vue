@@ -309,6 +309,25 @@
       </div>
     </footer>
   </div>
+
+  <teleport to="head">
+  <!-- BreadcrumbList structured data -->
+  <component :is="'script'" type="application/ld+json">{{`
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://kinyabotai.vercel.app/"
+        }
+      ]
+    }
+  `}}</component>
+</teleport>
+
 </template>
 
 <script setup>

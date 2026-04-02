@@ -1,0 +1,12 @@
+# KinyaBot – https://kinyabotai.vercel.app/
+# Allow all crawlers to index the full site
+
+User-agent: *
+Allow: /
+
+# Block admin area from indexing
+Disallow: /admin
+Disallow: /admin/
+
+# Sitemap location
+Sitemap: https://kinyabotai.vercel.app/sitemap.xml
