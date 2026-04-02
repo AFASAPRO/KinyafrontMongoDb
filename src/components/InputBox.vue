@@ -163,7 +163,11 @@ onBeforeUnmount(()=>{ window.removeEventListener('keydown', onKey); recog?.stop(
   flex-shrink: 0;
   padding: 4px 12px 10px;
   background: var(--bg-base);
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
 }
+ 
 
 /* File preview */
 .fp-row { display:flex; align-items:center; gap:9px; padding:7px 11px; margin-bottom:5px; background:var(--bg-card); border:1px solid var(--border-md); border-radius:10px; }
@@ -243,12 +247,16 @@ onBeforeUnmount(()=>{ window.removeEventListener('keydown', onKey); recog?.stop(
 
 /* ── MOBILE ─── */
 @media(max-width:600px) {
-  .input-area { padding:4px 8px 8px; }
+  .input-area {
+    padding: 4px 8px env(safe-area-inset-bottom, 8px);
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
   .tb-label   { display:none; }
   .tb-btn     { padding:6px 8px; }
-  .chat-ta    { font-size:15px; padding:11px 11px 4px; }
+  .chat-ta    { font-size:16px; padding:11px 11px 4px; }
   .disclaimer { font-size:10px; }
 }
+
 @media(max-width:380px) {
   .wave-info  { font-size:11px; }
   .wave-interim { display:none; }

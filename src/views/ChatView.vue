@@ -1,6 +1,6 @@
 <template>
   <div class="app-shell" :class="{ 'light-mode': isLightMode }">
-    <div v-if="mobileSidebarOpen" class="mob-overlay" @click="mobileSidebarOpen=false"></div>
+    <div v-show="mobileSidebarOpen" class="mob-overlay" @click="mobileSidebarOpen=false"></div>
 
     <Sidebar
       :mobile-open="mobileSidebarOpen"
@@ -121,7 +121,7 @@ async function handleShare() {
 
 <style scoped>
 .app-shell { display:flex; height:100vh; width:100vw; background:var(--bg-base); overflow:hidden; }
-.mob-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:40; backdrop-filter:blur(3px); }
+.mob-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:40; backdrop-filter:blur(3px); }
 
 .main-col { flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden; background:var(--bg-base); }
 
@@ -132,7 +132,7 @@ async function handleShare() {
 }
 .topbar-left,.topbar-right { display:flex; align-items:center; gap:6px; }
 
-.mob-menu-btn { display:none; width:36px; height:36px; background:none; border:none; border-radius:var(--r-sm); color:var(--text-2); font-size:15px; align-items:center; justify-content:center; transition:all .2s; cursor:pointer; }
+.mob-menu-btn { width:36px; height:36px; background:none; border:none; border-radius:var(--r-sm); color:var(--text-2); font-size:15px; align-items:center; justify-content:center; transition:all .2s; cursor:pointer; display:none; }
 .mob-menu-btn:hover { background:var(--bg-hover); color:var(--text-1); }
 
 .topbar-pill { display:flex; align-items:center; gap:6px; padding:7px 14px; background:var(--bg-card); border:1px solid var(--border-md); border-radius:99px; color:var(--text-2); font-size:13px; font-weight:500; cursor:pointer; transition:all .2s; }
@@ -148,8 +148,7 @@ async function handleShare() {
 .user-avatar-btn img { width:100%; height:100%; object-fit:cover; }
 
 @media(max-width:860px) {
-  .mob-overlay { display:block; }
-  .mob-menu-btn { display:flex !important; }
+  .mob-menu-btn { display:flex; }
   .topbar-pill span { display:none; }
   .topbar-pill { padding:7px 10px; }
 }

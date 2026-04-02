@@ -239,7 +239,7 @@ async function finish() {
 </script>
 
 <style scoped>
-.ob-root{min-height:100vh;width:100vw;background:#0d0d0f;display:flex;flex-direction:column;align-items:center;padding:0 1rem 2rem;position:relative;overflow:hidden}
+.ob-root{min-height:100vh;width:100vw;background:#0d0d0f;display:flex;flex-direction:column;align-items:center;padding:0 1rem 2rem;position:relative;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
 .ob-root.light{background:#f0f2f5}
 
 .ob-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
@@ -259,7 +259,7 @@ async function finish() {
 .ob-progress-fill{height:100%;background:linear-gradient(90deg,#4f46e5,#a855f7);transition:width .4s cubic-bezier(.4,0,.2,1)}
 .ob-step-text{font-size:12px;font-weight:600;color:var(--text-3)}
 
-.ob-card{width:100%;max-width:700px;background:#111112;border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:2.5rem;z-index:2;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.ob-card{width:100%;max-width:700px;background:#111112;border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:2.5rem;z-index:2;box-shadow:0 20px 50px rgba(0,0,0,.3);position:relative}
 .ob-root.light .ob-card{background:#fff;border-color:#e0e0e0;box-shadow:0 10px 30px rgba(0,0,0,.05)}
 
 .ob-step-header{display:flex;gap:20px;margin-bottom:2rem}
@@ -280,7 +280,14 @@ async function finish() {
 .option-grid{display:grid;gap:12px;margin-bottom:2rem}
 .cols4{grid-template-columns:repeat(4,1fr)}
 .cols3{grid-template-columns:repeat(3,1fr)}
-@media(max-width:600px){.cols4,.cols3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){
+  .cols4,.cols3{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:340px){
+  .cols4,.cols3{grid-template-columns:1fr 1fr}
+  .ob-card{padding:1rem .85rem}
+}
+ 
 
 .option-card{background:#1a1a1c;border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:12px;cursor:pointer;transition:all .2s;position:relative}
 .ob-root.light .option-card{background:#f8f9fa;border-color:#e0e0e0}
@@ -325,4 +332,27 @@ async function finish() {
 .ob-slide-enter-active,.ob-slide-leave-active{transition:all .4s cubic-bezier(.4,0,.2,1)}
 .ob-slide-enter-from{opacity:0;transform:translateX(30px)}
 .ob-slide-leave-to{opacity:0;transform:translateX(-30px)}
+
+
+@media(max-width:640px){
+  .ob-card{padding:1.5rem 1.1rem;border-radius:16px}
+  .ob-step-header{gap:12px;margin-bottom:1.25rem}
+  .ob-step-badge{width:44px;height:44px;font-size:18px;flex-shrink:0}
+  .ob-title{font-size:18px}
+  .ob-desc{font-size:13.5px}
+  .ob-actions{flex-direction:column;gap:8px}
+  .ob-back-btn{width:100%;text-align:center}
+  .ob-next-btn,.ob-finish-btn{width:100%}
+  .ob-header{padding:.85rem 0}
+  .starter-list{gap:8px}
+  .starter-row{padding:10px 12px;gap:10px}
+  .sr-title{font-size:13px}
+  .sr-sub{font-size:11px}
+  .custom-box{padding:10px 12px}
+  .divider-or{margin-bottom:1rem}
+  .option-card{padding:12px 8px;gap:8px}
+  .oc-icon{width:36px;height:36px;font-size:15px}
+  .oc-label{font-size:11.5px}
+  .ob-footer-text{margin-top:1.25rem;font-size:12px}
+}
 </style>

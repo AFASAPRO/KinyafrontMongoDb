@@ -207,7 +207,7 @@ function relTime(date) {
 .model-pill:hover { background:var(--bg-hover); }
 .chat-title-pill { font-size:12.5px; color:var(--text-2); background:var(--bg-card); border:1px solid var(--border); border-radius:99px; padding:4px 12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:300px; }
 
-.msg-area { flex:1; overflow-y:auto; padding:12px 16px; display:flex; flex-direction:column; scroll-behavior:smooth; }
+.msg-area { flex:1; overflow-y:auto; padding:12px 16px; display:flex; flex-direction:column; scroll-behavior:smooth; -webkit-overflow-scrolling: touch;  }
 
 /* Welcome */
 .welcome { flex:1; display:flex; align-items:center; justify-content:center; min-height:100%; }
