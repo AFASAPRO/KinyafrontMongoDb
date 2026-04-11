@@ -414,16 +414,14 @@ const stats = [
 
 const testimonials = [
   { name:'Chretien T.', role:'Full-stack Developer',  color:'#6366f1', text:'KinyaBot is hands-down the best AI assistant I\'ve used. The streaming responses feel incredibly natural and the code highlighting is perfect.' },
+    { name:'Espoir .N',  role:'UI/UX Designer',        color:'#f97316', text:'As a designer, I care deeply about interfaces — and KinyaBot nails it. The layout is clean, the interactions feel polished, and the AI responses are surprisingly creative.' },
+  { name:'Elie .Z',    role:'Photographer',     color:'#14b8a6', text:'KinyaBot has become my go-to photography companion. It understands context across the whole conversation and  it produces actually works. A huge time-saver.' },
   { name:'Azah K.',role:'Student, University of Rwanda', color:'#06b6d4', text:'I can ask questions in Spanish and get perfect answers. This is amazing for All students like me!' },
   { name:'Sonia K.',  role:'Startup Founder',       color:'#a855f7', text:'The knowledge base feature is incredible. I uploaded our company docs and now the AI answers questions about our product perfectly.' },
   { name:'Fania A.',   role:'Data Scientist',        color:'#34a853', text:'File analysis saved me hours of work. I uploaded a CSV and KinyaBot gave me insights I would have spent all day figuring out.' },
-  { 
-  name:'Afifah A.', 
-  role:'Product Manager', 
-  color:'#10b981', 
-  text:'The platform is incredibly intuitive. I can easily track performance, manage features, and make adjustments without any technical hassle.' 
-},
+  { name:'Afifah A.', role:'Product Manager', color:'#10b981', text:'The platform is incredibly intuitive. I can easily track performance, manage features, and make adjustments without any technical hassle.' },
   { name:'Aisha K.',   role:'Product Manager',       color:'#ec4899', text:'Dead simple to use, powerful when you need it. The memory feature means it actually remembers my preferences every time.' },
+
 ]
 
 const plans = [
@@ -450,10 +448,7 @@ const faqs = [
   { q:'Can I upload files to the AI?',    a:'Yes — you can upload images, PDFs, text files, code files, and more. The AI will read and analyze them as part of your conversation.' },
   { q:'What is the Knowledge Base (RAG)?', a:'RAG lets you upload your own documents and the AI will use them to answer questions. Great for company docs, study notes, or any custom knowledge.' },
   { q:'How does streaming work?',         a:'Instead of waiting for the full response, answers appear word-by-word in real time — just like ChatGPT. It makes the experience feel much more natural.' },
-  { 
-  q: 'Is my data secure when using the AI assistant?', 
-  a: 'Yes — we prioritize user privacy and security by implementing encryption, secure authentication, and strict access controls to protect all user data.' 
-},
+  { q:'Is my data secure when using the AI assistant?', a:'Yes — we prioritize user privacy and security by implementing encryption, secure authentication, and strict access controls to protect all user data.' },
 ]
 
 function handleGenerate() { router.push('/register') }
