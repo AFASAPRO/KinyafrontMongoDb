@@ -1,4 +1,4 @@
-<template>
+  <template>
   <!-- Typing indicator -->
   <div v-if="message._typing" class="msg-row assistant">
     <div class="bot-avatar"><img src="/logo.png" alt="bot" /></div>
@@ -321,7 +321,7 @@ function doDelete() {
   color:#f87171; font-size:13.5px; max-width:480px;
 }
 .error-bubble i { font-size:15px; flex-shrink:0; }
-
+  
 /* System message */
 .msg-row.system-msg { justify-content:center; }
 .system-bubble {
