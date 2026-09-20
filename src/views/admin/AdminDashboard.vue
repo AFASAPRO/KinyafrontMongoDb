@@ -438,8 +438,8 @@
             <div class="ai-grid">
               <div class="kb-card">
                 <div class="kbc-head"><i class="fas fa-robot"></i><h3>Model &amp; API</h3></div>
-                <div class="kbf"><label>LLM API URL</label><input v-model="cfg.llm_api_url" class="kb-input" placeholder="https://…"/></div>
-                <div class="kbf"><label>Image API URL</label><input v-model="cfg.image_api_url" class="kb-input" placeholder="https://…"/></div>
+                <div class="kbf"><label>AI Provider</label><input value="Groq" class="kb-input" readonly/></div>
+                <div class="kbf"><label>Groq Model</label><input v-model="cfg.groq_model" class="kb-input" readonly/></div>
                 <div class="kbf"><label>Max Tokens <strong class="range-v">{{ cfg.max_tokens }}</strong></label><input type="range" v-model.number="cfg.max_tokens" min="256" max="8192" step="256" class="kb-range"/></div>
                 <div class="kbf"><label>Temperature <strong class="range-v">{{ cfg.temperature }}</strong></label><input type="range" v-model.number="cfg.temperature" min="0" max="2" step="0.1" class="kb-range"/></div>
                 <div class="kbf"><label>Context Messages <strong class="range-v">{{ cfg.max_context_messages }}</strong></label><input type="range" v-model.number="cfg.max_context_messages" min="1" max="50" class="kb-range"/></div>
@@ -787,7 +787,7 @@
               <div class="kb-card">
                 <div class="kbc-head"><i class="fas fa-circle-info"></i><h3>Current Config</h3></div>
                 <div class="sysinfo-grid">
-                  <div class="si"><span class="si-l">LLM URL</span><span class="si-v" style="font-size:10px;word-break:break-all">{{ cfg.llm_api_url?.slice(0,40)||'Not set' }}…</span></div>
+                  <div class="si"><span class="si-l">AI Model</span><span class="si-v" style="font-size:10px;word-break:break-all">{{ cfg.groq_model || 'Not set' }}</span></div>
                   <div class="si"><span class="si-l">Max Tokens</span><span class="si-v">{{ cfg.max_tokens }}</span></div>
                   <div class="si"><span class="si-l">Temperature</span><span class="si-v">{{ cfg.temperature }}</span></div>
                   <div class="si"><span class="si-l">Context Msgs</span><span class="si-v">{{ cfg.max_context_messages }}</span></div>
@@ -897,7 +897,7 @@ const kbForm = reactive({ title:'', content:'' })
 const kbFile = ref(null)
 const kbUploading = ref(false)
 
-const cfg = reactive({ llm_api_url:'', image_api_url:'', max_tokens:2048, temperature:0.7,
+const cfg = reactive({ groq_model:'', max_tokens:2048, temperature:0.7,
   system_prompt:'You are KinyaBot, a helpful AI assistant.', image_gen_enabled:true,
   file_uploads_enabled:true, maintenance_mode:false, app_name:'KinyaBot AI', max_context_messages:10,
   blocked_ips:[], cost_per_1k_tokens:0.002, free_daily_limit:50, moderation_enabled:true })
