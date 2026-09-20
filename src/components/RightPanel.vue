@@ -145,7 +145,7 @@ function relTime(date) {
 .right-panel {
   width: var(--right-w);
   min-width: var(--right-w);
-  height: 100vh;
+  height: 100vh; height: 100dvh;
   background: var(--bg-panel);
   border-left: 1px solid var(--border);
   display: flex; flex-direction: column;
@@ -153,10 +153,16 @@ function relTime(date) {
   animation: fadeInRight .25s ease;
 }
 
-@media (max-width: 1100px) {
+/* Slide-over drawer on narrow screens (backdrop lives in ChatView) */
+@media (max-width: 900px) {
   .right-panel {
-    position: fixed; right: 0; top: 0; z-index: 50;
-    box-shadow: -4px 0 20px rgba(0,0,0,.4);
+    position: fixed;
+    right: 0; top: 0; bottom: 0;
+    height: 100vh; height: 100dvh;
+    width: min(320px, 88vw); min-width: 0;
+    z-index: 80;
+    box-shadow: -8px 0 32px rgba(0,0,0,.5);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 

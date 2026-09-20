@@ -92,6 +92,11 @@
         <p class="switch-text">
           Don't have an account? <router-link to="/register">Create one</router-link>
         </p>
+
+        <!-- PWA install (Chromium: native prompt · iOS: instructions) -->
+        <div v-if="showInstall" class="auth-install">
+          <InstallHint variant="button" label="Install KinyaBot App" compact />
+        </div>
       </div>
     </div>
 
@@ -122,9 +127,19 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { usePwaInstall } from '../composables/usePwaInstall'
+import InstallHint from '../components/InstallHint.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
+
+// Show the install action when it can do something useful:
+//  • the browser already offers the native prompt (canInstall)
+//  • iOS (manual Add-to-Home-Screen flow)
+//  • any phone (Chrome Android may fire the event later — the button
+//    gracefully falls back to instructions if the prompt isn't ready)
+const { canInstall, installed, isIOS, isMobileDevice } = usePwaInstall()
+const showInstall = computed(() => !installed.value && (canInstall.value || isIOS || isMobileDevice))
 
 const form = reactive({ email: '', password: '' })
 const errors = reactive({ email: '', password: '' })
@@ -189,10 +204,10 @@ async function handleForgot() {
 </script>
 
 <style scoped>
-.auth-root { display:flex; height:100vh; width:100vw; overflow:hidden; background:#0d0d0f; transition:background .3s; }
+.auth-root { display:flex; min-height:100vh; min-height:100dvh; width:100%; overflow:hidden; background:#0d0d0f; transition:background .3s; }
 .auth-root.light { background:#f0f2f5; }
 
-.auth-left { width:460px; min-width:460px; display:flex; flex-direction:column; padding:2rem 2.5rem; background:#111112; overflow-y:auto; transition:background .3s; }
+.auth-left { width:460px; min-width:460px; display:flex; flex-direction:column; padding:2rem 2.5rem; padding-top:max(2rem, env(safe-area-inset-top)); background:#111112; overflow-y:auto; transition:background .3s; }
 .auth-root.light .auth-left { background:#ffffff; box-shadow:4px 0 20px rgba(0,0,0,.06); }
 
 .auth-logo { display:flex; align-items:center; gap:10px; margin-bottom:2.25rem; }
@@ -302,4 +317,8 @@ async function handleForgot() {
 
 @media(max-width:860px){.auth-right{display:none}.auth-left{width:100%;min-width:unset}.auth-form-wrap{max-width:100%}}
 @media(max-width:480px){.auth-left{padding:1.5rem 1.25rem}}
+
+/* PWA install entry on the login screen */
+.auth-install { margin-top: 1rem; display: flex; }
+.auth-install .ih-btn { width: 100%; }
 </style>

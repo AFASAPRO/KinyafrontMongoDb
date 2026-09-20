@@ -85,6 +85,17 @@
             </span>
           </button>
 
+          <!-- ── PWA: Install the Admin app ── -->
+          <button class="ab-btn ab-btn-ghost" type="button" @click="handleInstallApp">
+            <span class="ab-btn-inner">
+              <i class="fas fa-download"></i> Download App
+            </span>
+          </button>
+          <p class="ab-install-note">
+            <i class="fas fa-shield-halved"></i>
+            Install KinyaBot Admin on your phone — opens directly on this login page.
+          </p>
+
   
         </div>
       </transition>
@@ -94,6 +105,31 @@
         <i class="fas fa-arrow-left"></i> Back to KinyaBot
       </router-link>
     </div>
+
+    <!-- ── Install instructions modal (iOS / unsupported browsers) ── -->
+    <transition name="fade">
+      <div v-if="installModal" class="ab-modal-overlay" @click.self="installModal=false">
+        <div class="ab-modal" role="dialog" aria-modal="true">
+          <button class="ab-modal-close" @click="installModal=false" aria-label="Close"><i class="fas fa-xmark"></i></button>
+          <img src="/admin-icon-192.png" alt="KinyaBot Admin" class="ab-modal-icon" />
+          <h3>{{ installDone ? 'Admin App Installed' : 'Install KinyaBot Admin' }}</h3>
+          <p v-if="installDone" class="ab-modal-lead">
+            KinyaBot Admin was added to your device. Open it from your home screen —
+            it starts right here on the Admin login.
+          </p>
+          <template v-else>
+            <p v-if="isIOS" class="ab-modal-lead">Add KinyaBot Admin to your iPhone / iPad home screen:</p>
+            <p v-else class="ab-modal-lead">Your browser doesn't support one-tap install. Add it from the browser menu:</p>
+            <ol class="ab-modal-steps">
+              <li><i class="fas fa-up-right-from-square"></i> Tap the <strong>Share</strong> button (iOS) or open the <strong>⋮ menu</strong> (Android)</li>
+              <li><i class="fas fa-square-plus"></i> Choose <strong>Add to Home Screen</strong> / <strong>Install app</strong></li>
+              <li><i class="fas fa-check"></i> Confirm — the Admin app appears on your home screen</li>
+            </ol>
+          </template>
+          <button class="ab-btn" @click="installModal=false">Got it</button>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -101,9 +137,34 @@
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import { usePwaInstall } from '../../composables/usePwaInstall'
 
 const router = useRouter()
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+
+// ── Admin PWA install ────────────────────────────────────────
+const { canInstall, installed, isIOS, promptInstall } = usePwaInstall()
+const installModal = ref(false)   // manual instructions (iOS / unsupported)
+const installDone = ref(false)    // success note
+
+async function handleInstallApp() {
+  if (installed.value) { installDone.value = true; installModal.value = true; return }
+  if (canInstall.value) {
+    const outcome = await promptInstall()
+    if (outcome === 'accepted') {
+      installDone.value = true
+      installModal.value = true
+    } else if (outcome === 'error' || outcome === 'unavailable') {
+      // Native prompt unusable → fall back to manual instructions
+      installDone.value = false
+      installModal.value = true
+    }
+    return
+  }
+  // iOS Safari & browsers without the native prompt → clear instructions
+  installDone.value = false
+  installModal.value = true
+}
 
 const mode = ref('login')
 
@@ -253,13 +314,18 @@ function particleStyle(i) {
 </script>
 
 <style scoped>
-/* ── Root ───────────────────────────────────────────────────── */
+/* ── Root ───────────────────────────────────────────────── */
 .admin-auth {
-  min-height: 100vh; width: 100vw;
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  overflow-y: auto;
   background: #05050d;
   display: flex; align-items: center; justify-content: center;
   padding: 1.5rem 1rem;
-  position: relative; overflow: hidden;
+  padding-top: max(1.5rem, env(safe-area-inset-top));
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  position: relative;
 }
 
 /* ── Background ─────────────────────────────────────────────── */
@@ -437,6 +503,26 @@ function particleStyle(i) {
 .ab-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 .ab-btn-inner { display: flex; align-items: center; justify-content: center; gap: 8px; }
 
+/* Secondary (Download App) button */
+.ab-btn-ghost {
+  background: rgba(99, 102, 241, .08);
+  border: 1px solid rgba(99, 102, 241, .4);
+  color: #c7d2fe;
+  box-shadow: none;
+  margin-top: 10px;
+}
+.ab-btn-ghost:hover:not(:disabled) {
+  background: rgba(99, 102, 241, .18);
+  box-shadow: 0 4px 18px rgba(79, 70, 229, .25);
+  transform: translateY(-1px);
+}
+.ab-install-note {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  margin-top: 9px;
+  font-size: 11.5px; color: #4b5563; text-align: center; line-height: 1.5;
+}
+.ab-install-note i { color: #6366f1; font-size: 11px; flex-shrink: 0; }
+
 /* ── Hints ──────────────────────────────────────────────────── */
 .ab-hint, .ab-invite-hint {
   display: flex; align-items: flex-start; gap: 9px;
@@ -498,4 +584,40 @@ function particleStyle(i) {
   .ab-card { padding: 1.75rem 1.25rem 1.5rem; }
   .ab-title { font-size: 1.2rem; }
 }
+
+/* ── Install instructions modal ─────────────────────────────── */
+.ab-modal-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0, 0, 0, .7); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.ab-modal {
+  position: relative; width: min(400px, 100%);
+  background: #0b0b18; border: 1px solid rgba(99, 102, 241, .35);
+  border-radius: 20px; padding: 28px 22px 20px; text-align: center;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .65), 0 0 60px rgba(79, 70, 229, .12);
+  animation: fadeUp .3s cubic-bezier(.34, 1.56, .64, 1);
+  max-height: 86dvh; overflow-y: auto;
+}
+.ab-modal-close {
+  position: absolute; top: 12px; right: 12px; width: 32px; height: 32px;
+  border-radius: 9px; background: rgba(255, 255, 255, .06); border: none;
+  color: #9ca3af; font-size: 14px; cursor: pointer;
+}
+.ab-modal-close:hover { background: rgba(255, 255, 255, .12); color: #fff; }
+.ab-modal-icon { width: 64px; height: 64px; border-radius: 15px; margin-bottom: 10px; }
+.ab-modal h3 { font-size: 16.5px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+.ab-modal-lead { font-size: 13px; color: #9ca3af; line-height: 1.6; margin-bottom: 14px; }
+.ab-modal-steps {
+  list-style: none; text-align: left; counter-reset: step;
+  display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px;
+}
+.ab-modal-steps li {
+  display: flex; align-items: center; gap: 11px;
+  background: rgba(99, 102, 241, .06); border: 1px solid rgba(99, 102, 241, .16);
+  border-radius: 11px; padding: 11px 13px;
+  font-size: 13px; color: #d1d5db; line-height: 1.45;
+}
+.ab-modal-steps li i { color: #818cf8; font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
 </style>

@@ -1,6 +1,13 @@
 <template>
   <div class="app-shell" :class="{ 'light-mode': isLightMode }">
-    <div v-show="mobileSidebarOpen" class="mob-overlay" @click="mobileSidebarOpen=false"></div>
+    <!-- Backdrop for the mobile sidebar (z 90 < sidebar z 100) -->
+    <transition name="fade">
+      <div v-if="mobileSidebarOpen" class="mob-overlay" @click="mobileSidebarOpen=false" aria-hidden="true"></div>
+    </transition>
+    <!-- Backdrop for the right panel when it becomes a drawer on mobile -->
+    <transition name="fade">
+      <div v-if="rightOpen && isMobile" class="mob-overlay rp-overlay" @click="rightOpen=false" aria-hidden="true"></div>
+    </transition>
 
     <Sidebar
       :mobile-open="mobileSidebarOpen"
@@ -68,8 +75,16 @@ import ProfileModal from '../components/ProfileModal.vue'
 const auth = useAuthStore()
 const chatStore = useChatStore()
 const mobileSidebarOpen = ref(false)
-const rightOpen = ref(window.innerWidth > 1200)
 const showProfile = ref(false)
+
+// The right panel becomes a slide-over drawer on narrow screens
+const mqMobile = window.matchMedia('(max-width: 900px)')
+const isMobile = ref(mqMobile.matches)
+function onMqChange(e) {
+  isMobile.value = e.matches
+  if (!e.matches) rightOpen.value = window.innerWidth > 1200
+}
+const rightOpen = ref(!mqMobile.matches && window.innerWidth > 1200)
 
 const isLightMode = computed(() => document.documentElement.classList.contains('light-mode'))
 
@@ -84,10 +99,12 @@ onMounted(async () => {
   if (chatStore.chats.length) await chatStore.loadChat(chatStore.chats[0].id)
 
   window.addEventListener('keydown', handleGlobalKeys)
+  mqMobile.addEventListener('change', onMqChange)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleGlobalKeys)
+  mqMobile.removeEventListener('change', onMqChange)
 })
 
 function handleGlobalKeys(e) {
@@ -120,10 +137,14 @@ async function handleShare() {
 </script>
 
 <style scoped>
-.app-shell { display:flex; height:100vh; width:100vw; background:var(--bg-base); overflow:hidden; }
-.mob-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:40; backdrop-filter:blur(3px); }
+.app-shell { display:flex; height:100vh; height:100dvh; width:100%; background:var(--bg-base); overflow:hidden; }
 
-.main-col { flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden; background:var(--bg-base); }
+/* Backdrop under the sidebar drawer (sidebar z-index: 100) */
+.mob-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:90; backdrop-filter:blur(3px); }
+/* Backdrop under the right-panel drawer (panel z-index: 80) */
+.rp-overlay { z-index:70; }
+
+.main-col { flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden; background:var(--bg-base); height:100vh; height:100dvh; }
 
 .top-bar {
   display:flex; align-items:center; justify-content:space-between;
@@ -153,7 +174,8 @@ async function handleShare() {
   .topbar-pill { padding:7px 10px; }
 }
 @media(max-width:480px) {
-  .top-bar { padding:0 8px; height:48px; }
-  .topbar-right { gap:4px; }
+  .top-bar { padding:0 6px; height:48px; }
+  .topbar-right { gap:2px; }
+  .topbar-pill { padding:7px 8px; }
 }
 </style>

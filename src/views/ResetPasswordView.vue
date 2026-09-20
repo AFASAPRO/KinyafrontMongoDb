@@ -96,9 +96,9 @@ async function submit() {
 </script>
 
 <style scoped>
-.auth-root{display:flex;height:100vh;width:100vw;overflow:hidden;background:#0d0d0f;transition:background .3s}
+.auth-root{display:flex;min-height:100vh;min-height:100dvh;width:100%;overflow:hidden;background:#0d0d0f;transition:background .3s}
 .auth-root.light{background:#f0f2f5}
-.auth-left{width:460px;min-width:460px;display:flex;flex-direction:column;padding:2rem 2.5rem;background:#111112;overflow-y:auto;transition:background .3s}
+.auth-left{width:460px;min-width:460px;display:flex;flex-direction:column;padding:max(2rem,env(safe-area-inset-top)) 2.5rem 2rem;background:#111112;overflow-y:auto;transition:background .3s}
 .auth-root.light .auth-left{background:#fff}
 .auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:2rem}
 .logo-img{width:36px;height:36px;border-radius:9px;object-fit:cover}

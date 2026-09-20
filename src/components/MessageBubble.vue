@@ -122,8 +122,38 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { marked } from 'marked'
-import hljs from 'highlight.js'
 import { useAuthStore } from '../stores/auth'
+import hljs from 'highlight.js/lib/core'
+// Register only the languages KinyaBot users actually get back from the AI.
+// (importing the full highlight.js bundle adds ~700 kB to the bundle)
+import javascript from 'highlight.js/lib/languages/javascript'
+import typescript from 'highlight.js/lib/languages/typescript'
+import python from 'highlight.js/lib/languages/python'
+import xml from 'highlight.js/lib/languages/xml'
+import css from 'highlight.js/lib/languages/css'
+import java from 'highlight.js/lib/languages/java'
+import cpp from 'highlight.js/lib/languages/cpp'
+import c from 'highlight.js/lib/languages/c'
+import csharp from 'highlight.js/lib/languages/csharp'
+import bash from 'highlight.js/lib/languages/bash'
+import json from 'highlight.js/lib/languages/json'
+import sql from 'highlight.js/lib/languages/sql'
+import ruby from 'highlight.js/lib/languages/ruby'
+import php from 'highlight.js/lib/languages/php'
+import go from 'highlight.js/lib/languages/go'
+import rust from 'highlight.js/lib/languages/rust'
+import kotlin from 'highlight.js/lib/languages/kotlin'
+import swift from 'highlight.js/lib/languages/swift'
+import yaml from 'highlight.js/lib/languages/yaml'
+import markdown from 'highlight.js/lib/languages/markdown'
+import plaintext from 'highlight.js/lib/languages/plaintext'
+
+const LANGS = { javascript, typescript, python, xml, html: xml, css, java, cpp, c, csharp, bash, sh: bash, json, sql, ruby, php, go, rust, kotlin, swift, yaml, markdown, plaintext }
+Object.entries(LANGS).forEach(([name, def]) => hljs.registerLanguage(name, def))
+hljs.registerAliases(['js'], { languageName: 'javascript' })
+hljs.registerAliases(['ts'], { languageName: 'typescript' })
+hljs.registerAliases(['py'], { languageName: 'python' })
+hljs.registerAliases(['shell', 'zsh'], { languageName: 'bash' })
 
 const props = defineProps({ message: Object })
 const emit = defineEmits(['delete', 'copy'])

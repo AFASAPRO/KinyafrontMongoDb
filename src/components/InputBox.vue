@@ -36,7 +36,8 @@
         :placeholder="placeholder"
         rows="1"
         :disabled="disabled"
-        @focus="focused=true"
+        enterkeyhint="send"
+        @focus="onFocus"
         @blur="focused=false"
         @keydown.enter.exact.prevent="submit"
         @keydown.enter.shift.exact="() => {}"
@@ -102,6 +103,12 @@ function resize() {
   el.style.height = Math.min(el.scrollHeight, 160) + 'px'
 }
 
+function onFocus() {
+  focused.value = true
+  // ChatWindow scrolls to the latest message when the composer is focused
+  emit('focus')
+}
+
 function submit() {
   const content = inputVal.value.trim()
   if (!content && !selectedFile.value) return
@@ -161,7 +168,8 @@ onBeforeUnmount(()=>{ window.removeEventListener('keydown', onKey); recog?.stop(
 <style scoped>
 .input-area {
   flex-shrink: 0;
-  padding: 4px 12px 10px;
+  padding: 4px 12px;
+  padding-bottom: calc(max(10px, env(safe-area-inset-bottom)) + var(--kb, 0px));
   background: var(--bg-base);
   position: sticky;
   bottom: 0;
@@ -248,12 +256,11 @@ onBeforeUnmount(()=>{ window.removeEventListener('keydown', onKey); recog?.stop(
 /* ── MOBILE ─── */
 @media(max-width:600px) {
   .input-area {
-    padding: 4px 8px env(safe-area-inset-bottom, 8px);
-    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    padding: 4px 8px calc(max(10px, env(safe-area-inset-bottom)) + var(--kb, 0px));
   }
   .tb-label   { display:none; }
   .tb-btn     { padding:6px 8px; }
-  .chat-ta    { font-size:16px; padding:11px 11px 4px; }
+  .chat-ta    { font-size:16px; padding:11px 11px 4px; max-height:120px; }
   .disclaimer { font-size:10px; }
 }
 

@@ -325,194 +325,159 @@ html.light-mode .content {
   color: #202124;
 }
 
+
 /* ═══════════════════════════════════════════════════════════════
-   FULL RESPONSIVE — all devices
+   VIEWPORT & TOUCH FOUNDATION
+   ───────────────────────────────────────────────────────────────
+   • --kb is set by src/utils/viewport.js from the visual viewport:
+     it equals the screen height currently covered by the keyboard.
+   • dvh (dynamic viewport height) keeps layouts inside the visible
+     area on mobile browsers with collapsing URL bars; the plain vh
+     line above each dvh line is the fallback for old browsers.
 ═══════════════════════════════════════════════════════════════ */
 
-/* ── Chat App (ChatView) ────────────────────────────────────── */
-@media (max-width: 900px) {
-  .app-shell { grid-template-columns: 0 1fr 0 !important; }
-  .sidebar    { transform: translateX(-100%); position: fixed !important; z-index: 200; height: 100%; transition: transform .3s; width: 280px !important; }
-  .sidebar.mobile-open { transform: translateX(0); }
-  .right-panel { display: none !important; }
-  .main-col    { grid-column: 1 / -1 !important; }
+html, body { overflow-x: clip; }
+img, svg, video { max-width: 100%; }
+
+/* AI/user message content must wrap instead of stretching the layout */
+.prose, .content { overflow-wrap: break-word; }
+.prose img { max-width: 100%; height: auto; }
+/* Wide markdown tables scroll inside their cell instead of the page */
+.prose table { display: block; max-width: 100%; overflow-x: auto; }
+
+/* Touch devices: message actions (copy/like/delete) have no hover */
+@media (hover: none) {
+  .bubble-col .actions { opacity: 1; }
+  .actions { opacity: 1; }
+  .act-btn { width: 32px; height: 32px; font-size: 13.5px; }
 }
+
+/* Larger touch targets on phones */
+@media (pointer: coarse) {
+  .mob-menu-btn { width: 42px; height: 42px; }
+  .send-btn { width: 40px; height: 40px; }
+  .tb-ico { width: 38px; height: 38px; }
+  .icon-btn, .topbar-icon-btn { width: 38px; height: 38px; }
+}
+
+/* Installed PWA: respect the iOS notch / status bar */
+@media (display-mode: standalone), (display-mode: minimal-ui) {
+  .top-bar { padding-top: max(0px, env(safe-area-inset-top)); height: auto; min-height: 52px; }
+  .sb-header { padding-top: max(10px, env(safe-area-inset-top)); }
+}
+
+/* ═════════════════════════════════════════════════════════════
+   CHAT APP (ChatView / ChatWindow / InputBox)
+   (off-canvas sidebar & right-panel drawer styles live inside
+   their own components — Sidebar.vue / RightPanel.vue)
+═════════════════════════════════════════════════════════════ */
+
+/* Full-height shell: fill the *visible* viewport on every browser.
+   Component overrides keep the same two lines for their own roots. */
+.app-shell {
+  height: 100vh;
+  height: 100dvh;
+  width: 100%;
+}
+
+/* Compact chat layout on phones */
 @media (max-width: 600px) {
   .msg-area { padding: 8px 8px !important; }
-  .input-area { padding: 8px !important; }
-  .bubble-col { max-width: 90% !important; }
-  .input-box { border-radius: 12px !important; }
-  .top-bar { padding: 6px 10px !important; }
+  .bubble-col { max-width: 92% !important; }
+  .chat-title-pill { max-width: 34vw !important; }
+  .top-bar { padding: 4px 8px !important; }
   .chat-topbar { padding: 6px 10px !important; }
   .welcome-heading { font-size: 1.2rem !important; }
-  .chips-row { flex-wrap: wrap !important; }
-  .chip { font-size: 11.5px !important; padding: 6px 10px !important; }
+  .chip { font-size: 11.5px !important; padding: 7px 12px !important; }
+  .code-header { padding: 6px 8px !important; }
+  .code-actions { gap: 2px !important; }
+  .copy-code-btn, .download-code-btn { padding: 5px 8px !important; font-size: 10.5px !important; }
 }
 
-/* ── Admin Dashboard ────────────────────────────────────────── */
-@media (max-width: 1100px) {
-  .kb-admin { flex-direction: column !important; }
-  .kba-sidebar { width: 100% !important; min-width: unset !important; height: auto !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; top: auto !important; flex-direction: row !important; border-right: none !important; border-top: 1px solid rgba(99,102,241,.15) !important; z-index: 200; }
-  .kbs-nav { flex-direction: row !important; padding: .25rem .5rem !important; overflow-x: auto; flex:1; }
-  .kbs-nav::-webkit-scrollbar { height: 0; }
-  .kbs-group-label { display: none !important; }
-  .kbs-nav-group { display: contents; }
-  .kbs-item { flex-direction: column !important; gap: 2px !important; padding: 6px 10px !important; font-size: 10px !important; min-width: 52px; }
-  .kbs-label { font-size: 9.5px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50px; }
-  .kbs-count { position: absolute; top: 3px; right: 3px; width: 14px !important; height: 14px !important; font-size: 8px !important; }
-  .kbs-brand { display: none !important; }
-  .kbs-foot  { display: none !important; }
-  .kbs-pill  { display: none !important; }
-  .kba-main  { padding-bottom: 70px !important; }
-  .kba-topbar { flex-wrap: wrap !important; gap: 8px !important; }
-  .kbt-center { order: 3; width: 100% !important; max-width: 100% !important; }
-  .dash-mid, .dash-bot { flex-direction: column !important; }
-  .activity-box, .donut-box { width: 100% !important; }
-  .notif-grid, .sec-grid, .ai-grid { grid-template-columns: 1fr !important; }
-  .circ-row { grid-template-columns: repeat(2, 1fr) !important; }
-  .kb-card.full { grid-column: 1 !important; }
-}
-@media (max-width: 640px) {
-  .kba-body { padding: .75rem !important; }
-  .chart-box { padding: .85rem !important; }
-  .kb-table { overflow-x: auto; }
-  .kb-table table { min-width: 600px; }
-  .circ-row { grid-template-columns: 1fr 1fr !important; }
-  .stat-flat { padding: .75rem !important; }
-  .kba-topbar { padding: .6rem .75rem !important; }
-  .adt-greeting { font-size: .95rem !important; }
-  .features-grid, .steps-row, .pricing-grid { grid-template-columns: 1fr !important; }
-  .bar-scene { height: 100px !important; }
-  .heat-chart.tall { height: 80px !important; }
+@media (max-width: 380px) {
+  .bubble-col { max-width: 95% !important; }
+  .welcome-heading { font-size: 1.08rem !important; }
 }
 
-/* ── Auth pages (Login/Register/ForgotPW) ───────────────────── */
+/* Composer keyboard lift is implemented in InputBox.vue via --kb.
+   Global helpers only hide space-consuming chrome while typing. */
+html.kb-open .disclaimer { display: none; }
+html.kb-open .chat-ta { max-height: 110px !important; }
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTH PAGES (Login / Register / Forgot / Reset) + ONBOARDING
+═══════════════════════════════════════════════════════════════ */
+
+.auth-root, .admin-auth {
+  min-height: 100vh;
+  min-height: 100dvh;
+  /* Small screens + open keyboard: the form must be able to scroll */
+  overflow-y: auto;
+}
+.ob-root {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* 16px inputs prevent iOS Safari auto-zoom on focus */
+@media (max-width: 600px) {
+  .field-input, .ab-input, .otp-box { font-size: 16px !important; }
+  .auth-root { flex-direction: column; }
+}
+
 @media (max-width: 860px) {
   .auth-right { display: none !important; }
   .auth-left  { width: 100% !important; min-width: unset !important; }
-  .auth-form-wrap { max-width: 100% !important; }
+  .auth-form-wrap { max-width: 480px !important; }
+  .auth-root { background: var(--bg-base) !important; }
 }
 @media (max-width: 480px) {
-  .auth-left { padding: 1.5rem 1.25rem !important; }
+  .auth-form-wrap, .auth-left { padding: 1.5rem 1.25rem !important; }
   .auth-heading { font-size: 1.4rem !important; }
-  .fp-card { padding: 1.75rem 1rem !important; }
+  .auth-left { padding-top: max(1.25rem, env(safe-area-inset-top)) !important; }
+}
+@media (max-width: 480px) {
+  .fp-card { padding: 1.75rem 1.25rem !important; }
   .otp-row { gap: 6px !important; }
   .otp-box { width: 38px !important; height: 46px !important; font-size: 1.15rem !important; }
 }
 
-/* ── Onboarding ─────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   ONBOARDING
+═══════════════════════════════════════════════════════════════ */
 @media (max-width: 600px) {
-  .ob-card { padding: 1.5rem 1rem !important; }
-  .option-grid { grid-template-columns: 1fr 1fr !important; }
-  .starter-list { gap: 6px !important; }
-}
-
-/* ── General utilities ─────────────────────────────────────── */
-@media (max-width: 480px) {
-  html { font-size: 13px; }
-}
-
-/* ═══════════════════════════════════════════════════
-   MOBILE INPUT BOX — full responsive fix
-═══════════════════════════════════════════════════ */
-@media (max-width: 600px) {
-  /* InputBox */
-  .input-area { padding: 4px 8px 10px !important; }
-  .input-box { border-radius: 14px !important; }
-  .chat-textarea { font-size: 16px !important; /* prevents iOS zoom */ padding: 10px 12px 3px !important; }
-  .input-toolbar { padding: 4px 8px 6px !important; }
-  .tool-btn span { display: none !important; }
-  .tool-btn { padding: 6px 9px !important; border-radius: 7px !important; }
-  .send-btn { width: 36px !important; height: 36px !important; }
-  .icon-tool { width: 34px !important; height: 34px !important; }
-  .input-disclaimer { font-size: 10px !important; }
-  .trial-strip { font-size: 11px !important; padding: 5px 10px !important; }
-  /* Chat messages */
-  .bubble-col { max-width: 94% !important; }
-  .msg-area { padding: 8px 6px !important; }
-  .chat-textarea::placeholder { font-size: 13.5px !important; }
-  /* Sidebar mobile overlay */
-  .app-shell { position: relative; }
-}
-@media (max-width: 400px) {
-  .tool-btn { padding: 5px 7px !important; }
-  .toolbar-left { gap: 3px !important; }
-  .toolbar-right { gap: 3px !important; }
-}
-
-/* ── safe-area for iPhone notch ── */
-@supports (padding: env(safe-area-inset-bottom)) {
-  .input-area {
-    padding-bottom: calc(10px + env(safe-area-inset-bottom)) !important;
-  }
+  .ob-card { padding: 1.5rem 1rem !important; margin: 0 .5rem !important; }
+  .ob-progress { padding: 0 .5rem !important; }
+  .option-grid, .starter-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+  .option-card, .starter-card { padding: .8rem !important; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   GLOBAL MOBILE RESPONSIVE — v6.2
+   ADMIN DASHBOARD
+   ───────────────────────────────────────────────────────────────
+   ≤960px: sidebar becomes a fixed bottom navigation bar; tables
+   scroll horizontally instead of being squeezed.
 ═══════════════════════════════════════════════════════════════ */
-
-/* Ensure landing page always scrolls */
-.landing-active html,
-.landing-active body { overflow: auto !important; height: auto !important; }
-
-/* ── Chat App responsive ─────────────────────────────────────── */
-@media (max-width: 900px) {
-  .app-shell {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-  }
-  .sidebar {
-    position: fixed !important;
-    left: 0 !important; top: 0 !important; bottom: 0 !important;
-    width: 280px !important;
-    transform: translateX(-100%) !important;
-    z-index: 300 !important;
-    transition: transform .3s cubic-bezier(.34,1.56,.64,1) !important;
-    box-shadow: 4px 0 24px rgba(0,0,0,.4);
-  }
-  .sidebar.mobile-open { transform: translateX(0) !important; }
-  .right-panel { display: none !important; }
-  .main-area { width: 100% !important; }
-  /* Mobile sidebar overlay */
-  .sidebar-overlay {
-    display: block !important;
-    position: fixed; inset: 0; background: rgba(0,0,0,.55);
-    z-index: 299; backdrop-filter: blur(4px);
-  }
+.kb-admin {
+  height: 100vh;
+  height: 100dvh;
 }
 
-@media (max-width: 600px) {
-  /* Chat window */
-  .msg-area, .messages-area { padding: 10px 8px !important; }
-  .bubble-col { max-width: 88% !important; }
-  .bubble.user { border-radius: 14px 4px 14px 14px !important; }
-  .bubble.assistant { padding: 2px 0 !important; }
-  /* Top bars */
-  .top-bar, .chat-header { padding: 8px 10px !important; }
-  .chat-title { font-size: 13.5px !important; }
-  /* Welcome screen */
-  .welcome-inner { padding: 1rem !important; }
-  .welcome-heading { font-size: 1.15rem !important; }
-  .welcome-desc { font-size: 12.5px !important; }
-  .chips-row { gap: 6px !important; flex-wrap: wrap !important; }
-  .chip { font-size: 11.5px !important; padding: 6px 11px !important; }
-}
-
-/* ── Admin Dashboard mobile ──────────────────────────────────── */
-@media (max-width: 900px) {
-  .kb-admin { flex-direction: column !important; height: 100vh; }
+@media (max-width: 960px) {
+  .kb-admin { flex-direction: column !important; height: 100vh; height: 100dvh; }
   .kba-sidebar {
     position: fixed !important;
     bottom: 0 !important; left: 0 !important; right: 0 !important;
-    top: auto !important; width: 100% !important;
-    min-width: unset !important;
-    height: 58px !important;
+    top: auto !important;
+    width: 100% !important; min-width: unset !important;
+    height: calc(58px + env(safe-area-inset-bottom)) !important;
     flex-direction: row !important;
     border-right: none !important;
-    border-top: 1px solid rgba(99,102,241,.18) !important;
+    border-top: 1px solid rgba(99, 102, 241, .18) !important;
     z-index: 200 !important;
     backdrop-filter: blur(20px);
-    background: rgba(13,14,27,.96) !important;
+    background: rgba(13, 14, 27, .96) !important;
+    padding-bottom: env(safe-area-inset-bottom) !important;
   }
   .kbs-brand { display: none !important; }
   .kbs-nav {
@@ -527,7 +492,7 @@ html.light-mode .content {
   .kbs-group-label { display: none !important; }
   .kbs-item {
     flex-direction: column !important;
-    padding: 4px 10px !important;
+    padding: 5px 10px !important;
     min-width: 52px !important;
     gap: 2px !important;
     border-radius: 8px !important;
@@ -536,177 +501,63 @@ html.light-mode .content {
   .kbs-icon i { font-size: 16px !important; }
   .kbs-pill { display: none !important; }
   .kbs-count { font-size: 8px !important; padding: 1px 4px !important; }
-  .kbs-foot  { display: none !important; }
-  .kba-main  { padding-bottom: 64px !important; height: 100vh; overflow: hidden; }
-  .kba-body  { padding-bottom: 20px !important; }
-}
-
-@media (max-width: 640px) {
-  .kba-topbar { padding: .6rem .75rem !important; flex-wrap: wrap; gap: 6px !important; }
-  .kbt-greeting { font-size: .9rem !important; }
-  .kbt-sub { font-size: 11px !important; }
-  .kbt-center { order: 3; width: 100% !important; max-width: 100% !important; }
-  .kba-body { padding: .75rem .75rem 20px !important; }
-  .circ-row { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
-  .circ-card { padding: .75rem !important; gap: 10px !important; }
-  .cc-ring-wrap { width: 52px !important; height: 52px !important; }
-  .cc-ring { width: 52px !important; height: 52px !important; }
-  .cc-value { font-size: 1.1rem !important; }
-  .dash-mid, .dash-bot { flex-direction: column !important; gap: 8px !important; }
-  .activity-box, .donut-box { width: 100% !important; }
-  .notif-grid, .sec-grid, .ai-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
-  .kb-card.full { grid-column: 1 !important; }
-  .chart-box { padding: .85rem !important; }
-  .kb-table { overflow-x: auto !important; }
-  .kb-table table { min-width: 520px !important; }
-  .log-line { grid-template-columns: 120px 50px 80px 1fr !important; font-size: 11px !important; }
-}
-
-/* ── Auth pages ──────────────────────────────────────────────── */
-@media (max-width: 860px) {
-  .auth-right { display: none !important; }
-  .auth-left  { width: 100% !important; min-width: unset !important; }
-  .auth-form-wrap { max-width: 480px !important; padding: 2rem 1.5rem !important; }
-  .auth-root { background: var(--bg-base) !important; }
-}
-@media (max-width: 480px) {
-  .auth-form-wrap, .auth-left { padding: 1.5rem 1.25rem !important; }
-  .auth-heading { font-size: 1.4rem !important; }
-  .fp-card { padding: 1.75rem 1.25rem !important; }
-}
-
-/* ── Onboarding responsive ───────────────────────────────────── */
-@media (max-width: 600px) {
-  .ob-card { padding: 1.5rem 1rem !important; margin: 0 .5rem !important; }
-  .ob-progress { padding: 0 .5rem !important; }
-  .option-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
-  .option-card { padding: .75rem !important; }
-  .starter-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
-  .starter-card { padding: .85rem !important; }
-}
-
-/* ── Safe area for phones ────────────────────────────────────── */
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
-  .input-area { padding-bottom: calc(10px + env(safe-area-inset-bottom)) !important; }
-  .kba-sidebar { padding-bottom: env(safe-area-inset-bottom) !important; }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   CHAT VIEW — FULL MOBILE RESPONSIVE
-═══════════════════════════════════════════════════════════════ */
-
-/* Mobile sidebar overlay */
-@media(max-width:860px) {
-  /* App shell becomes single-column */
-  .app-shell {
-    display: flex !important;
-    flex-direction: row !important;
-    position: relative;
-  }
-  /* Sidebar slides off-screen */
-  .sidebar {
-    position: fixed !important; left:0; top:0; bottom:0;
-    z-index: 300; transform: translateX(-100%);
-    transition: transform .28s cubic-bezier(.34,1.56,.64,1);
-    width: 280px !important; min-width: 280px !important;
-    box-shadow: 4px 0 24px rgba(0,0,0,.5);
-  }
-  .sidebar.mobile-open {
-    transform: translateX(0) !important;
-  }
-  /* Overlay dim when sidebar open */
-  .sidebar-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,.55);
-    z-index: 299; display: none;
-    backdrop-filter: blur(2px);
-  }
-  .sidebar-overlay.show { display: block; }
-
-  /* Right panel hidden on mobile */
-  .right-panel { display: none !important; }
-
-  /* Main column takes full width */
-  .main-col { flex: 1 !important; min-width: 0 !important; }
-
-  /* Show hamburger in chat topbar */
-  .topbar-hamburger { display: flex !important; }
-}
-
-/* Smaller phones */
-@media(max-width:600px) {
-  /* Message area */
-  .msg-area { padding: 8px 10px !important; }
-  .bubble-col { max-width: 88% !important; }
-
-  /* Chat topbar */
-  .chat-topbar { padding: 8px 10px !important; }
-  .chat-topbar .ct-title { font-size: 14px !important; }
-
-  /* Welcome screen */
-  .welcome-inner { padding: 1.5rem 1rem !important; }
-  .welcome-heading { font-size: clamp(1.1rem,5vw,1.4rem) !important; }
-  .wl-img { width:48px !important; height:48px !important; }
-  .chips-row { gap: 6px !important; flex-wrap: wrap !important; }
-  .chip { font-size: 11.5px !important; padding: 6px 10px !important; }
-
-  /* Input area */
-  .input-area { padding: 4px 8px 8px !important; }
-}
-
-@media(max-width:380px) {
-  .bubble-col { max-width: 95% !important; }
-  .welcome-heading { font-size: 1.05rem !important; }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   ADMIN DASHBOARD — FULL MOBILE RESPONSIVE
-═══════════════════════════════════════════════════════════════ */
-@media(max-width:960px) {
-  .kb-admin { flex-direction: column !important; height: auto !important; min-height: 100vh; }
-  .kba-sidebar {
-    width: 100% !important; min-width: unset !important;
-    height: auto !important; min-height: unset !important;
-    position: fixed !important; bottom:0 !important;
-    left:0 !important; right:0 !important; top:auto !important;
-    flex-direction: row !important; z-index: 200;
-    border-right: none !important;
-    border-top: 1px solid rgba(99,102,241,.15) !important;
-    overflow-x: auto;
-  }
-  .kbs-brand  { display: none !important; }
-  .kbs-foot   { display: none !important; }
-  .kbs-nav    { flex-direction: row !important; overflow-x: auto; flex: 1; padding: .2rem .3rem !important; gap: 0 !important; }
-  .kbs-nav::-webkit-scrollbar { height: 0; }
-  .kbs-group-label { display: none !important; }
-  .kbs-item { flex-direction: column !important; gap: 2px !important; padding: 6px 8px !important; min-width: 52px; flex: none; }
-  .kbs-label { font-size: 9px !important; overflow: hidden; text-overflow: ellipsis; max-width: 48px; white-space: nowrap; }
-  .kbs-icon i { font-size: 16px !important; }
-  .kbs-pill { display: none !important; }
-  .kbs-count { position: absolute; top: 3px; right: 3px; width: 14px !important; height: 14px !important; font-size: 8px !important; padding: 0 !important; }
-
-  .kba-main { padding-bottom: 65px !important; overflow-y: auto; height: 100vh; }
-  .kba-topbar { flex-wrap: wrap !important; gap: 8px !important; padding: .7rem 1rem !important; }
+  .kbs-foot { display: none !important; }
+  .kba-main { padding-bottom: calc(64px + env(safe-area-inset-bottom)) !important; height: 100vh; height: 100dvh; overflow: hidden; }
+  .kba-body { padding-bottom: 20px !important; }
+  .kba-topbar { flex-wrap: wrap !important; gap: 8px !important; padding: .7rem 1rem !important; padding-top: max(.7rem, env(safe-area-inset-top)) !important; }
   .kbt-center { order: 3; width: 100% !important; max-width: 100% !important; }
   .kbt-greeting { font-size: .95rem !important; }
   .kbt-sub { display: none; }
+  .kbt-search kbd { display: none; }
+  .kbt-pinfo { display: none; }
 
-  .dash-mid, .dash-bot { flex-direction: column !important; }
+  .dash-mid, .dash-bot { flex-direction: column !important; gap: 8px !important; }
   .activity-box, .donut-box { width: 100% !important; }
   .notif-grid, .sec-grid, .ai-grid { grid-template-columns: 1fr !important; }
-  .circ-row { grid-template-columns: repeat(2,1fr) !important; }
+  .circ-row { grid-template-columns: repeat(2, 1fr) !important; }
   .kb-card.full { grid-column: 1 !important; }
   .chart-box.big { flex: none !important; }
 }
 
-@media(max-width:500px) {
-  .kba-body { padding: .6rem !important; }
-  .chart-box { padding: .85rem .75rem !important; }
-  .kb-table { overflow-x: auto; }
-  .kb-table table { min-width: 540px; }
+@media (max-width: 640px) {
+  .kba-body { padding: .75rem .75rem 20px !important; }
+  .chart-box { padding: .85rem !important; }
+  .kb-table { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+  .kb-table table { min-width: 560px !important; }
+  .circ-row { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+  .circ-card { padding: .75rem !important; gap: 10px !important; }
+  .cc-ring-wrap, .cc-ring { width: 52px !important; height: 52px !important; }
+  .cc-value { font-size: 1.1rem !important; }
+  .bar-scene { height: 110px !important; }
+  .log-line { grid-template-columns: 120px 50px 80px 1fr !important; font-size: 11px !important; }
+  .pg-head h2 { font-size: .95rem !important; }
+  .srch-box { width: 100% !important; }
+  .pg-acts { width: 100% !important; }
+  .pg-acts .btn-outline, .pg-acts .srch-box { flex: 1; }
+}
+
+@media (max-width: 400px) {
+  .kbs-label { font-size: 8px !important; max-width: 42px; }
+  .kbs-item { min-width: 46px !important; padding: 5px 8px !important; }
   .circ-row { grid-template-columns: 1fr 1fr !important; }
-  .sysinfo-grid { grid-template-columns: 1fr 1fr !important; }
-  .file-stats-row { grid-template-columns: repeat(2,1fr) !important; }
-  .file-grid { grid-template-columns: repeat(2,1fr) !important; }
-  .kba-item { padding: 6px 4px !important; min-width: 44px; }
-  .kbs-label { font-size: 8px !important; max-width: 40px; }
+}
+
+/* Admin modals fit small screens */
+@media (max-width: 600px) {
+  .modal-overlay { padding: 12px !important; align-items: flex-end !important; }
+  .mini-modal, .feature-modal, .del-modal { width: 100% !important; max-height: 84vh; max-height: 84dvh; overflow-y: auto; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SHARED UTILITIES
+═══════════════════════════════════════════════════════════════ */
+
+/* Landing page must always scroll */
+html.landing-page, html.landing-page body, html.landing-page #app {
+  overflow: auto !important;
+  height: auto !important;
+}
+
+@media (max-width: 480px) {
+  html { font-size: 14px; }
 }

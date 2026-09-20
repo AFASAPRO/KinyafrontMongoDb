@@ -12,5 +12,20 @@ export default defineConfig({
     proxy: {
       '/api': { target: 'http://localhost:5000', changeOrigin: true, secure: false }
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        // Split heavy vendor libraries so app code updates don't
+        // re-download the whole dependency graph (faster PWA updates)
+        manualChunks: {
+          'vendor-vue': ['vue', 'vue-router', 'pinia'],
+          'vendor-firebase': ['firebase/app', 'firebase/auth'],
+          'vendor-markdown': ['marked', 'highlight.js'],
+          'vendor-socket': ['socket.io-client'],
+          'vendor-axios': ['axios']
+        }
+      }
+    }
   }
 })

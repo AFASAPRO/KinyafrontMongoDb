@@ -323,6 +323,7 @@ onBeforeUnmount(() => clearInterval(timerInterval))
 /* ── Root ─────────────────────────────────────────────────── */
 .fp-root {
   min-height: 100vh;
+  min-height: 100dvh;
   background: #05060f;
   display: flex; align-items: center; justify-content: center;
   padding: 1.5rem;

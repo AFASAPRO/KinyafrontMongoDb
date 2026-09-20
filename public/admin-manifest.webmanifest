@@ -1,0 +1,36 @@
+{
+  "id": "kinyabot-admin-app",
+  "name": "KinyaBot Admin",
+  "short_name": "KB Admin",
+  "description": "KinyaBot Admin Console — manage users, conversations, AI usage and system settings.",
+  "start_url": "/admin?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "theme_color": "#4f46e5",
+  "background_color": "#05050d",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["productivity", "developer"],
+  "icons": [
+    {
+      "src": "/admin-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/admin-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/admin-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

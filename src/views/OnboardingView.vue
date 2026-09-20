@@ -239,7 +239,7 @@ async function finish() {
 </script>
 
 <style scoped>
-.ob-root{min-height:100vh;width:100vw;background:#0d0d0f;display:flex;flex-direction:column;align-items:center;padding:0 1rem 2rem;position:relative;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.ob-root{min-height:100vh;min-height:100dvh;width:100%;background:#0d0d0f;display:flex;flex-direction:column;align-items:center;padding:0 1rem 2rem;position:relative;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
 .ob-root.light{background:#f0f2f5}
 
 .ob-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden}

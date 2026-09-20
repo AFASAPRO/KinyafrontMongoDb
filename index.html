@@ -2,7 +2,16 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover: enables env(safe-area-inset-*) on notched phones.
+         interactive-widget=resizes-content: Chrome Android resizes the layout when
+         the keyboard opens so the chat composer stays visible above it. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+
+    <!-- ══ PWA ══════════════════════════════════════════════ -->
+    <meta name="theme-color" content="#131314" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="KinyaBot" />
+    <link rel="manifest" href="/site.webmanifest" />
 
     <!-- ══ PRIMARY SEO ══════════════════════════════════════ -->
     <title>KinyaBot – Free AI Chat Assistant for Rwanda | multilingual AI</title>
@@ -38,6 +47,16 @@
 
     <meta name="google-site-verification" content="MwsqLd2izMHg6sJpy9JHjS8V3WeNgYOqdzPpLICbMMc" />
     
+
+
+ <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="KinyaBot" />
+
 
     <!-- ══ STRUCTURED DATA — WebSite + SearchAction ═════════ -->
     <script type="application/ld+json">

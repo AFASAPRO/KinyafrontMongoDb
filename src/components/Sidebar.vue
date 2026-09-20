@@ -1,5 +1,5 @@
 <template>
-  <aside class="sidebar" :class="{ 'mob-open': mobileOpen }">
+  <aside class="sidebar" :class="{ 'mob-open': mobileOpen }" role="dialog" aria-modal="true" aria-label="Chats sidebar">
     <!-- ── Header: Logo + "Chats" + search icon ── -->
     <div class="sb-header">
       <img src="/logo.png" alt="KinyaBot" class="sb-logo" />
@@ -106,6 +106,7 @@
     <!-- Footer -->
     <div class="sb-footer">
       <div class="footer-nav">
+        <InstallHint v-if="showInstall" variant="footer" />
         <button class="footer-item" @click="showSettings=true">
           <i class="fas fa-gear"></i><span>Settings</span>
         </button>
@@ -215,14 +216,16 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, nextTick, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useChatStore } from '../stores/chat'
 import { disconnectSocket } from '../socket'
+import { usePwaInstall } from '../composables/usePwaInstall'
 import SidebarChatItem from './SidebarChatItem.vue'
 import SettingsModal from './SettingsModal.vue'
 import HelpModal from './HelpModal.vue'
+import InstallHint from './InstallHint.vue'
 
 defineProps({ mobileOpen: Boolean })
 const emit = defineEmits(['close-mobile','new-chat','load-chat'])
@@ -241,6 +244,10 @@ const showSettings = ref(false)
 const showHelp = ref(false)
 const showCanvas = ref(false)
 const showGuided = ref(false)
+
+// PWA install entry (hidden when already installed)
+const { canInstall, installed, isIOS } = usePwaInstall()
+const showInstall = computed(() => (canInstall.value || isIOS) && !installed.value)
 
 // Toggle search
 function toggleSearch() {
@@ -267,8 +274,8 @@ async function submitRename() {
 function startDelete(chat) { deletingChat.value = chat }
 async function submitDelete() { await chatStore.deleteChat(deletingChat.value.id); deletingChat.value = null }
 
-function openCanvas() { showCanvas.value = true }
-function openGuided() { showGuided.value = true }
+function openCanvas() { emit('close-mobile'); showCanvas.value = true }
+function openGuided() { emit('close-mobile'); showGuided.value = true }
 
 async function sendCanvasPrompt(prompt) {
   showCanvas.value = false
@@ -296,7 +303,10 @@ function handleKeydown(e) {
   const ctrl = e.ctrlKey || e.metaKey
   if (ctrl && e.key === '/') { e.preventDefault(); toggleSearch() }
   if (ctrl && e.key === 'b') { e.preventDefault(); emit('close-mobile') }
-  if (e.key === 'Escape' && searchOpen.value) closeSearch()
+  if (e.key === 'Escape') {
+    if (searchOpen.value) closeSearch()
+    else emit('close-mobile') // close the mobile drawer
+  }
 }
 
 onMounted(() => window.addEventListener('keydown', handleKeydown))
@@ -306,15 +316,35 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
 <style scoped>
 .sidebar {
   width: var(--sidebar-w); min-width: var(--sidebar-w);
-  height: 100vh; background: var(--bg-panel);
+  height: 100vh; height: 100dvh;
+  background: var(--bg-panel);
   border-right: 1px solid var(--border);
   display: flex; flex-direction: column; overflow: hidden;
-  flex-shrink: 0; z-index: 50; transition: transform .3s ease;
+  flex-shrink: 0; transition: transform .3s ease;
 }
+
+/* ── Off-canvas mobile drawer (≤900px) ────────────────────────
+   The overlay lives in ChatView (.mob-overlay, z-index: 90).
+   The drawer must sit ABOVE the overlay (z-index: 100) and must
+   never be caught by ancestor stacking contexts. */
 @media (max-width: 900px) {
-  .sidebar { position:fixed; left:0; top:0; transform:translateX(-100%); box-shadow:4px 0 24px rgba(0,0,0,.5); }
-  .sidebar.mob-open { transform:translateX(0); }
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    height: 100vh; height: 100dvh;
+    width: min(300px, 85vw); min-width: 0;
+    z-index: 100;
+    transform: translateX(-105%);
+    transition: transform .28s cubic-bezier(.32,.72,.35,1);
+    will-change: transform;
+    box-shadow: 4px 0 24px rgba(0,0,0,.5);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .sidebar.mob-open { transform: translateX(0); }
 }
+
+/* Fullscreen overlay side-effects: keep drawer touch-scrolling smooth */
+.sb-scroll { -webkit-overflow-scrolling: touch; }
 
 .sb-header { display:flex; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid var(--border); flex-shrink:0; }
 .sb-logo { width:28px; height:28px; border-radius:7px; object-fit:contain; flex-shrink:0; }

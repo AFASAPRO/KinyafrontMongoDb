@@ -292,6 +292,9 @@
       </div>
     </section>
 
+    <!-- ── PWA install banner (supported browsers only) ── -->
+    <InstallHint variant="banner" />
+
     <!-- ══ FOOTER ══════════════════════════════════════════════ -->
     <footer class="footer">
       <div class="footer-inner">
@@ -327,12 +330,12 @@
     }
   `}}</component>
 </teleport>
-
 </template>
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
+import InstallHint from '../components/InstallHint.vue'
 
 const router = useRouter()
 const landingRoot = ref(null)

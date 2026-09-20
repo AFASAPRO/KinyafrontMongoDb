@@ -105,7 +105,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, watch, onMounted } from 'vue'
+import { ref, nextTick, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useChatStore } from '../stores/chat'
 import { getSocket } from '../socket'
 import api from '../api'
@@ -122,6 +122,7 @@ const dismissedIds = ref(new Set())
 
 // Load active notifications on mount and listen for new ones
 onMounted(async () => {
+  window.visualViewport?.addEventListener?.('resize', onVisualViewportChange)
   try {
     const { data } = await api.get('/notifications')
     if (data.length) {
@@ -174,6 +175,15 @@ function scrollBottom() {
 watch(() => chatStore.messages.length, scrollBottom)
 watch(() => chatStore.activeChat?.id, scrollBottom)
 
+// Keep the newest message visible when the mobile keyboard opens/closes
+function onVisualViewportChange() {
+  if (document.documentElement.classList.contains('kb-open')) {
+    nextTick(() => {
+      if (msgArea.value) msgArea.value.scrollTop = msgArea.value.scrollHeight
+    })
+  }
+}
+
 async function handleSend({ content, file }) {
   if (!chatStore.activeChat) await chatStore.createChat()
   await chatStore.sendMessage(content, file)
@@ -197,6 +207,10 @@ function relTime(date) {
   if (h < 24) return `${h}h ago`
   return new Date(date).toLocaleDateString()
 }
+
+onBeforeUnmount(() => {
+  window.visualViewport?.removeEventListener?.('resize', onVisualViewportChange)
+})
 </script>
 
 <style scoped>

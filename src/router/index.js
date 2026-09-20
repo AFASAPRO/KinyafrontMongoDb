@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { isStandalone } from '../utils/viewport'
 
 const routes = [
   // Public landing page — shown to guests at /
@@ -24,6 +25,18 @@ router.beforeEach((to, from, next) => {
   // Admin routes
   if (to.meta.requiresAdmin && !adminToken) return next('/admin')
   if (to.meta.adminGuest && adminToken) return next('/admin/dashboard')
+
+  // Installed PWA opened at start_url "/":
+  //  • authenticated user  → chat / onboarding
+  //  • guest               → straight to Login (NOT the public website)
+  // Regular browser tabs still see the landing page for SEO/marketing.
+  if (to.meta.landingPage && isStandalone()) {
+    if (auth.isLoggedIn) {
+      if (!auth.user?.onboarded) return next('/onboarding')
+      return next('/chat')
+    }
+    return next('/login')
+  }
 
   // Landing page: if already logged in, go to /chat
   if (to.meta.landingPage && auth.isLoggedIn) {

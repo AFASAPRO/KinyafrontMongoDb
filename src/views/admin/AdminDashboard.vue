@@ -1229,7 +1229,7 @@ onBeforeUnmount(()=>{ clearInterval(tInt); clearInterval(rInt) })
 /* ════════════════════════════════════
    SHELL
 ════════════════════════════════════ */
-.kb-admin { display:flex; height:100vh; width:100vw; background:var(--s1); font-family:'Google Sans','Segoe UI',system-ui,sans-serif; color:var(--t1); overflow:hidden; }
+.kb-admin { display:flex; height:100vh; height:100dvh; width:100%; background:var(--s1); font-family:'Google Sans','Segoe UI',system-ui,sans-serif; color:var(--t1); overflow:hidden; }
 
 /* ════════════════════════════════════
    SIDEBAR
