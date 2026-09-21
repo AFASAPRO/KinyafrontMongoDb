@@ -9,14 +9,20 @@
       <transition name="fade">
         <div v-if="rightOpen && isMobile" class="mob-overlay rp-overlay" @click="rightOpen=false" aria-hidden="true"></div>
       </transition>
-
-      <Sidebar
-        :mobile-open="mobileSidebarOpen"
-        @close-mobile="mobileSidebarOpen=false"
-        @new-chat="handleNewChat"
-        @load-chat="handleLoadChat"
-      />
     </template>
+    <transition name="fade">
+      <div v-if="isGuest && mobileSidebarOpen" class="mob-overlay" @click="mobileSidebarOpen=false" aria-hidden="true"></div>
+    </transition>
+
+    <!-- Sidebar: members get conversations, guests get a sign-in CTA.
+         Visible on desktop AND as a mobile drawer for both. -->
+    <Sidebar
+      :mobile-open="mobileSidebarOpen"
+      :guest="isGuest"
+      @close-mobile="mobileSidebarOpen=false"
+      @new-chat="handleNewChat"
+      @load-chat="handleLoadChat"
+    />
 
     <div class="main-col">
       <!-- Top bar -->
@@ -58,6 +64,9 @@
         </template>
         <template v-else>
           <div class="guest-brand">
+            <button class="mob-menu-btn" @click="mobileSidebarOpen=true" title="Menu" aria-label="Open menu">
+              <i class="fas fa-bars"></i>
+            </button>
             <img src="/logo.png" alt="KinyaBot" class="guest-logo" />
             <span class="guest-name">KinyaBot</span>
           </div>
@@ -87,7 +96,6 @@
     <!-- ── Guest auth gate: shown BEFORE any AI request is sent ── -->
     <AuthGateModal
       v-if="showAuthGate"
-      :draft="gatedDraft"
       @close="showAuthGate=false"
     />
   </div>
@@ -181,7 +189,6 @@ function handleAuthRequired({ content }) {
   } catch {}
   showAuthGate.value = true
 }
-
 function goAuth(mode) {
   router.push(`/${mode}?redirect=/`)
 }
@@ -204,6 +211,11 @@ function handleGlobalKeys(e) {
 }
 
 async function handleNewChat() {
+  // Guests have no server chats — reset the local view only.
+  if (isGuest.value) {
+    mobileSidebarOpen.value = false
+    return
+  }
   await chatStore.createChat()
   mobileSidebarOpen.value = false
 }
@@ -265,6 +277,7 @@ onBeforeUnmount(() => {
 
 /* ── Guest header ── */
 .guest-brand { display:flex; align-items:center; gap:9px; min-width:0; }
+.guest-brand .mob-menu-btn { display:none; }
 .guest-logo { width:30px; height:30px; border-radius:8px; object-fit:contain; flex-shrink:0; }
 .guest-name { font-size:15px; font-weight:700; color:var(--text-1); white-space:nowrap; }
 
@@ -278,6 +291,7 @@ onBeforeUnmount(() => {
 /* ── MOBILE ── */
 @media(max-width:860px) {
   .mob-menu-btn { display:flex; }
+  .guest-brand .mob-menu-btn { display:flex; }
   .topbar-pill span { display:none; }
   .topbar-pill { padding:7px 10px; }
 }

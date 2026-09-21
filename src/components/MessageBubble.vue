@@ -10,9 +10,16 @@
   <!-- Error message -->
   <div v-else-if="message._error" class="msg-row assistant">
     <div class="bot-avatar"><img src="/logo.png" alt="KinyaBot" /></div>
-    <div class="error-bubble">
-      <i class="fas fa-triangle-exclamation"></i>
-      <span>{{ message.content }}</span>
+    <div class="error-wrap">
+      <div class="error-bubble">
+        <i class="fas fa-triangle-exclamation"></i>
+        <span>{{ message.content }}</span>
+      </div>
+      <div class="error-actions">
+        <button class="retry-btn" @click="$emit('retry', message._retryOf || message.id)" aria-label="Retry request" title="Retry">
+          <i class="fas fa-rotate-right"></i> Retry
+        </button>
+      </div>
     </div>
   </div>
 
@@ -31,33 +38,76 @@
     </div>
 
     <div class="bubble-col" :class="message.role">
-      <!-- File attachment -->
-      <div v-if="message.file_url" class="attach-preview">
-        <img v-if="isImage(message.file_url)" :src="resolveUrl(message.file_url)" class="attach-img" @click="openImg(resolveUrl(message.file_url))" />
-        <div v-else class="attach-file">
-          <i class="fas fa-file-lines"></i>
-          <span>{{ fileName(message.file_url) }}</span>
-          <a :href="resolveUrl(message.file_url)" download class="dl-link"><i class="fas fa-download"></i></a>
-        </div>
+      <!-- Attachments (structured + legacy) -->
+      <div v-if="attachmentItems.length" class="attach-previews">
+        <MessageAttachment
+          v-for="(att, i) in attachmentItems"
+          :key="i"
+          :attachment="att"
+          :legacy-url="att ? null : message.file_url"
+          @open="openImg"
+        />
       </div>
 
       <!-- Bubble content -->
       <div class="bubble" :class="[message.role, {streaming: message._streaming, pending: message._pending}]" :id="`msg-${message.id}`">
         <div class="content" :class="{ prose: message.role==='assistant', 'user-text': message.role==='user' }"
           v-html="rendered"></div>
+        <!-- Thinking indicator while the first tokens arrive -->
+        <div v-if="message._streaming && !message.content" class="thinking">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="thinking-label">KinyaBot is thinking…</span>
+        </div>
         <!-- Streaming cursor -->
-        <span v-if="message._streaming" class="stream-cursor"></span>
+        <span v-else-if="message._streaming" class="stream-cursor"></span>
+      </div>
+
+      <!-- Cancelled marker -->
+      <div v-if="message._status === 'cancelled' && message.role === 'assistant'" class="cancelled-note">
+        <i class="fas fa-ban"></i> Generation stopped
+      </div>
+
+      <!-- Source references — only when the backend actually knows them -->
+      <div v-if="message.sources?.length" class="sources-line">
+        <i class="fas fa-file-shield"></i>
+        <span>Source: {{ message.sources.join(', ') }}</span>
       </div>
 
       <!-- Actions -->
-      <div class="actions" :class="message.role">
+      <div class="actions" :class="[message.role, { 'always-on': message._status === 'failed' || ttsActive }]">
         <!-- Copy -->
-        <button class="act-btn" :class="{success: copied}" @click="handleCopy" :title="copied?'Copied!':'Copy message'">
+        <button class="act-btn" :class="{success: copied}" @click="handleCopy" :title="copied?'Copied!':'Copy message'" :aria-label="copied?'Copied':'Copy message'">
           <i :class="copied ? 'fas fa-check' : 'fas fa-copy'"></i>
         </button>
 
+        <!-- Retry for failed user sends -->
+        <button v-if="message.role==='user' && message._status === 'failed'" class="act-btn retry-act" @click="$emit('retry', message.id)" title="Retry send" aria-label="Retry send">
+          <i class="fas fa-rotate-right"></i>
+        </button>
+
         <!-- AI-only actions -->
-        <template v-if="message.role==='assistant'">
+        <template v-if="message.role==='assistant' && !message._error">
+          <!-- Listen (TTS) -->
+          <button
+            v-if="canListen"
+            class="act-btn"
+            :class="{active: ttsState !== 'idle'}"
+            @click="toggleListen"
+            :title="listenTitle"
+            :aria-label="listenTitle"
+          >
+            <i v-if="ttsState === 'loading'" class="fas fa-spinner fa-spin"></i>
+            <i v-else-if="ttsState === 'playing'" class="fas fa-pause"></i>
+            <i v-else class="fas fa-volume-high"></i>
+          </button>
+          <!-- Stop audio while playing -->
+          <button v-if="ttsState === 'playing'" class="act-btn" @click="stopListen" title="Stop audio" aria-label="Stop audio">
+            <i class="fas fa-stop"></i>
+          </button>
+          <!-- Regenerate (last assistant message only) -->
+          <button v-if="isLast" class="act-btn" :class="{spin: regenBusy}" @click="$emit('regenerate')" title="Regenerate response" aria-label="Regenerate response">
+            <i class="fas fa-rotate-right"></i>
+          </button>
           <!-- Like -->
           <button class="act-btn" :class="{liked: liked===true}" @click="handleLike(true)" title="Helpful">
             <i :class="liked===true ? 'fas fa-thumbs-up' : 'far fa-thumbs-up'"></i>
@@ -77,12 +127,17 @@
         </template>
 
         <!-- Delete -->
-        <button class="act-btn danger" @click="confirmDelete=true" title="Delete">
+        <button class="act-btn danger" @click="confirmDelete=true" title="Delete" aria-label="Delete message">
           <i class="fas fa-trash-can"></i>
         </button>
 
         <span class="msg-time">{{ fmtTime }}</span>
       </div>
+
+      <!-- TTS honest error -->
+      <transition name="fade">
+        <div v-if="ttsError" class="tts-error">{{ ttsError }}</div>
+      </transition>
 
       <!-- Feedback text after like/dislike -->
       <transition name="fade">
@@ -120,9 +175,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onBeforeUnmount } from 'vue'
 import { marked } from 'marked'
 import { useAuthStore } from '../stores/auth'
+import api from '../api'
+import MessageAttachment from './MessageAttachment.vue'
+import { register as registerAudio, unregister as unregisterAudio } from '../utils/audio'
 import hljs from 'highlight.js/lib/core'
 // Register only the languages KinyaBot users actually get back from the AI.
 // (importing the full highlight.js bundle adds ~700 kB to the bundle)
@@ -155,8 +213,12 @@ hljs.registerAliases(['ts'], { languageName: 'typescript' })
 hljs.registerAliases(['py'], { languageName: 'python' })
 hljs.registerAliases(['shell', 'zsh'], { languageName: 'bash' })
 
-const props = defineProps({ message: Object })
-const emit = defineEmits(['delete', 'copy'])
+const props = defineProps({
+  message: Object,
+  isLast: { type: Boolean, default: false },       // last assistant message → regenerate
+  regenBusy: { type: Boolean, default: false }
+})
+const emit = defineEmits(['delete', 'copy', 'retry', 'regenerate'])
 
 const auth = useAuthStore()
 const userInitial = computed(() => auth.user?.username?.[0]?.toUpperCase() || 'U')
@@ -276,13 +338,77 @@ const fmtTime = computed(() => {
 })
 
 function isImage(url) { return /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url) }
-function resolveUrl(url) {
-  if (!url) return ''
-  if (url.startsWith('blob:') || url.startsWith('http')) return url
-  return `${import.meta.env.VITE_API_URL?.replace('/api','') || 'http://localhost:5000'}${url}`
-}
-function fileName(url) { return url.split('/').pop() }
 function openImg(src) { lightboxImg.value = src }
+
+/* ── Attachments (structured new + legacy file_url) ─────────── */
+const attachmentItems = computed(() => {
+  const list = []
+  if (Array.isArray(props.message.attachments) && props.message.attachments.length) {
+    for (const a of props.message.attachments) list.push(a)
+  } else if (props.message.file_url) {
+    list.push(null) // legacy → MessageAttachment resolves from legacyUrl
+  }
+  return list
+})
+
+/* ── Voice output (TTS) — optional Listen button, §13 ───────── */
+const ttsState = ref('idle')   // idle | loading | playing | paused
+const ttsError = ref('')
+const ttsActive = computed(() => ttsState.value === 'playing' || ttsState.value === 'paused')
+const canListen = computed(() =>
+  props.message.role === 'assistant' &&
+  !props.message._streaming &&
+  (props.message.content || '').trim().length > 0 &&
+  !props.message._error && props.message._status !== 'cancelled'
+)
+const listenTitle = computed(() =>
+  ({ loading: 'Generating audio…', playing: 'Pause audio', paused: 'Resume audio', idle: 'Listen to this response' })[ttsState.value]
+)
+let audioEl = null
+let ttsErrorTimer = null
+
+function stopOtherAudio() {
+  if (audioEl) registerAudio(audioEl, { forceIdle }) // pauses whoever else is playing
+}
+
+async function toggleListen() {
+  if (ttsState.value === 'playing') { audioEl?.pause(); ttsState.value = 'paused'; return }
+  if (ttsState.value === 'paused') { stopOtherAudio(); audioEl?.play(); ttsState.value = 'playing'; return }
+  if (ttsState.value === 'loading') return
+  ttsState.value = 'loading'
+  ttsError.value = ''
+  try {
+    if (!audioEl) {
+      const res = await api.post('/tts', { text: props.message.content }, { responseType: 'blob', timeout: 90000 })
+      audioEl = new Audio(URL.createObjectURL(res.data))
+      audioEl.onended = () => { ttsState.value = 'idle' }
+    }
+    stopOtherAudio()
+    await audioEl.play()
+    ttsState.value = 'playing'
+  } catch (err) {
+    ttsState.value = 'idle'
+    let msg = null
+    const d = err?.response?.data
+    if (d instanceof Blob) { try { msg = JSON.parse(await d.text()).error } catch {} }
+    else msg = err?.response?.data?.error
+    ttsError.value = msg || 'KinyaBot could not generate audio for this response right now.'
+    clearTimeout(ttsErrorTimer)
+    ttsErrorTimer = setTimeout(() => { ttsError.value = '' }, 6000)
+  }
+}
+
+function stopListen() {
+  if (audioEl) { audioEl.pause(); audioEl.currentTime = 0 }
+  ttsState.value = 'idle'
+}
+
+function forceIdle() { if (ttsState.value !== 'idle') ttsState.value = 'idle' }
+
+onBeforeUnmount(() => {
+  if (audioEl) { unregisterAudio(audioEl); audioEl.pause(); audioEl = null }
+  clearTimeout(ttsErrorTimer)
+})
 
 async function handleCopy() {
   const text = props.message.content || ''
@@ -351,6 +477,48 @@ function doDelete() {
   color:#f87171; font-size:13.5px; max-width:480px;
 }
 .error-bubble i { font-size:15px; flex-shrink:0; }
+.error-wrap { display:flex; flex-direction:column; gap:6px; }
+.error-actions { display:flex; }
+.retry-btn {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:6px 14px; border-radius:99px; font-size:12.5px; font-weight:600;
+  background:var(--bg-card); border:1px solid var(--border-md);
+  color:var(--text-1); cursor:pointer; transition:all .2s;
+}
+.retry-btn:hover { border-color:rgba(109,40,217,.5); background:rgba(109,40,217,.12); }
+.retry-btn i { font-size:11px; }
+.retry-act { color:var(--blue) !important; }
+
+/* Attachments stack */
+.attach-previews { display:flex; flex-direction:column; gap:6px; align-items:flex-start; max-width:100%; }
+.bubble-col.user .attach-previews { align-items:flex-end; }
+
+/* Thinking indicator */
+.thinking { display:flex; align-items:center; gap:5px; padding:6px 0; }
+.thinking-label { font-size:12.5px; color:var(--text-3); margin-left:4px; font-style:italic; }
+.thinking .dot { width:6px; height:6px; border-radius:50%; background:var(--text-3); animation:blink 1.3s infinite both; }
+.thinking .dot:nth-child(2){animation-delay:.2s}.thinking .dot:nth-child(3){animation-delay:.4s}
+
+/* Cancelled marker */
+.cancelled-note { display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-3); margin-top:3px; }
+.cancelled-note i { font-size:10px; }
+
+/* Source references (backend-verified only) */
+.sources-line {
+  display:inline-flex; align-items:center; gap:6px;
+  margin-top:5px; padding:3px 10px;
+  background:var(--bg-card); border:1px solid var(--border);
+  border-radius:99px; font-size:11px; color:var(--text-3); max-width:100%;
+}
+.sources-line i { color:#c4b5fd; font-size:10px; flex-shrink:0; }
+.sources-line span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* TTS */
+.tts-error { font-size:11.5px; color:#f87171; margin-top:3px; }
+.act-btn.active { color:#c4b5fd !important; background:rgba(109,40,217,.14); }
+.act-btn.spin i { animation:spin 1s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.actions.always-on { opacity:1; }
   
 /* System message */
 .msg-row.system-msg { justify-content:center; }

@@ -527,7 +527,10 @@
             <div class="file-grid">
               <div v-for="f in filesD.files" :key="f.name" class="fg-card">
                 <div class="fg-thumb">
-                  <img v-if="f.type==='image'" :src="resolveUrl(f.url)" @error="e=>e.target.parentElement.innerHTML='<i class=\'fas fa-image\'></i>'"/>
+                  <template v-if="f.type==='image'">
+                    <img v-if="fileBlobUrls[f.name]" :src="fileBlobUrls[f.name]" @error="e=>e.target.parentElement.innerHTML='<i class=\'fas fa-image\'></i>'" />
+                    <i v-else class="fas fa-image"></i>
+                  </template>
                   <i v-else class="fas fa-file-lines"></i>
                 </div>
                 <div class="fg-info">
@@ -535,8 +538,8 @@
                   <div class="fg-size">{{ fmtSize(f.size) }}</div>
                 </div>
                 <div class="fg-acts">
-                  <a :href="resolveUrl(f.url)" target="_blank" class="fg-btn"><i class="fas fa-eye"></i></a>
-                  <button class="fg-btn red" @click="deleteFile(f)"><i class="fas fa-trash"></i></button>
+                  <button class="fg-btn" @click="viewFile(f)" aria-label="View file" title="View"><i class="fas fa-eye"></i></button>
+                  <button class="fg-btn red" @click="deleteFile(f)" aria-label="Delete file" title="Delete"><i class="fas fa-trash"></i></button>
                 </div>
               </div>
               <div v-if="!filesD.files?.length" class="fg-empty"><i class="fas fa-folder-open"></i><span>No files yet</span></div>
@@ -1057,6 +1060,8 @@ async function refresh(){
     notifs.value      = n.data
     logs.value        = l.data.logs||[]
     filesD.value      = f.data
+    // Pre-fetch thumbnails for image files (authed blobs)
+    ;(f.data.files||[]).filter(x=>x.type==='image').slice(0,24).forEach(loadFileBlob)
     secData.value     = s.data
     admins.value      = adm.data
     usageD.value      = us.data
@@ -1195,7 +1200,27 @@ function barH(v,arr,key='count'){ const max=Math.max(...(arr||[]).map(x=>x[key]|
 function fmtSize(b){ if(!b) return '0 B'; if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB' }
 function fmtUptime(s){ const h=Math.floor(s/3600),m=Math.floor(s%3600/60); return `${h}h ${m}m` }
 function shortDate(d){ if(!d) return '—'; return new Date(d).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) }
-function resolveUrl(u){ return u?.startsWith('http')?u:BASE+u }
+/* Uploads are no longer public — admin views them via the authenticated
+   /api/files/:name endpoint using blob object URLs. */
+function resolveUrl(u){
+  if (!u) return ''
+  if (u.startsWith('http')) return u
+  const name = u.split('/').pop()
+  return `${API}/files/${encodeURIComponent(name)}`
+}
+const fileBlobUrls = ref({})
+async function loadFileBlob(f){
+  if (fileBlobUrls.value[f.name]) return
+  try {
+    const res = await axios.get(`${API}/files/${encodeURIComponent(f.name)}`, { headers: hdrs.value, responseType: 'blob' })
+    fileBlobUrls.value = { ...fileBlobUrls.value, [f.name]: URL.createObjectURL(res.data) }
+  } catch {}
+}
+async function viewFile(f){
+  const url = fileBlobUrls.value[f.name]
+  if (url) window.open(url, '_blank')
+  else loadFileBlob(f).then(() => { const u = fileBlobUrls.value[f.name]; if (u) window.open(u, '_blank') })
+}
 function nIcon(t){ return {info:'fas fa-circle-info',success:'fas fa-circle-check',warning:'fas fa-triangle-exclamation',error:'fas fa-circle-exclamation'}[t]||'fas fa-bell' }
 
 function pushActivity(a){ liveActivity.value.unshift({id:Date.now(),...a}); if(liveActivity.value.length>8) liveActivity.value.pop() }

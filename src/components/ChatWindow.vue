@@ -9,6 +9,11 @@
       <div v-if="chatStore.activeChat" class="chat-title-pill">
         {{ chatStore.activeChat.title }}
       </div>
+      <!-- Voice Mode (optional, authed users) -->
+      <button v-if="!guest" class="voice-pill" @click="showVoiceMode=true" title="Voice mode" aria-label="Enable voice mode">
+        <i class="fas fa-microphone-lines"></i>
+        <span class="vp-label">Voice</span>
+      </button>
     </div>
 
     <!-- Admin broadcast notifications banner -->
@@ -46,11 +51,12 @@
           </div>
           <p class="welcome-desc">
             <template v-if="guest">
-              Ask anything, generate code, analyze files — try a suggestion below,
-              or type your own. <strong>Sign in to start chatting.</strong>
+              Ask anything, attach documents or images, or talk with your voice —
+              try a suggestion below, or type your own.
+              <strong>Sign in to start chatting.</strong>
             </template>
             <template v-else>
-              Turn imagination into impact — ask anything, generate code, images, get guidance, and more.
+              Turn imagination into impact — ask anything, attach documents and images, use your voice, and more.
             </template>
           </p>
 
@@ -88,14 +94,28 @@
       <!-- Message list -->
       <transition-group v-else name="msg" tag="div" class="msgs-list">
         <MessageBubble
-          v-for="msg in chatStore.messages"
+          v-for="(msg, i) in chatStore.messages"
           :key="msg.id"
           :message="msg"
+          :is-last="isLastAssistant(msg, i)"
+          :regen-busy="chatStore.sending || chatStore.streaming"
           @delete="chatStore.deleteMessage(msg.id)"
           @copy="handleCopy(msg.content)"
+          @retry="handleRetry"
+          @regenerate="handleRegenerate"
         />
       </transition-group>
+
+      <!-- Stop generation -->
+      <transition name="fade">
+        <button v-if="chatStore.streaming" class="stop-btn" @click="chatStore.stopGeneration()" aria-label="Stop generating" title="Stop generating">
+          <i class="fas fa-stop"></i> Stop generating
+        </button>
+      </transition>
     </div>
+
+    <!-- Voice mode overlay -->
+    <VoiceMode v-if="showVoiceMode" @close="showVoiceMode=false" />
 
     <!-- Scroll FAB -->
     <transition name="fade">
@@ -137,6 +157,7 @@ import { getSocket } from '../socket'
 import api from '../api'
 import MessageBubble from './MessageBubble.vue'
 import InputBox from './InputBox.vue'
+import VoiceMode from './VoiceMode.vue'
 
 const props = defineProps({
   guest: { type: Boolean, default: false },
@@ -150,6 +171,7 @@ const showScrollBtn = ref(false)
 const copyToast = ref(false)
 const activeNotif = ref(null)
 const dismissedIds = ref(new Set())
+const showVoiceMode = ref(false)
 
 // Draft text injected into the composer (guest chips + restored drafts)
 const chipDraft = ref('')
@@ -229,7 +251,29 @@ async function handleSend({ content, file }) {
   }
   if (props.restoredDraft) emit('draft-consumed')
   if (!chatStore.activeChat) await chatStore.createChat()
-  await chatStore.sendMessage(content, file)
+  try {
+    await chatStore.sendMessage(content, file)
+  } catch {} // errors are rendered as retryable bubbles
+  scrollBottom()
+}
+
+function isLastAssistant(msg, index) {
+  if (msg.role !== 'assistant' || msg._error || msg._streaming) return false
+  // true when no other completed assistant message comes after it
+  for (let j = index + 1; j < chatStore.messages.length; j++) {
+    const m = chatStore.messages[j]
+    if (m.role === 'assistant' && !m._error) return false
+  }
+  return true
+}
+
+async function handleRetry(failedId) {
+  try { await chatStore.retry(failedId) } catch {}
+  scrollBottom()
+}
+
+async function handleRegenerate() {
+  try { await chatStore.regenerate() } catch {}
   scrollBottom()
 }
 
@@ -268,6 +312,15 @@ onBeforeUnmount(() => {
 .chat-window { display:flex; flex-direction:column; height:100%; overflow:hidden; background:var(--bg-base); position:relative; }
 
 .chat-topbar { display:flex; align-items:center; gap:10px; padding:8px 16px; flex-shrink:0; }
+.voice-pill {
+  display:flex; align-items:center; gap:6px; margin-left:auto;
+  padding:6px 12px; background:var(--bg-card); border:1px solid var(--border);
+  border-radius:99px; color:var(--text-2); font-size:12.5px; font-weight:500;
+  cursor:pointer; transition:all .2s;
+}
+.voice-pill:hover { background:rgba(109,40,217,.14); color:#c4b5fd; border-color:rgba(109,40,217,.4); }
+.voice-pill i { font-size:12px; }
+@media(max-width:600px){ .voice-pill .vp-label { display:none; } .voice-pill { padding:6px 10px; } }
 .model-pill { display:flex; align-items:center; gap:6px; padding:6px 12px; background:var(--bg-card); border:1px solid var(--border); border-radius:99px; color:var(--text-1); font-size:13px; font-weight:500; cursor:pointer; transition:all .2s; }
 .model-pill:hover { background:var(--bg-hover); }
 .chat-title-pill { font-size:12.5px; color:var(--text-2); background:var(--bg-card); border:1px solid var(--border); border-radius:99px; padding:4px 12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:300px; }
@@ -309,6 +362,17 @@ onBeforeUnmount(() => {
 .chip i { font-size:12px; }
 
 .msgs-list { display:flex; flex-direction:column; }
+
+/* Stop generation pill */
+.stop-btn {
+  display:flex; align-items:center; gap:7px;
+  margin:2px auto 8px; padding:6px 16px;
+  background:var(--bg-card); border:1px solid var(--border-md);
+  border-radius:99px; color:var(--text-2); font-size:12.5px; font-weight:500;
+  cursor:pointer; transition:all .2s;
+}
+.stop-btn:hover { background:var(--bg-hover); color:var(--text-1); border-color:rgba(242,139,130,.4); }
+.stop-btn i { font-size:10px; color:#f28b82; }
 
 .scroll-fab { position:absolute; bottom:110px; right:20px; width:36px; height:36px; border-radius:50%; background:var(--bg-card); border:1px solid var(--border-md); color:var(--text-2); font-size:13px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,.3); cursor:pointer; z-index:5; transition:all .2s; }
 .scroll-fab:hover { background:var(--bg-hover); color:var(--text-1); }

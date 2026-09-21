@@ -16,13 +16,6 @@
           history and pick up right where you left off.
         </p>
 
-        <!-- The guest's draft is preserved and shown back to them -->
-        <div v-if="draftPreview" class="gate-draft">
-          <div class="gd-label"><i class="fas fa-message"></i> Your message is saved</div>
-          <div class="gd-text">“{{ draftPreview }}”</div>
-          <div class="gd-note">It will be waiting in the composer after you sign in.</div>
-        </div>
-
         <div class="gate-actions">
           <button class="gbtn solid" @click="go('/login')">
             <i class="fas fa-right-to-bracket"></i> Sign In
@@ -39,18 +32,12 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onBeforeUnmount } from 'vue'
+import { onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 
-const props = defineProps({ draft: { type: String, default: '' } })
 const emit = defineEmits(['close'])
 
 const router = useRouter()
-
-const draftPreview = computed(() => {
-  const t = (props.draft || '').trim()
-  return t.length > 120 ? t.slice(0, 120) + '…' : t
-})
 
 function go(path) {
   router.push(`${path}?redirect=/`)
@@ -98,25 +85,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 .gate-title { font-size: 1.2rem; font-weight: 700; color: #fff; margin-bottom: .4rem; }
 .gate-sub { font-size: 13px; color: var(--text-2); line-height: 1.65; margin-bottom: 1.1rem; }
-
-.gate-draft {
-  background: var(--bg-panel);
-  border: 1px dashed var(--border-md);
-  border-radius: 12px;
-  padding: 11px 13px;
-  text-align: left;
-  margin-bottom: 1.15rem;
-}
-.gd-label {
-  display: flex; align-items: center; gap: 7px;
-  font-size: 12px; font-weight: 600; color: #c4b5fd; margin-bottom: 6px;
-}
-.gd-label i { font-size: 11px; }
-.gd-text {
-  font-size: 13px; color: var(--text-1); line-height: 1.55;
-  margin-bottom: 5px; word-break: break-word;
-}
-.gd-note { font-size: 11.5px; color: var(--text-3); }
 
 .gate-actions { display: flex; flex-direction: column; gap: 9px; margin-bottom: .9rem; }
 .gbtn {

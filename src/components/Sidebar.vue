@@ -1,17 +1,17 @@
 <template>
-  <aside class="sidebar" :class="{ 'mob-open': mobileOpen }" role="dialog" aria-modal="true" aria-label="Chats sidebar">
+  <aside class="sidebar" :class="{ 'mob-open': mobileOpen, guest }" role="dialog" aria-modal="true" aria-label="Chats sidebar">
     <!-- ── Header: Logo + "Chats" + search icon ── -->
     <div class="sb-header">
       <img src="/logo.png" alt="KinyaBot" class="sb-logo" />
-      <span class="sb-title">Chats</span>
-      <button class="icon-btn" @click="searchOpen=!searchOpen" title="Search chats (Ctrl+/)">
+      <span class="sb-title">{{ guest ? 'KinyaBot' : 'Chats' }}</span>
+      <button v-if="!guest" class="icon-btn" @click="searchOpen=!searchOpen" title="Search chats (Ctrl+/)">
         <i class="fas fa-magnifying-glass"></i>
       </button>
     </div>
 
     <!-- Search box (Ctrl+/ toggles) -->
     <transition name="fade">
-      <div v-if="searchOpen" class="sb-search">
+      <div v-if="searchOpen && !guest" class="sb-search">
         <div class="search-row">
           <i class="fas fa-magnifying-glass"></i>
           <input ref="searchRef" v-model="searchQ" type="text" placeholder="Search chats…"
@@ -22,7 +22,7 @@
     </transition>
 
     <!-- Search results -->
-    <div v-if="searchQ && chatStore.searchResults.length" class="sb-scroll">
+    <div v-if="!guest && searchQ && chatStore.searchResults.length" class="sb-scroll">
       <div class="section-label-row">Results</div>
       <div v-for="r in chatStore.searchResults" :key="r.id" class="search-result" @click="goToChat(r.chat_id)">
         <i class="fas fa-message"></i>
@@ -34,7 +34,7 @@
     </div>
 
     <!-- Chat list -->
-    <div v-else class="sb-scroll">
+    <div v-else-if="!guest" class="sb-scroll">
       <!-- Pinned Models -->
       <div class="section-group">
         <div class="section-header">
@@ -103,7 +103,30 @@
       </div>
     </div>
 
-    <!-- Footer -->
+    <!-- ── Guest panel: sign-in CTA instead of chat history ── -->
+    <div v-else class="sb-scroll guest-panel">
+      <div class="guest-cta">
+        <div class="gc-icon"><i class="fas fa-comment-dots"></i></div>
+        <h3>Chat with KinyaBot</h3>
+        <p>
+          Create a free account to keep your conversation history, attach
+          documents and images, and talk with your voice.
+        </p>
+        <button class="gc-btn solid" @click="goAuth('register')">
+          <i class="fas fa-user-plus"></i> Create free account
+        </button>
+        <button class="gc-btn outline" @click="goAuth('login')">
+          <i class="fas fa-right-to-bracket"></i> I already have an account
+        </button>
+      </div>
+
+      <div class="guest-perks">
+        <div class="perk"><i class="fas fa-file-lines"></i><span>Document Q&amp;A (PDF, DOCX, TXT)</span></div>
+        <div class="perk"><i class="fas fa-image"></i><span>Image understanding</span></div>
+        <div class="perk"><i class="fas fa-microphone"></i><span>Voice input &amp; spoken answers</span></div>
+        <div class="perk"><i class="fas fa-clock-rotate-left"></i><span>Saved conversation history</span></div>
+      </div>
+    </div>
     <div class="sb-footer">
       <div class="footer-nav">
         <InstallHint v-if="showInstall" variant="footer" />
@@ -113,32 +136,65 @@
         <button class="footer-item" @click="showHelp=true">
           <i class="fas fa-circle-question"></i><span>Help &amp; Support</span>
         </button>
-        <button class="footer-item logout-item" @click="handleLogout">
+        <!-- Guest: auth entries replace Log Out -->
+        <template v-if="guest">
+          <button class="footer-item" @click="goAuth('login')">
+            <i class="fas fa-right-to-bracket"></i><span>Sign In</span>
+          </button>
+          <button class="footer-item accent-item" @click="goAuth('register')">
+            <i class="fas fa-user-plus"></i><span>Sign Up</span>
+          </button>
+        </template>
+        <button v-else class="footer-item logout-item" @click="handleLogout">
           <i class="fas fa-right-from-bracket"></i><span>Log Out</span>
         </button>
       </div>
       <div class="credits-bar">
-        <div class="credits-info">
-          <span class="credits-num">80 credits left today</span>
-          <div class="credits-sub">
-            <a href="#" class="upgrade-link">Upgrade</a>
-            <i class="fas fa-circle-info credits-icon"></i>
+        <!-- Real usage from /api/usage (authed) · sign-in hint (guest) -->
+        <template v-if="!guest">
+          <div class="credits-info">
+            <span class="credits-num">{{ usage.remaining }} of {{ usage.daily_limit }} messages left today</span>
+            <div class="credits-sub">
+              <span class="used-label">{{ usage.today }} used</span>
+              <i class="fas fa-circle-info credits-icon"></i>
+            </div>
           </div>
-        </div>
-        <div class="credits-ring">
-          <svg viewBox="0 0 36 36" class="credits-svg">
-            <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(128,128,128,.2)" stroke-width="3"/>
-            <circle cx="18" cy="18" r="15.9" fill="none" stroke="url(#cg)" stroke-width="3"
-              stroke-dasharray="8 92" stroke-dashoffset="25" stroke-linecap="round"/>
-            <defs>
-              <linearGradient id="cg" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#4f46e5"/>
-                <stop offset="100%" stop-color="#a855f7"/>
-              </linearGradient>
-            </defs>
-          </svg>
-          <span class="credits-pct">8%</span>
-        </div>
+          <div class="credits-ring">
+            <svg viewBox="0 0 36 36" class="credits-svg">
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(128,128,128,.2)" stroke-width="3"/>
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="url(#cg)" stroke-width="3"
+                :stroke-dasharray="`${usageRing} ${100 - usageRing}`" stroke-dashoffset="25" stroke-linecap="round"/>
+              <defs>
+                <linearGradient id="cg" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#4f46e5"/>
+                  <stop offset="100%" stop-color="#a855f7"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <span class="credits-pct">{{ usageRing }}%</span>
+          </div>
+        </template>
+        <template v-else>
+          <div class="credits-info">
+            <span class="credits-num">Free daily credits included</span>
+            <div class="credits-sub">
+              <button class="upgrade-link as-btn" @click="goAuth('register')">Sign up to claim them</button>
+            </div>
+          </div>
+          <div class="credits-ring">
+            <svg viewBox="0 0 36 36" class="credits-svg">
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(128,128,128,.2)" stroke-width="3"/>
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="url(#cg)" stroke-width="3"
+                stroke-dasharray="0 100" stroke-dashoffset="25" stroke-linecap="round"/>
+              <defs>
+                <linearGradient id="cg" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#4f46e5"/>
+                  <stop offset="100%" stop-color="#a855f7"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+        </template>
       </div>
     </div>
 
@@ -216,10 +272,11 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted, onBeforeUnmount, computed } from 'vue'
+import { ref, nextTick, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useChatStore } from '../stores/chat'
+import api from '../api'
 import { disconnectSocket } from '../socket'
 import { usePwaInstall } from '../composables/usePwaInstall'
 import SidebarChatItem from './SidebarChatItem.vue'
@@ -227,12 +284,31 @@ import SettingsModal from './SettingsModal.vue'
 import HelpModal from './HelpModal.vue'
 import InstallHint from './InstallHint.vue'
 
-defineProps({ mobileOpen: Boolean })
+defineProps({ mobileOpen: Boolean, guest: Boolean })
 const emit = defineEmits(['close-mobile','new-chat','load-chat'])
 
 const router = useRouter()
 const auth = useAuthStore()
 const chatStore = useChatStore()
+
+/* Real daily usage for the credits bar (authed users only). */
+const usage = ref({ today: 0, daily_limit: 50, remaining: 50 })
+const usageRing = computed(() => {
+  const limit = usage.value.daily_limit || 50
+  return Math.min(100, Math.round((usage.value.today / limit) * 100))
+})
+async function fetchUsage() {
+  try {
+    const { data } = await api.get('/usage')
+    usage.value = { today: data.today || 0, daily_limit: data.daily_limit || 50, remaining: Math.max(0, data.remaining ?? 50) }
+  } catch {}
+}
+watch(() => chatStore.sending, (busy, was) => { if (was && !busy) fetchUsage() })
+
+function goAuth(mode) {
+  emit('close-mobile')
+  router.push(`/${mode}?redirect=/`)
+}
 
 const searchOpen = ref(false)
 const searchRef = ref(null)
@@ -312,7 +388,10 @@ function handleKeydown(e) {
   }
 }
 
-onMounted(() => window.addEventListener('keydown', handleKeydown))
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown)
+  fetchUsage()
+})
 onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
 </script>
 
@@ -405,10 +484,54 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
 .credits-sub { display:flex; align-items:center; gap:6px; }
 .upgrade-link { font-size:11.5px; color:var(--blue); }
 .upgrade-link:hover { text-decoration:underline; }
+.upgrade-link.as-btn { background:none; border:none; cursor:pointer; padding:0; font-family:inherit; }
+.used-label { font-size:11px; color:var(--text-3); }
+.accent-item { color:#c4b5fd !important; }
 .credits-icon { font-size:11px; color:var(--text-3); }
 .credits-ring { position:relative; width:36px; height:36px; flex-shrink:0; }
 .credits-svg { width:100%; height:100%; transform:rotate(-90deg); }
 .credits-pct { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:600; color:var(--text-2); }
+
+/* ── Guest panel ── */
+.guest-panel { display:flex; flex-direction:column; gap:14px; padding-top:6px; }
+.guest-cta {
+  background:linear-gradient(160deg, rgba(109,40,217,.16), rgba(79,70,229,.07));
+  border:1px solid rgba(109,40,217,.3);
+  border-radius:var(--r-lg); padding:18px 14px; text-align:center;
+}
+.gc-icon {
+  width:44px; height:44px; margin:0 auto 10px; border-radius:13px;
+  background:rgba(109,40,217,.22); border:1px solid rgba(109,40,217,.35);
+  display:flex; align-items:center; justify-content:center;
+  color:#c4b5fd; font-size:19px;
+}
+.guest-cta h3 { font-size:14.5px; font-weight:700; color:var(--text-1); margin-bottom:6px; }
+.guest-cta p { font-size:12px; color:var(--text-2); line-height:1.6; margin-bottom:12px; }
+.gc-btn {
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  width:100%; padding:9px 10px; border-radius:10px;
+  font-size:12.5px; font-weight:600; cursor:pointer; transition:all .2s;
+  margin-bottom:8px;
+}
+.gc-btn:last-child { margin-bottom:0; }
+.gc-btn.solid { background:var(--accent); border:1px solid transparent; color:#fff; box-shadow:0 3px 14px rgba(109,40,217,.3); }
+.gc-btn.solid:hover { filter:brightness(1.12); }
+.gc-btn.outline { background:transparent; border:1px solid var(--border-md); color:var(--text-1); }
+.gc-btn.outline:hover { background:var(--bg-hover); border-color:rgba(109,40,217,.4); }
+.gc-btn i { font-size:11px; }
+
+.guest-perks { display:flex; flex-direction:column; gap:4px; }
+.perk {
+  display:flex; align-items:center; gap:10px;
+  padding:8px 10px; border-radius:var(--r-sm);
+  font-size:12px; color:var(--text-2);
+}
+.perk i {
+  width:26px; height:26px; border-radius:7px; flex-shrink:0;
+  background:var(--bg-card); border:1px solid var(--border);
+  display:flex; align-items:center; justify-content:center;
+  color:#a5b4fc; font-size:11px;
+}
 
 /* Modals */
 .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:999; backdrop-filter:blur(4px); }

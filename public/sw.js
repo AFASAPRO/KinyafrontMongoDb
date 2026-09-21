@@ -17,7 +17,7 @@
  *    always go straight to the network (auth, AI conversations, admin data).
  */
 
-const VERSION = 'v2.0.0'
+const VERSION = 'v2.1.0'
 const SHELL_CACHE = `kb-shell-${VERSION}`
 const ASSET_CACHE = `kb-assets-${VERSION}`
 const CDN_CACHE = `kb-cdn-${VERSION}`
