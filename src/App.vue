@@ -32,20 +32,31 @@
       <span>Back online! Connection restored.</span>
     </div>
   </transition>
+
+  <!-- ── Session expired toast ── -->
+  <transition name="toast-slide">
+    <div v-if="showExpiredToast" class="reconnected-toast expired-toast">
+      <i class="fas fa-clock"></i>
+      <span>Your session expired — sign in to continue chatting.</span>
+    </div>
+  </transition>
 </template>
 
 <script setup>
 import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import { connectSocket, disconnectSocket } from './socket'
 import api from './api'
 
 const auth = useAuthStore()
 const route = useRoute()
+const router = useRouter()
 const isOffline = ref(!navigator.onLine)
 const showReconnected = ref(false)
+const showExpiredToast = ref(false)
 let wasOffline = false
+let expiredToastTimer = null
 
 function applyThemeMode(mode) {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -81,10 +92,11 @@ onMounted(async () => {
   window.addEventListener('offline', handleOffline)
   window.addEventListener('online', handleOnline)
 
-  if (auth.isLoggedIn) {
-    try { await auth.fetchProfile() } catch {}
-    connectSocket(auth.token)
-  }
+  // Resolve the persisted session in the background (validates the token
+  // via /auth/me; UI has already rendered optimistically — no black boot).
+  auth.init()
+
+  if (auth.isLoggedIn) connectSocket(auth.token)
 
   const accent = localStorage.getItem('kb_accent') || 'indigo'
   const accentMap = { indigo:'#6366f1', purple:'#a855f7', blue:'#3b82f6', cyan:'#06b6d4', green:'#22c55e' }
@@ -107,6 +119,22 @@ watch(() => route.path, (p) => trackPage(p))
 watch(() => auth.isLoggedIn, (loggedIn) => {
   if (loggedIn) connectSocket(auth.token)
   else disconnectSocket()
+})
+
+/**
+ * Session-expiry handling without any page refresh:
+ *  • on a protected route  → redirect to /login?expired=1 (renders immediately)
+ *  • on the chat route (/) → drop into guest mode + show a small toast
+ */
+watch(() => auth.status, (s) => {
+  if (s !== 'unauthenticated' || !auth.sessionExpired) return
+  if (route.meta.requiresAuth) {
+    router.push('/login?expired=1')
+  } else if (route.path === '/') {
+    showExpiredToast.value = true
+    clearTimeout(expiredToastTimer)
+    expiredToastTimer = setTimeout(() => { showExpiredToast.value = false }, 5000)
+  }
 })
 
 onBeforeUnmount(() => {
@@ -170,6 +198,8 @@ onBeforeUnmount(() => {
 }
 .toast-slide-enter-active, .toast-slide-leave-active { transition: all .3s ease; }
 .toast-slide-enter-from, .toast-slide-leave-to { opacity: 0; transform: translateX(20px); }
+
+.expired-toast { background: #1a1410; border-color: rgba(245,158,11,.35); color: #fcd34d; }
 
 .offline-pop-enter-active { animation: fadeUp .4s cubic-bezier(.34,1.56,.64,1); }
 .offline-pop-leave-active { transition: all .3s ease; }

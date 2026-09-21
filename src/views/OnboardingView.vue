@@ -231,9 +231,9 @@ async function finish() {
     await chatStore.fetchChats()
     await chatStore.createChat()
     if (form.firstPrompt) await chatStore.sendMessage(form.firstPrompt)
-    router.push('/chat')
+    router.push('/')
   } catch {
-    router.push('/chat')
+    router.push('/')
   } finally { saving.value = false }
 }
 </script>

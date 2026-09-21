@@ -74,9 +74,16 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted, onBeforeUnmount, computed } from 'vue'
+import { ref, nextTick, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 
-const props = defineProps({ disabled: Boolean })
+const props = defineProps({
+  disabled: Boolean,
+  // Guest mode: keep the typed message in the composer when the
+  // auth gate fires, so nothing the user wrote is ever lost.
+  preserveOnSend: Boolean,
+  // Text injected from outside (restored pending message / guest chips)
+  injectedText: { type: String, default: '' }
+})
 const emit  = defineEmits(['send', 'focus'])
 
 const inputVal     = ref('')
@@ -97,6 +104,15 @@ const placeholder = computed(() =>
   window.innerWidth < 480 ? 'Ask anything…' : 'Ask me anything…'
 )
 
+/* External text injection (restored pending message, suggestion chips) */
+watch(() => props.injectedText, (val) => {
+  if (!val) return
+  inputVal.value = val
+  selectedFile.value = null
+  filePreview.value = null
+  nextTick(() => { resize(); taRef.value?.focus() })
+})
+
 function resize() {
   const el = taRef.value; if (!el) return
   el.style.height = 'auto'
@@ -113,6 +129,9 @@ function submit() {
   const content = inputVal.value.trim()
   if (!content && !selectedFile.value) return
   emit('send', { content, file: selectedFile.value })
+  // Guest mode keeps the draft so closing the auth gate returns the
+  // user to their message exactly as they typed it.
+  if (props.preserveOnSend) return
   inputVal.value = ''; selectedFile.value = null; filePreview.value = null
   if (fileRef.value) fileRef.value.value = ''
   nextTick(() => { if (taRef.value) { taRef.value.style.height = 'auto'; taRef.value.focus() } })

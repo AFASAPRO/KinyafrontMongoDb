@@ -35,16 +35,27 @@
             </div>
           </div>
           <h1 class="welcome-heading">
-            <span class="g-text">Think bigger</span> with KinyaBot AI<br />
-            <span style="color:var(--text-2);font-size:.65em;font-weight:400">innovation at your command</span>
+            <template v-if="guest">How can I <span class="g-text">help you</span> today?</template>
+            <template v-else>
+              <span class="g-text">Think bigger</span> with KinyaBot AI<br />
+              <span style="color:var(--text-2);font-size:.65em;font-weight:400">innovation at your command</span>
+            </template>
           </h1>
           <div class="powered-badge">
             <i class="fas fa-bolt"></i> POWERED BY AFASA
           </div>
-          <p class="welcome-desc">Turn imagination into impact — ask anything, generate code, images, get guidance, and more.</p>
+          <p class="welcome-desc">
+            <template v-if="guest">
+              Ask anything, generate code, analyze files — try a suggestion below,
+              or type your own. <strong>Sign in to start chatting.</strong>
+            </template>
+            <template v-else>
+              Turn imagination into impact — ask anything, generate code, images, get guidance, and more.
+            </template>
+          </p>
 
-          <!-- Pinned cards -->
-          <div v-if="chatStore.pinnedChats.length" class="pinned-section">
+          <!-- Pinned cards (authenticated users) -->
+          <div v-if="!guest && chatStore.pinnedChats.length" class="pinned-section">
             <div class="pinned-header">
               <i class="fas fa-thumbtack" style="color:var(--text-2)"></i>
               <span>Pinned Chats</span>
@@ -100,25 +111,49 @@
       </div>
     </transition>
 
-    <InputBox @send="handleSend" :disabled="chatStore.sending" @focus="scrollBottom" />
+    <!-- Restored-draft hint (message preserved across sign-in) -->
+    <transition name="fade">
+      <div v-if="restoredDraft" class="restored-hint">
+        <i class="fas fa-circle-info"></i>
+        <span>Your message is ready below — press Send to chat with KinyaBot.</span>
+        <button class="rh-x" @click="$emit('draft-consumed')"><i class="fas fa-xmark"></i></button>
+      </div>
+    </transition>
+
+    <InputBox
+      @send="handleSend"
+      :disabled="chatStore.sending"
+      :preserve-on-send="guest"
+      :injected-text="composerInject"
+      @focus="scrollBottom"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, nextTick, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, nextTick, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useChatStore } from '../stores/chat'
 import { getSocket } from '../socket'
 import api from '../api'
 import MessageBubble from './MessageBubble.vue'
 import InputBox from './InputBox.vue'
 
-defineEmits(['toggle-sidebar'])
+const props = defineProps({
+  guest: { type: Boolean, default: false },
+  restoredDraft: { type: String, default: null }
+})
+const emit = defineEmits(['toggle-sidebar', 'auth-required', 'draft-consumed'])
+
 const chatStore = useChatStore()
 const msgArea = ref(null)
 const showScrollBtn = ref(false)
 const copyToast = ref(false)
 const activeNotif = ref(null)
 const dismissedIds = ref(new Set())
+
+// Draft text injected into the composer (guest chips + restored drafts)
+const chipDraft = ref('')
+const composerInject = computed(() => props.restoredDraft || chipDraft.value)
 
 // Load active notifications on mount and listen for new ones
 onMounted(async () => {
@@ -185,12 +220,28 @@ function onVisualViewportChange() {
 }
 
 async function handleSend({ content, file }) {
+  // GUESTS: the AI is never contacted before authentication.
+  // The typed message stays in the composer and is handed to the
+  // auth gate (which preserves it across the sign-in round-trip).
+  if (props.guest) {
+    emit('auth-required', { content })
+    return
+  }
+  if (props.restoredDraft) emit('draft-consumed')
   if (!chatStore.activeChat) await chatStore.createChat()
   await chatStore.sendMessage(content, file)
   scrollBottom()
 }
 
-function useChip(prompt) { handleSend({ content: prompt, file: null }) }
+function useChip(prompt) {
+  // Guests: a chip fills the composer (the auth gate fires on Send),
+  // so they can see and edit the exact message they are about to send.
+  if (props.guest) {
+    chipDraft.value = prompt
+    return
+  }
+  handleSend({ content: prompt, file: null })
+}
 
 function handleCopy(text) {
   navigator.clipboard.writeText(text || '').catch(() => {})
@@ -264,6 +315,19 @@ onBeforeUnmount(() => {
 
 .copy-toast { position:absolute; bottom:120px; left:50%; transform:translateX(-50%); background:var(--bg-card); border:1px solid var(--border-md); border-radius:99px; padding:7px 16px; font-size:12.5px; color:var(--text-1); display:flex; align-items:center; gap:7px; box-shadow:0 4px 16px rgba(0,0,0,.3); pointer-events:none; z-index:10; }
 .copy-toast i { color:#34a853; }
+
+/* ── Restored draft hint ── */
+.restored-hint {
+  display:flex; align-items:center; gap:8px;
+  margin:0 12px 6px; padding:8px 12px;
+  background:rgba(99,102,241,.1); border:1px solid rgba(99,102,241,.25);
+  border-radius:10px; font-size:12.5px; color:#c4b5fd;
+  animation:fadeUp .3s ease;
+}
+.restored-hint i { font-size:12px; flex-shrink:0; }
+.restored-hint span { flex:1; }
+.rh-x { background:none; border:none; color:var(--text-3); font-size:13px; cursor:pointer; padding:2px 4px; border-radius:5px; transition:all .15s; flex-shrink:0; }
+.rh-x:hover { color:var(--text-1); background:var(--bg-hover); }
 
 /* ── Admin Notification Banner ── */
 .notif-banner {

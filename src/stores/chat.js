@@ -329,11 +329,26 @@ export const useChatStore = defineStore('chat', () => {
 
   function clearSearch() { searchResults.value = [] }
 
+  /* Wipe all in-memory chat state (used on logout so no stale
+     conversations from a previous account leak into the next one). */
+  function resetChatState() {
+    chats.value = []
+    activeChat.value = null
+    messages.value = []
+    searchResults.value = []
+    stats.value = { total_chats: 0, total_messages: 0, total_tokens: 0 }
+    pendingChatId.value = null
+    seenMessageIds.value = new Set()
+    loading.value = false
+    sending.value = false
+    streaming.value = false
+  }
+
   return {
     chats, activeChat, messages, loading, sending, streaming, searchResults, stats, pendingChatId,
     pinnedChats, recentChats,
     fetchChats, fetchStats, createChat, loadChat, renameChat, pinChat,
     deleteChat, deleteAllChats, sendMessage, deleteMessage, searchMessages, clearSearch,
-    setupSocketListeners
+    setupSocketListeners, resetChatState
   }
 })

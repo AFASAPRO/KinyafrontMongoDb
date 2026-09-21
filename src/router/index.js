@@ -1,64 +1,92 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { isStandalone } from '../utils/viewport'
 
+/**
+ * CHAT-FIRST ROUTING
+ * ─────────────────────────────────────────────────────────────────
+ * `/` IS the KinyaBot chat interface (the app itself — no landing page).
+ *   • Guests  : full chat UI in read/explore mode + Sign In / Sign Up in
+ *               the header. Sending a message triggers the auth gate.
+ *   • Members : restored session, conversation history, normal chat.
+ *
+ * /login, /register … are guest-only and bounce authenticated users
+ * straight back to the chat. The admin app (/admin) stays fully separate.
+ */
 const routes = [
-  // Public landing page — shown to guests at /
-  { path: '/',            component: () => import('../views/LandingView.vue'),          meta: { landingPage: true } },
-  { path: '/login',       component: () => import('../views/LoginView.vue'),            meta: { guestOnly: true } },
-  { path: '/register',    component: () => import('../views/RegisterView.vue'),         meta: { guestOnly: true } },
-  { path: '/chat',        component: () => import('../views/ChatView.vue'),             meta: { requiresAuth: true } },
-  { path: '/onboarding',  component: () => import('../views/OnboardingView.vue'),       meta: { requiresAuth: true } },
-  { path: '/forgot-password', component: () => import('../views/ForgotPasswordView.vue'), meta: { guestOnly: true } },
-  { path: '/reset-password',  component: () => import('../views/ResetPasswordView.vue'),  meta: { guestOnly: true } },
-  { path: '/admin',           component: () => import('../views/admin/AdminLoginView.vue'),  meta: { adminGuest: true } },
+  {
+    path: '/',
+    component: () => import('../views/ChatView.vue'),
+    meta: { allowGuest: true }
+  },
+  // Legacy deep links & the PWA "New Chat" shortcut still land here
+  // (query — e.g. ?new=1 — is preserved through the redirect)
+  { path: '/chat', redirect: (to) => ({ path: '/', query: to.query }) },
+  { path: '/login',           component: () => import('../views/LoginView.vue'),            meta: { guestOnly: true } },
+  { path: '/register',        component: () => import('../views/RegisterView.vue'),         meta: { guestOnly: true } },
+  { path: '/onboarding',      component: () => import('../views/OnboardingView.vue'),       meta: { requiresAuth: true } },
+  { path: '/forgot-password', component: () => import('../views/ForgotPasswordView.vue'),   meta: { guestOnly: true } },
+  { path: '/reset-password',  component: () => import('../views/ResetPasswordView.vue'),    meta: { guestOnly: true } },
+  { path: '/admin',           component: () => import('../views/admin/AdminLoginView.vue'), meta: { adminGuest: true } },
   { path: '/admin/dashboard', component: () => import('../views/admin/AdminDashboard.vue'), meta: { requiresAdmin: true } },
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
 const router = createRouter({ history: createWebHistory(), routes })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore()
-  const adminToken = localStorage.getItem('kb_admin_token')
 
-  // Admin routes
-  if (to.meta.requiresAdmin && !adminToken) return next('/admin')
-  if (to.meta.adminGuest && adminToken) return next('/admin/dashboard')
+  /* ── Admin app: independent token & guard logic (unchanged) ── */
+  if (to.meta.requiresAdmin || to.meta.adminGuest) {
+    const adminToken = localStorage.getItem('kb_admin_token')
+    if (to.meta.requiresAdmin && !adminToken) return '/admin'
+    if (to.meta.adminGuest && adminToken) return '/admin/dashboard'
+    return true
+  }
 
-  // Installed PWA opened at start_url "/":
-  //  • authenticated user  → chat / onboarding
-  //  • guest               → straight to Login (NOT the public website)
-  // Regular browser tabs still see the landing page for SEO/marketing.
-  if (to.meta.landingPage && isStandalone()) {
-    if (auth.isLoggedIn) {
-      if (!auth.user?.onboarded) return next('/onboarding')
-      return next('/chat')
+  /* ── User app ──────────────────────────────────────────────────
+     auth.status is resolved synchronously from storage, so this
+     decision NEVER runs against an undefined auth state.         */
+  const authed = auth.status === 'authenticated'
+
+  // Protected routes: unauthenticated → login
+  if (to.meta.requiresAuth && !authed) return '/login'
+
+  // Guest-only routes (login/register/reset): members go straight to chat
+  if (to.meta.guestOnly && authed) {
+    return auth.needsOnboarding ? '/onboarding' : '/'
+  }
+
+  // Fresh registrations must finish onboarding before anything else
+  if (authed && auth.needsOnboarding && to.path !== '/onboarding') return '/onboarding'
+
+  return true
+})
+
+/**
+ * STALE-CHUNK RECOVERY (black-screen fix, part 1)
+ * ─────────────────────────────────────────────────────────────────
+ * After a redeploy, an open tab / PWA can hold HTML that references
+ * hashed chunks which no longer exist. The dynamic import of a lazy
+ * route then fails and — with the out-in page transition — the screen
+ * would stay empty (black). We detect the failure and reload once
+ * with fresh assets; the sessionStorage flag prevents reload loops.
+ */
+router.onError((error, to) => {
+  const msg = String(error?.message || '')
+  const isChunkError =
+    msg.includes('Failed to fetch dynamically imported module') ||
+    msg.includes('Importing a module script failed') ||
+    msg.includes('error loading dynamically imported module')
+
+  if (isChunkError) {
+    if (!sessionStorage.getItem('kb_chunk_reload')) {
+      sessionStorage.setItem('kb_chunk_reload', '1')
+      window.location.assign(to?.fullPath || '/')
     }
-    return next('/login')
+    return
   }
-
-  // Landing page: if already logged in, go to /chat
-  if (to.meta.landingPage && auth.isLoggedIn) {
-    if (!auth.user?.onboarded) return next('/onboarding')
-    return next('/chat')
-  }
-
-  // Protected routes
-  if (to.meta.requiresAuth && !auth.isLoggedIn) return next('/login')
-
-  // Guest-only routes: logged in users go to chat
-  if (to.meta.guestOnly && auth.isLoggedIn) {
-    if (!auth.user?.onboarded) return next('/onboarding')
-    return next('/chat')
-  }
-
-  // Redirect logged-in users who haven't onboarded
-  if (auth.isLoggedIn && !auth.user?.onboarded && to.path !== '/onboarding') {
-    return next('/onboarding')
-  }
-
-  next()
+  console.error('[Router]', error)
 })
 
 export default router

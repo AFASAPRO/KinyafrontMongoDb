@@ -10,6 +10,11 @@
         <h1 class="auth-heading">Welcome back! 👋</h1>
         <p class="auth-sub">Log in to KinyaBot to continue your AI journey.</p>
 
+        <!-- Session expired while using the app → friendly notice, no black screen -->
+        <div v-if="sessionExpiredNotice" class="notice warn-notice">
+          <i class="fas fa-clock"></i> Your session expired. Please sign in again to continue.
+        </div>
+
         <!-- Show forgot password form inline -->
         <div v-if="showForgot">
           <div class="back-link" @click="showForgot=false">
@@ -125,12 +130,13 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { usePwaInstall } from '../composables/usePwaInstall'
 import InstallHint from '../components/InstallHint.vue'
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 
 // Show the install action when it can do something useful:
@@ -153,13 +159,26 @@ const forgotLoading = ref(false)
 const forgotMsg = ref(null)
 const oauthToast = ref('')
 
+// Chat-first: after authentication the user returns to the chat
+// (`/`). A redirect target is set by the guest auth gate.
+const redirectTarget = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/')
+  ? route.query.redirect : '/'
+
+// Returned here after a session expiry while on a protected route
+const sessionExpiredNotice = computed(() => route.query.expired === '1')
+
+function afterAuth(result) {
+  // Router guard sends non-onboarded accounts to /onboarding automatically
+  if (!result.user.onboarded) router.push('/onboarding')
+  else router.push(redirectTarget)
+}
+
 async function showOAuth(provider) {
   if (provider === 'Google') {
     serverError.value = ''; loading.value = true
     try {
       const result = await auth.loginWithGoogle()
-      if (!result.user.onboarded) router.push('/onboarding')
-      else router.push('/chat')
+      afterAuth(result)
     } catch (err) {
       serverError.value = err.response?.data?.error || 'Google login failed. Please try again.'
     } finally { loading.value = false }
@@ -185,8 +204,7 @@ async function handleLogin() {
   serverError.value = ''; loading.value = true
   try {
     const result = await auth.login(form.email, form.password, rememberMe.value)
-    if (!result.user.onboarded) router.push('/onboarding')
-    else router.push('/chat')
+    afterAuth(result)
   } catch (err) {
     serverError.value = err.response?.data?.error || 'Login failed. Please try again.'
   } finally { loading.value = false }
@@ -272,6 +290,7 @@ async function handleForgot() {
 .notice { padding:9px 12px; border-radius:var(--r-sm); font-size:12.5px; display:flex; align-items:center; gap:7px; margin-bottom:.9rem; }
 .notice.ok { background:rgba(52,168,83,.1); border:1px solid rgba(52,168,83,.3); color:#34a853; }
 .notice.err,.error-notice { background:rgba(242,139,130,.1); border:1px solid rgba(242,139,130,.25); color:var(--red); }
+.notice.warn-notice { background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.3); color:#fcd34d; }
 
 .submit-btn { width:100%; padding:11px; background:#3c3c42; border:1px solid rgba(255,255,255,.1); border-radius:var(--r-sm); color:var(--text-2); font-size:14px; font-weight:500; cursor:pointer; transition:all .2s; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:1.1rem; }
 .auth-root.light .submit-btn { background:#e8eaed; border-color:#dadce0; color:#5f6368; }

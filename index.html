@@ -71,7 +71,7 @@
         "@type": "SearchAction",
         "target": {
           "@type": "EntryPoint",
-          "urlTemplate": "https://kinyabotai.vercel.app/login"
+          "urlTemplate": "https://kinyabotai.vercel.app/"
         },
         "query-input": "required name=search_term_string"
       }
@@ -184,9 +184,57 @@
     <!-- ══ PERFORMANCE ═══════════════════════════════════════ -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
     <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
+
+    <!-- Pre-paint theme (prevents a dark/light flash before Vue mounts) -->
+    <script>
+      (function () {
+        try {
+          var mode = localStorage.getItem('kb_mode') || 'dark'
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+          var isDark = mode === 'dark' || (mode === 'system' && prefersDark)
+          if (!isDark) document.documentElement.classList.add('light-mode')
+        } catch (e) {}
+      })()
+    </script>
+    <style>
+      /* ── Boot splash: paints instantly (no JS wait) and is replaced
+            by Vue on mount. Guarantees there is never a black/blank
+            first screen — even on slow networks or cold PWA starts. */
+      #boot-splash {
+        position: fixed; inset: 0; z-index: 1;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 14px; background: #131314;
+      }
+      html.light-mode #boot-splash { background: #f8f9fa; }
+      #boot-splash img {
+        width: 56px; height: 56px; border-radius: 14px; object-fit: contain;
+        box-shadow: 0 0 30px rgba(109,40,217,.35);
+        animation: bsPulse 1.6s ease-in-out infinite;
+      }
+      #boot-splash .bs-name {
+        color: #e3e3e3; font-size: 15px; font-weight: 700;
+        font-family: 'Segoe UI', system-ui, sans-serif; letter-spacing: .02em;
+      }
+      html.light-mode #boot-splash .bs-name { color: #202124; }
+      #boot-splash .bs-spinner {
+        width: 22px; height: 22px; border-radius: 50%;
+        border: 2.5px solid rgba(255,255,255,.12); border-top-color: #8b5cf6;
+        animation: bsSpin .8s linear infinite;
+      }
+      html.light-mode #boot-splash .bs-spinner { border-color: rgba(0,0,0,.1); border-top-color: #6d28d9; }
+      @keyframes bsSpin { to { transform: rotate(360deg) } }
+      @keyframes bsPulse { 0%,100% { opacity:.85 } 50% { opacity:1; transform:scale(1.05) } }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <!-- Boot splash (removed automatically when Vue mounts) -->
+      <div id="boot-splash">
+        <img src="/logo.png" alt="KinyaBot" />
+        <span class="bs-name">KinyaBot</span>
+        <div class="bs-spinner"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

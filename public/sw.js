@@ -5,15 +5,19 @@
  *  • Precache the app shell (SPA entry + branding) so the installed
  *    PWA boots offline and route refreshes never blank out.
  *  • Navigations: network-first, fall back to the cached shell
- *    (keeps /login, /chat, /admin/... working inside the PWA).
- *  • Static assets: stale-while-revalidate.
+ *    (keeps /login, /, /admin/... working inside the PWA).
+ *  • App code (JS/CSS bundles): NETWORK-FIRST with cache fallback —
+ *    after a redeploy clients immediately get the new bundle instead
+ *    of a stale one that references deleted hashed chunks (the old
+ *    stale-while-revalidate behavior caused blank/black screens).
+ *  • Other static assets (images, fonts): stale-while-revalidate.
  *  • Cross-origin CDN libs (font-awesome, highlight.js, fonts): cache-first
  *    (immutable, versioned URLs).
  *  • NEVER cache dynamic / private data: /api/*, /socket.io/*, /uploads/*
  *    always go straight to the network (auth, AI conversations, admin data).
  */
 
-const VERSION = 'v1.0.1'
+const VERSION = 'v2.0.0'
 const SHELL_CACHE = `kb-shell-${VERSION}`
 const ASSET_CACHE = `kb-assets-${VERSION}`
 const CDN_CACHE = `kb-cdn-${VERSION}`
@@ -119,7 +123,28 @@ self.addEventListener('fetch', (event) => {
     return // everything else: untouched
   }
 
-  // Same-origin static assets: stale-while-revalidate
+  // Same-origin static assets
+  //  • App code (.js/.css): network-first → a deploy takes effect on the
+  //    next load; the cache covers offline / network failures.
+  //  • Everything else (images, manifests, fonts): stale-while-revalidate.
+  const isAppCode = /\.(js|css)(\?.*)?$/.test(url.pathname)
+  if (isAppCode) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res && res.ok) {
+            const copy = res.clone()
+            caches.open(ASSET_CACHE).then((c) => c.put(req, copy)).catch(() => {})
+          }
+          return res
+        })
+        .catch(() =>
+          caches.match(req).then((hit) => hit || Response.error())
+        )
+    )
+    return
+  }
+
   event.respondWith(
     caches.open(ASSET_CACHE).then(async (cache) => {
       const hit = await cache.match(req)

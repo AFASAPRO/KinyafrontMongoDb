@@ -294,8 +294,11 @@ async function handleLogout() {
     try { await import('../api').then(m => m.default.delete(`/chats/${chatStore.pendingChatId}`)) } catch {}
   }
   disconnectSocket()
+  chatStore.resetChatState()
   auth.logout()
-  router.push('/login')
+  // Chat-first: after logout the user lands back on the chat
+  // interface in guest mode (Sign In / Sign Up become visible).
+  router.push('/')
 }
 
 // Global keyboard shortcuts
