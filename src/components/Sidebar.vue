@@ -1,17 +1,17 @@
 <template>
-  <aside class="sidebar" :class="{ 'mob-open': mobileOpen, guest }" role="dialog" aria-modal="true" aria-label="Chats sidebar">
+  <aside class="sidebar" :class="{ 'mob-open': mobileOpen }" role="dialog" aria-modal="true" aria-label="Chats sidebar">
     <!-- ── Header: Logo + "Chats" + search icon ── -->
     <div class="sb-header">
       <img src="/logo.png" alt="KinyaBot" class="sb-logo" />
-      <span class="sb-title">{{ guest ? 'KinyaBot' : 'Chats' }}</span>
-      <button v-if="!guest" class="icon-btn" @click="searchOpen=!searchOpen" title="Search chats (Ctrl+/)">
+      <span class="sb-title">Chats</span>
+      <button class="icon-btn" @click="toggleSearch" title="Search chats (Ctrl+/)">
         <i class="fas fa-magnifying-glass"></i>
       </button>
     </div>
 
     <!-- Search box (Ctrl+/ toggles) -->
     <transition name="fade">
-      <div v-if="searchOpen && !guest" class="sb-search">
+      <div v-if="searchOpen" class="sb-search">
         <div class="search-row">
           <i class="fas fa-magnifying-glass"></i>
           <input ref="searchRef" v-model="searchQ" type="text" placeholder="Search chats…"
@@ -22,7 +22,7 @@
     </transition>
 
     <!-- Search results -->
-    <div v-if="!guest && searchQ && chatStore.searchResults.length" class="sb-scroll">
+    <div v-if="searchQ && chatStore.searchResults.length" class="sb-scroll">
       <div class="section-label-row">Results</div>
       <div v-for="r in chatStore.searchResults" :key="r.id" class="search-result" @click="goToChat(r.chat_id)">
         <i class="fas fa-message"></i>
@@ -33,8 +33,8 @@
       </div>
     </div>
 
-    <!-- Chat list -->
-    <div v-else-if="!guest" class="sb-scroll">
+    <!-- Chat list — IDENTICAL structure for guests and members -->
+    <div v-else class="sb-scroll">
       <!-- Pinned Models -->
       <div class="section-group">
         <div class="section-header">
@@ -92,41 +92,24 @@
       </div>
 
       <!-- Recent chats -->
-      <div class="section-group" v-if="chatStore.recentChats.length">
+      <div class="section-group">
         <div class="section-label-row">Recent Chats</div>
-        <SidebarChatItem
-          v-for="chat in chatStore.recentChats" :key="chat.id"
-          :chat="chat" :active="chatStore.activeChat?.id===chat.id"
-          @click="$emit('load-chat',chat.id)"
-          @rename="startRename(chat)" @pin="chatStore.pinChat(chat.id,1)" @delete="startDelete(chat)"
-        />
+        <template v-if="chatStore.recentChats.length">
+          <SidebarChatItem
+            v-for="chat in chatStore.recentChats" :key="chat.id"
+            :chat="chat" :active="chatStore.activeChat?.id===chat.id"
+            @click="$emit('load-chat',chat.id)"
+            @rename="startRename(chat)" @pin="chatStore.pinChat(chat.id,1)" @delete="startDelete(chat)"
+          />
+        </template>
+        <div v-else class="empty-hint">
+          <i class="fas fa-clock-rotate-left"></i>
+          <span v-if="guest">Your conversations will appear here — sign in to keep them</span>
+          <span v-else>No conversations yet</span>
+        </div>
       </div>
     </div>
 
-    <!-- ── Guest panel: sign-in CTA instead of chat history ── -->
-    <div v-else class="sb-scroll guest-panel">
-      <div class="guest-cta">
-        <div class="gc-icon"><i class="fas fa-comment-dots"></i></div>
-        <h3>Chat with KinyaBot</h3>
-        <p>
-          Create a free account to keep your conversation history, attach
-          documents and images, and talk with your voice.
-        </p>
-        <button class="gc-btn solid" @click="goAuth('register')">
-          <i class="fas fa-user-plus"></i> Create free account
-        </button>
-        <button class="gc-btn outline" @click="goAuth('login')">
-          <i class="fas fa-right-to-bracket"></i> I already have an account
-        </button>
-      </div>
-
-      <div class="guest-perks">
-        <div class="perk"><i class="fas fa-file-lines"></i><span>Document Q&amp;A (PDF, DOCX, TXT)</span></div>
-        <div class="perk"><i class="fas fa-image"></i><span>Image understanding</span></div>
-        <div class="perk"><i class="fas fa-microphone"></i><span>Voice input &amp; spoken answers</span></div>
-        <div class="perk"><i class="fas fa-clock-rotate-left"></i><span>Saved conversation history</span></div>
-      </div>
-    </div>
     <div class="sb-footer">
       <div class="footer-nav">
         <InstallHint v-if="showInstall" variant="footer" />
@@ -284,12 +267,18 @@ import SettingsModal from './SettingsModal.vue'
 import HelpModal from './HelpModal.vue'
 import InstallHint from './InstallHint.vue'
 
-defineProps({ mobileOpen: Boolean, guest: Boolean })
-const emit = defineEmits(['close-mobile','new-chat','load-chat'])
+const props = defineProps({ mobileOpen: Boolean, guest: Boolean })
+const emit = defineEmits(['close-mobile','new-chat','load-chat','authrequired'])
 
 const router = useRouter()
 const auth = useAuthStore()
 const chatStore = useChatStore()
+
+/* Guests get the SAME sidebar — account-gated actions open the auth gate. */
+function requireAuth() {
+  emit('close-mobile')
+  emit('authrequired')
+}
 
 /* Real daily usage for the credits bar (authed users only). */
 const usage = ref({ today: 0, daily_limit: 50, remaining: 50 })
@@ -325,8 +314,9 @@ const showGuided = ref(false)
 const { canInstall, installed, isIOS } = usePwaInstall()
 const showInstall = computed(() => (canInstall.value || isIOS) && !installed.value)
 
-// Toggle search
+// Toggle search (guests are asked to sign in — history is account data)
 function toggleSearch() {
+  if (props.guest) { requireAuth(); return }
   searchOpen.value = !searchOpen.value
   if (searchOpen.value) nextTick(() => searchRef.value?.focus())
   else clearSearch()
@@ -350,8 +340,14 @@ async function submitRename() {
 function startDelete(chat) { deletingChat.value = chat }
 async function submitDelete() { await chatStore.deleteChat(deletingChat.value.id); deletingChat.value = null }
 
-function openCanvas() { emit('close-mobile'); showCanvas.value = true }
-function openGuided() { emit('close-mobile'); showGuided.value = true }
+function openCanvas() {
+  if (props.guest) { requireAuth(); return }
+  emit('close-mobile'); showCanvas.value = true
+}
+function openGuided() {
+  if (props.guest) { requireAuth(); return }
+  emit('close-mobile'); showGuided.value = true
+}
 
 async function sendCanvasPrompt(prompt) {
   showCanvas.value = false
@@ -492,48 +488,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
 .credits-svg { width:100%; height:100%; transform:rotate(-90deg); }
 .credits-pct { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:600; color:var(--text-2); }
 
-/* ── Guest panel ── */
-.guest-panel { display:flex; flex-direction:column; gap:14px; padding-top:6px; }
-.guest-cta {
-  background:linear-gradient(160deg, rgba(109,40,217,.16), rgba(79,70,229,.07));
-  border:1px solid rgba(109,40,217,.3);
-  border-radius:var(--r-lg); padding:18px 14px; text-align:center;
-}
-.gc-icon {
-  width:44px; height:44px; margin:0 auto 10px; border-radius:13px;
-  background:rgba(109,40,217,.22); border:1px solid rgba(109,40,217,.35);
-  display:flex; align-items:center; justify-content:center;
-  color:#c4b5fd; font-size:19px;
-}
-.guest-cta h3 { font-size:14.5px; font-weight:700; color:var(--text-1); margin-bottom:6px; }
-.guest-cta p { font-size:12px; color:var(--text-2); line-height:1.6; margin-bottom:12px; }
-.gc-btn {
-  display:flex; align-items:center; justify-content:center; gap:8px;
-  width:100%; padding:9px 10px; border-radius:10px;
-  font-size:12.5px; font-weight:600; cursor:pointer; transition:all .2s;
-  margin-bottom:8px;
-}
-.gc-btn:last-child { margin-bottom:0; }
-.gc-btn.solid { background:var(--accent); border:1px solid transparent; color:#fff; box-shadow:0 3px 14px rgba(109,40,217,.3); }
-.gc-btn.solid:hover { filter:brightness(1.12); }
-.gc-btn.outline { background:transparent; border:1px solid var(--border-md); color:var(--text-1); }
-.gc-btn.outline:hover { background:var(--bg-hover); border-color:rgba(109,40,217,.4); }
-.gc-btn i { font-size:11px; }
-
-.guest-perks { display:flex; flex-direction:column; gap:4px; }
-.perk {
-  display:flex; align-items:center; gap:10px;
-  padding:8px 10px; border-radius:var(--r-sm);
-  font-size:12px; color:var(--text-2);
-}
-.perk i {
-  width:26px; height:26px; border-radius:7px; flex-shrink:0;
-  background:var(--bg-card); border:1px solid var(--border);
-  display:flex; align-items:center; justify-content:center;
-  color:#a5b4fc; font-size:11px;
-}
-
-/* Modals */
+/* ── Modals ── */
 .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:999; backdrop-filter:blur(4px); }
 .mini-modal { width:340px; background:var(--bg-card); border:1px solid var(--border-md); border-radius:var(--r-lg); padding:1.5rem; animation:fadeUp .2s ease; }
 .mini-modal h3 { font-size:14.5px; font-weight:600; margin-bottom:.9rem; display:flex; align-items:center; gap:8px; }

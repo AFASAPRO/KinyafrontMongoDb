@@ -145,6 +145,7 @@
       :disabled="chatStore.sending"
       :preserve-on-send="guest"
       :injected-text="composerInject"
+      :injected-file="restoredFile"
       @focus="scrollBottom"
     />
   </div>
@@ -161,7 +162,8 @@ import VoiceMode from './VoiceMode.vue'
 
 const props = defineProps({
   guest: { type: Boolean, default: false },
-  restoredDraft: { type: String, default: null }
+  restoredDraft: { type: String, default: null },
+  restoredFile: { type: [Object, File], default: null }
 })
 const emit = defineEmits(['toggle-sidebar', 'auth-required', 'draft-consumed'])
 
@@ -243,13 +245,14 @@ function onVisualViewportChange() {
 
 async function handleSend({ content, file }) {
   // GUESTS: the AI is never contacted before authentication.
-  // The typed message stays in the composer and is handed to the
-  // auth gate (which preserves it across the sign-in round-trip).
+  // The typed message AND the attached file are handed to the auth
+  // gate — the file is kept in memory (SPA navigation keeps it alive)
+  // so the exact message the guest wrote can be sent after sign-in.
   if (props.guest) {
-    emit('auth-required', { content })
+    emit('auth-required', { content, file })
     return
   }
-  if (props.restoredDraft) emit('draft-consumed')
+  if (props.restoredDraft || props.restoredFile) emit('draft-consumed')
   if (!chatStore.activeChat) await chatStore.createChat()
   try {
     await chatStore.sendMessage(content, file)

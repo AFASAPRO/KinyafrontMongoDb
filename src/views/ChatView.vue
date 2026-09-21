@@ -14,14 +14,15 @@
       <div v-if="isGuest && mobileSidebarOpen" class="mob-overlay" @click="mobileSidebarOpen=false" aria-hidden="true"></div>
     </transition>
 
-    <!-- Sidebar: members get conversations, guests get a sign-in CTA.
-         Visible on desktop AND as a mobile drawer for both. -->
+    <!-- Sidebar: identical structure for members and guests —
+         visible on desktop AND as a mobile drawer for both. -->
     <Sidebar
       :mobile-open="mobileSidebarOpen"
       :guest="isGuest"
       @close-mobile="mobileSidebarOpen=false"
       @new-chat="handleNewChat"
       @load-chat="handleLoadChat"
+      @authrequired="showAuthGate=true"
     />
 
     <div class="main-col">
@@ -80,9 +81,10 @@
       <ChatWindow
         :guest="isGuest"
         :restored-draft="restoredDraft"
+        :restored-file="restoredFile"
         @toggle-sidebar="mobileSidebarOpen=!mobileSidebarOpen"
         @auth-required="handleAuthRequired"
-        @draft-consumed="restoredDraft=null"
+        @draft-consumed="onDraftConsumed"
       />
     </div>
 
@@ -128,7 +130,9 @@ const isGuest = computed(() => auth.status !== 'authenticated')
 
 const showAuthGate = ref(false)
 const gatedDraft = ref('')
+const gatedFile = ref(null)   // File object kept in memory across the SPA auth round-trip
 const restoredDraft = ref(null)
+const restoredFile = ref(null)
 
 // The right panel becomes a slide-over drawer on narrow screens
 const mqMobile = window.matchMedia('(max-width: 900px)')
@@ -182,8 +186,9 @@ watch(isGuest, async (guest, wasGuest) => {
    never contacted for unauthenticated users. The typed message is
    preserved in sessionStorage so it survives the round-trip through
    /login or /register and returns to the composer afterwards.      */
-function handleAuthRequired({ content }) {
+function handleAuthRequired({ content, file }) {
   gatedDraft.value = content || ''
+  gatedFile.value = file || null
   try {
     if (content) sessionStorage.setItem('kb_pending_message', content)
   } catch {}
@@ -193,7 +198,7 @@ function goAuth(mode) {
   router.push(`/${mode}?redirect=/`)
 }
 
-/** After sign-in: put the preserved message back into the composer. */
+/** After sign-in: put the preserved message AND attachment back into the composer. */
 function restorePendingDraft() {
   let draft = null
   try { draft = sessionStorage.getItem('kb_pending_message') } catch {}
@@ -201,6 +206,16 @@ function restorePendingDraft() {
     restoredDraft.value = draft
     sessionStorage.removeItem('kb_pending_message')
   }
+  if (gatedFile.value) {
+    restoredFile.value = gatedFile.value
+    gatedFile.value = null
+  }
+}
+
+/** Composer consumed the restored draft/attachment (sent or dismissed). */
+function onDraftConsumed() {
+  restoredDraft.value = null
+  restoredFile.value = null
 }
 
 function handleGlobalKeys(e) {

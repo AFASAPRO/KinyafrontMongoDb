@@ -133,7 +133,10 @@ const props = defineProps({
   // auth gate fires, so nothing the user wrote is ever lost.
   preserveOnSend: Boolean,
   // Text injected from outside (restored pending message / guest chips)
-  injectedText: { type: String, default: '' }
+  injectedText: { type: String, default: '' },
+  // File injected from outside (restored pending attachment — kept
+  // in memory across the guest sign-in round-trip)
+  injectedFile: { type: [Object, File], default: null }
 })
 const emit  = defineEmits(['send', 'focus'])
 
@@ -216,6 +219,22 @@ watch(() => props.injectedText, (val) => {
   if (!val) return
   inputVal.value = val
   removeFile()
+  nextTick(() => { resize(); taRef.value?.focus() })
+})
+
+/* External file injection (restored pending attachment after sign-in) */
+watch(() => props.injectedFile, (f) => {
+  if (!f) return
+  const isImg = (f.type || '').startsWith('image/')
+  selectedFile.value = f
+  const size = f.size > 1024 * 1024
+    ? (f.size / 1024 / 1024).toFixed(1) + ' MB'
+    : (f.size / 1024).toFixed(0) + ' KB'
+  filePreview.value = {
+    name: f.name, size, isImg,
+    url: isImg ? URL.createObjectURL(f) : null,
+    icon: isImg ? 'fas fa-image' : 'fas fa-file-lines'
+  }
   nextTick(() => { resize(); taRef.value?.focus() })
 })
 
