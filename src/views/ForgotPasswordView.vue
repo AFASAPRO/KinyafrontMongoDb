@@ -14,7 +14,7 @@
       <div class="fp-logo">
         <img src="/logo.png" alt="KinyaBot"/>
         <span>KinyaBot</span>
-        <span class="fp-powered">POWERED BY AFASA</span>
+  
       </div>
 
       <!-- Step progress bar -->

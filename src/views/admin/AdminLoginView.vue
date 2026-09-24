@@ -27,6 +27,10 @@
           <i class="fas fa-right-to-bracket"></i>
           Sign In
         </button>
+        <button class="ab-tab" :class="{ active: mode === 'register' }" @click="switchMode('register')">
+          <i class="fas fa-user-plus"></i>
+          Register
+        </button>
         <!-- Animated tab indicator -->
         <div class="ab-tab-line" :style="{ left: mode === 'login' ? '0' : '50%' }"></div>
       </div>
@@ -96,7 +100,93 @@
             Install KinyaBot Admin on your phone — opens directly on this login page.
           </p>
 
-  
+
+        </div>
+
+        <!-- ── Register Form ── -->
+        <div v-else key="register" class="ab-form">
+
+          <!-- Success state -->
+          <div v-if="registered" class="ab-success">
+            <div class="ab-success-icon"><i class="fas fa-circle-check"></i></div>
+            <h3>Admin account created</h3>
+            <p>Welcome, <strong>{{ registeredName }}</strong>. Your admin account is ready and you are signed in.</p>
+            <button class="ab-btn" @click="goToDashboard">
+              <span class="ab-btn-inner"><i class="fas fa-gauge-high"></i> Go to Dashboard</span>
+            </button>
+          </div>
+
+          <template v-else>
+            <!-- Username -->
+            <div class="ab-field" :class="{ focused: focus.rUsername, 'ab-field-error': regErrors.username }">
+              <div class="ab-field-icon"><i class="fas fa-user"></i></div>
+              <input v-model.trim="regForm.username" type="text" placeholder="Username" class="ab-input"
+                autocomplete="username" @focus="focus.rUsername = true" @blur="focus.rUsername = false" />
+            </div>
+            <span v-if="regErrors.username" class="ab-err"><i class="fas fa-circle-exclamation"></i> {{ regErrors.username }}</span>
+
+            <!-- Email -->
+            <div class="ab-field" :class="{ focused: focus.rEmail, 'ab-field-error': regErrors.email }">
+              <div class="ab-field-icon"><i class="fas fa-envelope"></i></div>
+              <input v-model.trim="regForm.email" type="email" placeholder="Admin email" class="ab-input"
+                autocomplete="email" @focus="focus.rEmail = true" @blur="focus.rEmail = false" />
+            </div>
+            <span v-if="regErrors.email" class="ab-err"><i class="fas fa-circle-exclamation"></i> {{ regErrors.email }}</span>
+
+            <!-- Role -->
+            <div class="ab-field" :class="{ focused: focus.rRole }">
+              <div class="ab-field-icon"><i class="fas fa-user-shield"></i></div>
+              <select v-model="regForm.role" class="ab-input ab-select"
+                @focus="focus.rRole = true" @blur="focus.rRole = false">
+                <option value="admin">Admin</option>
+                <option value="moderator">Moderator</option>
+              </select>
+            </div>
+
+            <!-- Password -->
+            <div class="ab-field" :class="{ focused: focus.rPassword, 'ab-field-error': regErrors.password }">
+              <div class="ab-field-icon"><i class="fas fa-lock"></i></div>
+              <input v-model="regForm.password" :type="showRegPass ? 'text' : 'password'" placeholder="Password (min. 8 characters)"
+                class="ab-input" autocomplete="new-password" @focus="focus.rPassword = true" @blur="focus.rPassword = false" />
+              <button type="button" class="ab-eye" @click="showRegPass = !showRegPass" aria-label="Show or hide password">
+                <i :class="showRegPass ? 'far fa-eye-slash' : 'far fa-eye'"></i>
+              </button>
+            </div>
+            <div v-if="regForm.password" class="ab-strength-bar">
+              <div class="ab-strength-fill" :style="{ width: strength.pct + '%', background: strength.color }"></div>
+            </div>
+            <span v-if="regErrors.password" class="ab-err"><i class="fas fa-circle-exclamation"></i> {{ regErrors.password }}</span>
+
+            <!-- Confirm -->
+            <div class="ab-field" :class="{ focused: focus.rConfirm }">
+              <div class="ab-field-icon"><i class="fas fa-shield-halved"></i></div>
+              <input v-model="regForm.confirm" :type="showRegPass ? 'text' : 'password'" placeholder="Confirm password"
+                class="ab-input" autocomplete="new-password" @focus="focus.rConfirm = true" @blur="focus.rConfirm = false" />
+              <i v-if="regForm.confirm" class="fas ab-match-icon"
+                :class="regForm.confirm === regForm.password ? 'fa-circle-check' : 'fa-circle-xmark'"
+                :style="{ color: regForm.confirm === regForm.password ? '#34d399' : '#f28b82' }"></i>
+            </div>
+
+            <!-- Invite code -->
+            <div class="ab-field" :class="{ focused: focus.rInvite, 'ab-field-error': regErrors.invite_code }">
+              <div class="ab-field-icon"><i class="fas fa-key"></i></div>
+              <input v-model.trim="regForm.invite_code" type="password" placeholder="Admin invite code" class="ab-input"
+                autocomplete="off" @focus="focus.rInvite = true" @blur="focus.rInvite = false" @keyup.enter="handleRegister" />
+            </div>
+            <span v-if="regErrors.invite_code" class="ab-err"><i class="fas fa-circle-exclamation"></i> {{ regErrors.invite_code }}</span>
+
+            <div v-if="regError" class="ab-server-err"><i class="fas fa-circle-exclamation"></i> {{ regError }}</div>
+
+            <button class="ab-btn" :disabled="regLoading || !isRegFormValid" @click="handleRegister">
+              <span v-if="regLoading" class="ab-btn-inner"><i class="fas fa-spinner fa-spin"></i> Creating account…</span>
+              <span v-else class="ab-btn-inner"><i class="fas fa-user-plus"></i> Create Admin Account</span>
+            </button>
+
+            <div class="ab-invite-hint">
+              <i class="fas fa-circle-info"></i>
+              <span>New admin accounts need the invite code. Ask an existing super admin for it.</span>
+            </div>
+          </template>
         </div>
       </transition>
 
@@ -269,8 +359,8 @@ async function handleRegister() {
   regError.value = ''; regLoading.value = true
   try {
     const { data } = await axios.post(`${API}/admin/register`, {
-      username:    regForm.username,
-      email:       regForm.email,
+      username:    regForm.username.trim(),
+      email:       regForm.email.trim(),
       password:    regForm.password,
       role:        regForm.role,
       invite_code: regForm.invite_code
@@ -295,10 +385,6 @@ function switchMode(m) {
   loginError.value = ''
   regError.value   = ''
   registered.value = false
-  // Auto-fill the default invite code when opening register tab
-  if (m === 'register' && !regForm.invite_code) {
-    regForm.invite_code = 'KinyaBot-Admin-2024'
-  }
 }
 
 function particleStyle(i) {
@@ -358,6 +444,7 @@ function particleStyle(i) {
   border-radius: 24px;
   padding: 2.25rem 2rem 1.75rem;
   width: min(440px, 100%);
+  margin: auto;
   position: relative; z-index: 2;
   box-shadow:
     0 0 0 1px rgba(99,102,241,.08),
@@ -581,6 +668,7 @@ function particleStyle(i) {
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 
 @media (max-width: 480px) {
+  .ab-input { font-size: 16px; } /* prevents iOS zoom-on-focus */
   .ab-card { padding: 1.75rem 1.25rem 1.5rem; }
   .ab-title { font-size: 1.2rem; }
 }

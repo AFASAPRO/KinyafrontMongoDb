@@ -44,6 +44,38 @@
     ════════════════════════════════════════════════════════ -->
     <div class="kba-main">
 
+      <!-- ── MOBILE TOP BAR (≤768px) ── -->
+      <header class="kba-mtop">
+        <div class="mt-row1">
+          <div class="mt-brand">
+            <div class="mt-logo"><img src="/logo.png" alt="KinyaBot" /></div>
+            <div class="mt-titles">
+              <h1>{{ currentItem.label }}</h1>
+              <small>{{ currentGroup }}</small>
+            </div>
+          </div>
+          <div class="mt-actions">
+            <button class="mt-btn" :class="{ on: mSearch }" @click="toggleMobileSearch" aria-label="Search">
+              <i class="fas fa-magnifying-glass"></i>
+            </button>
+            <button class="mt-btn" :class="{ spin: loading }" @click="refresh" aria-label="Refresh data">
+              <i class="fas fa-rotate-right"></i>
+            </button>
+            <button class="mt-avatar" @click="mobileMenu = true" aria-label="Open menu">
+              {{ me?.username?.[0]?.toUpperCase() }}
+            </button>
+          </div>
+        </div>
+        <transition name="msearch">
+          <div v-if="mSearch" class="mt-search">
+            <i class="fas fa-magnifying-glass"></i>
+            <input ref="mSearchRef" v-model="gSearch" type="search" enterkeyhint="search"
+              placeholder="Search users, chats, logs…" @keyup.enter="runSearch(); mSearch = false" />
+            <button v-if="gSearch" class="mt-clear" @click="gSearch = ''" aria-label="Clear"><i class="fas fa-xmark"></i></button>
+          </div>
+        </transition>
+      </header>
+
       <!-- ── TOP BAR ── -->
       <header class="kba-topbar">
         <div class="kbt-left">
@@ -805,6 +837,62 @@
       </div><!-- .kba-body -->
     </div><!-- .kba-main -->
 
+    <!-- ════════ MOBILE BOTTOM NAV (≤768px) ════════ -->
+    <nav class="kba-bnav" aria-label="Primary">
+      <button v-for="t in primaryTabs" :key="t.id" class="bn-item"
+        :class="{ active: tab === t.id }" @click="goTab(t.id)" :aria-current="tab === t.id ? 'page' : undefined">
+        <span class="bn-ico">
+          <i :class="t.icon"></i>
+          <span v-if="t.count" class="bn-badge">{{ t.count > 99 ? '99+' : t.count }}</span>
+        </span>
+        <span class="bn-lbl">{{ t.short }}</span>
+      </button>
+      <button class="bn-item" :class="{ active: mobileMenu || !primaryIds.includes(tab) }"
+        @click="mobileMenu = true" aria-haspopup="dialog">
+        <span class="bn-ico"><i class="fas fa-grip"></i></span>
+        <span class="bn-lbl">More</span>
+      </button>
+    </nav>
+
+    <!-- ════════ MOBILE "MORE" SHEET ════════ -->
+    <transition name="sheet">
+      <div v-if="mobileMenu" class="ms-overlay" @click.self="mobileMenu = false">
+        <div class="ms-sheet" role="dialog" aria-modal="true" aria-label="Navigation menu"
+          :style="sheetStyle" @touchstart.passive="sheetTouchStart" @touchmove.passive="sheetTouchMove" @touchend="sheetTouchEnd">
+          <div class="ms-grab"><span></span></div>
+
+          <div class="ms-profile">
+            <div class="ms-avatar">{{ me?.username?.[0]?.toUpperCase() }}</div>
+            <div class="ms-pinfo">
+              <b>{{ me?.username }}</b>
+              <small>{{ me?.role?.replace('_',' ') }}</small>
+            </div>
+            <button class="ms-close" @click="mobileMenu = false" aria-label="Close menu"><i class="fas fa-xmark"></i></button>
+          </div>
+
+          <div class="ms-scroll">
+            <section v-for="g in navGroups" :key="g.id" class="ms-group">
+              <h4>{{ g.label }}</h4>
+              <div class="ms-grid">
+                <button v-for="item in g.items" :key="item.id" class="ms-tile"
+                  :class="{ active: tab === item.id }" @click="goTab(item.id)">
+                  <span class="ms-ico">
+                    <i :class="item.icon"></i>
+                    <span v-if="item.count" class="ms-badge">{{ item.count > 99 ? '99+' : item.count }}</span>
+                  </span>
+                  <span class="ms-lbl">{{ item.label }}</span>
+                </button>
+              </div>
+            </section>
+          </div>
+
+          <div class="ms-foot">
+            <button class="ms-logout" @click="doLogout"><i class="fas fa-right-from-bracket"></i> Log Out</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- ════════ CHAT VIEWER MODAL ════════ -->
     <transition name="modal">
       <div v-if="chatModal" class="kb-overlay" @click.self="chatModal=null">
@@ -856,7 +944,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 
@@ -954,6 +1042,40 @@ const navGroups = computed(()=>[
     { id:'settings',      icon:'fas fa-gear',             label:'Settings' },
   ]},
 ])
+
+/* ── MOBILE NAVIGATION ──────────────────────────────────────── */
+const mobileMenu = ref(false)
+const mSearch    = ref(false)
+const mSearchRef = ref(null)
+const primaryIds = ['dashboard','users','chats','notifications']
+const primaryTabs = computed(()=>{
+  const all = navGroups.value.flatMap(g=>g.items)
+  const shortNames = { dashboard:'Home', users:'Users', chats:'Chats', notifications:'Alerts' }
+  return primaryIds.map(id=>{ const it = all.find(i=>i.id===id); return { ...it, short: shortNames[id] } })
+})
+const currentItem  = computed(()=> navGroups.value.flatMap(g=>g.items).find(i=>i.id===tab.value) || { label:'Dashboard' })
+const currentGroup = computed(()=> navGroups.value.find(g=>g.items.some(i=>i.id===tab.value))?.label?.toLowerCase().replace(/^./,c=>c.toUpperCase()) || 'Admin')
+
+function goTab(id){ tab.value = id; mobileMenu.value = false }
+function toggleMobileSearch(){
+  mSearch.value = !mSearch.value
+  if(mSearch.value) nextTick(()=>mSearchRef.value?.focus())
+}
+// Bring each page back to the top when switching sections
+watch(tab, ()=>{ nextTick(()=>{ const b=document.querySelector('.kba-body'); if(b) b.scrollTop=0 }) })
+
+// Swipe-down-to-close for the "More" sheet
+const sheetDrag = reactive({ startY:0, dy:0, active:false })
+const sheetStyle = computed(()=> sheetDrag.active && sheetDrag.dy>0 ? { transform:`translateY(${sheetDrag.dy}px)`, transition:'none' } : {})
+function sheetTouchStart(e){
+  const scroller = e.currentTarget.querySelector('.ms-scroll')
+  // only start a drag from the grabber/profile area or when the list is scrolled to top
+  if(scroller && scroller.contains(e.target) && scroller.scrollTop>0) return
+  sheetDrag.startY = e.touches[0].clientY; sheetDrag.dy = 0; sheetDrag.active = true
+}
+function sheetTouchMove(e){ if(sheetDrag.active) sheetDrag.dy = Math.max(0, e.touches[0].clientY - sheetDrag.startY) }
+function sheetTouchEnd(){ if(sheetDrag.active && sheetDrag.dy>90) mobileMenu.value=false; sheetDrag.active=false; sheetDrag.dy=0 }
+function onKey(e){ if(e.key==='Escape'){ mobileMenu.value=false; mSearch.value=false } }
 
 /* ── CIRCULAR STAT CARDS ────────────────────────────────────── */
 const circStats = computed(()=>[
@@ -1241,8 +1363,9 @@ onMounted(async()=>{
   refresh()
   tInt = setInterval(()=>{},1000)
   rInt = setInterval(refresh, 30000)
+  window.addEventListener('keydown', onKey)
 })
-onBeforeUnmount(()=>{ clearInterval(tInt); clearInterval(rInt) })
+onBeforeUnmount(()=>{ clearInterval(tInt); clearInterval(rInt); window.removeEventListener('keydown', onKey) })
 </script>
 
 <style scoped>
@@ -1713,5 +1836,124 @@ onBeforeUnmount(()=>{ clearInterval(tInt); clearInterval(rInt) })
 .tr-content { padding:12px 14px; font-size:13.5px; color:var(--t2); line-height:1.65; white-space:pre-wrap; max-height:300px; overflow-y:auto; }
 
 @media(max-width:1100px){ .dash-mid,.dash-bot { flex-direction:column; } .activity-box,.donut-box { width:100%; } .notif-grid,.sec-grid { grid-template-columns:1fr; } }
-@media(max-width:768px){ .kba-topbar { flex-wrap:wrap; } .kbt-center { order:3; width:100%; max-width:100%; } .circ-row { grid-template-columns:repeat(2,1fr); } }
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE NAVIGATION  (top bar + floating bottom nav + "More" sheet)
+   Hidden on desktop – the classic sidebar/topbar stay untouched.
+════════════════════════════════════════════════════════════ */
+.kb-admin { --s1:#0a0b12; --s2:#0d0e1b; --s3:#111220; --border:rgba(99,102,241,.12); --border2:rgba(99,102,241,.22); --t1:#e2e8f0; --t2:#9ca3af; --t3:#4b5563; --t4:#374151; --acc:#6366f1; --acc2:#a855f7; --bnav-h:64px; --nav-mute:#8b93a7; }
+.kba-mtop, .kba-bnav, .ms-overlay { display:none; }
+
+@media(max-width:768px){
+  /* ── swap desktop chrome for mobile chrome ── */
+  .kba-sidebar, .kba-topbar { display:none; }
+
+  /* top bar */
+  .kba-mtop { display:block; flex-shrink:0; position:relative; z-index:20; padding:env(safe-area-inset-top) 12px 0; background:rgba(13,14,27,.86); -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); }
+  .mt-row1 { display:flex; align-items:center; justify-content:space-between; gap:10px; height:58px; }
+  .mt-brand { display:flex; align-items:center; gap:10px; min-width:0; }
+  .mt-logo { width:38px; height:38px; border-radius:12px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,rgba(79,70,229,.28),rgba(168,85,247,.18)); border:1px solid var(--border2); }
+  .mt-logo img { width:25px; height:25px; object-fit:contain; }
+  .mt-titles { min-width:0; }
+  .mt-titles h1 { font-size:16.5px; font-weight:800; color:#fff; letter-spacing:-.25px; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mt-titles small { display:block; font-size:11px; color:var(--nav-mute); line-height:1.25; }
+  .mt-actions { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+  .mt-btn { width:42px; height:42px; border-radius:13px; background:rgba(255,255,255,.04); border:1px solid var(--border); color:#a5b4fc; font-size:14px; display:flex; align-items:center; justify-content:center; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background .2s, transform .15s, border-color .2s; }
+  .mt-btn:active { transform:scale(.92); }
+  .mt-btn.on { background:rgba(99,102,241,.22); border-color:rgba(129,140,248,.5); color:#fff; }
+  .mt-btn.spin i { animation:spin .7s linear infinite; }
+  .mt-avatar { width:42px; height:42px; border-radius:50%; cursor:pointer; color:#fff; font-size:14px; font-weight:700; background:linear-gradient(135deg,#4f46e5,#a855f7); border:2px solid rgba(129,140,248,.5); -webkit-tap-highlight-color:transparent; transition:transform .15s; }
+  .mt-avatar:active { transform:scale(.92); }
+  .mt-search { display:flex; align-items:center; gap:9px; height:46px; margin:0 0 10px; padding:0 12px; border-radius:13px; background:rgba(255,255,255,.05); border:1px solid var(--border2); }
+  .mt-search > i { color:#818cf8; font-size:13px; }
+  .mt-search input { flex:1; min-width:0; background:none; border:none; outline:none; color:var(--t1); font-size:16px; font-family:inherit; }
+  .mt-search input::placeholder { color:var(--nav-mute); }
+  .mt-clear { width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,.08); border:none; color:#c7cbe0; font-size:11px; cursor:pointer; }
+  .msearch-enter-active, .msearch-leave-active { transition:opacity .2s ease, transform .2s ease; }
+  .msearch-enter-from, .msearch-leave-to { opacity:0; transform:translateY(-8px); }
+
+  /* floating bottom nav */
+  .kba-bnav { display:grid; grid-template-columns:repeat(5,1fr); gap:2px; position:fixed; z-index:30; left:10px; right:10px; bottom:calc(10px + env(safe-area-inset-bottom)); height:var(--bnav-h); padding:6px; border-radius:24px; background:rgba(15,16,30,.88); -webkit-backdrop-filter:blur(22px) saturate(1.4); backdrop-filter:blur(22px) saturate(1.4); border:1px solid var(--border2); box-shadow:0 14px 34px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.04); }
+  .bn-item { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; min-width:0; min-height:44px; border:none; border-radius:18px; background:none; color:var(--nav-mute); cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background .25s, color .25s, transform .15s; }
+  .bn-item:active { transform:scale(.93); }
+  .bn-item::before { content:''; position:absolute; top:3px; left:50%; width:18px; height:3px; border-radius:99px; background:linear-gradient(90deg,#6366f1,#a855f7); transform:translateX(-50%) scaleX(0); opacity:0; transition:transform .3s cubic-bezier(.34,1.56,.64,1), opacity .2s; }
+  .bn-item.active { background:linear-gradient(180deg,rgba(99,102,241,.22),rgba(168,85,247,.1)); color:#c4b5fd; }
+  .bn-item.active::before { transform:translateX(-50%) scaleX(1); opacity:1; }
+  .bn-ico { position:relative; font-size:17px; line-height:1; transition:transform .25s cubic-bezier(.34,1.56,.64,1); }
+  .bn-item.active .bn-ico { transform:translateY(-1px) scale(1.08); }
+  .bn-lbl { font-size:10.5px; font-weight:600; letter-spacing:.1px; line-height:1; }
+  .bn-badge, .ms-badge { position:absolute; top:-7px; right:-11px; min-width:17px; height:17px; padding:0 4px; border-radius:99px; display:flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:700; color:#fff; background:linear-gradient(135deg,#ef4444,#f97316); border:2px solid #0f101e; box-sizing:content-box; }
+
+  /* "More" bottom sheet */
+  .ms-overlay { display:flex; align-items:flex-end; position:fixed; inset:0; z-index:60; background:rgba(3,3,10,.62); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
+  .ms-sheet { width:100%; max-height:88vh; max-height:88dvh; display:flex; flex-direction:column; padding-bottom:env(safe-area-inset-bottom); background:linear-gradient(180deg,#14152c 0%,#0c0d1a 45%); border:1px solid var(--border2); border-bottom:none; border-radius:28px 28px 0 0; box-shadow:0 -24px 70px rgba(0,0,0,.65); transition:transform .3s cubic-bezier(.22,1,.36,1); touch-action:pan-y; }
+  .sheet-enter-active, .sheet-leave-active { transition:opacity .3s ease; }
+  .sheet-enter-from, .sheet-leave-to { opacity:0; }
+  .sheet-enter-from .ms-sheet, .sheet-leave-to .ms-sheet { transform:translateY(100%); }
+  .ms-grab { display:flex; justify-content:center; padding:10px 0 2px; }
+  .ms-grab span { width:42px; height:4px; border-radius:99px; background:rgba(255,255,255,.2); }
+  .ms-profile { display:flex; align-items:center; gap:12px; padding:10px 18px 14px; }
+  .ms-avatar { width:46px; height:46px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:800; color:#fff; background:linear-gradient(135deg,#4f46e5,#a855f7); box-shadow:0 0 0 3px rgba(99,102,241,.22); }
+  .ms-pinfo { flex:1; min-width:0; }
+  .ms-pinfo b { display:block; font-size:15.5px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ms-pinfo small { display:block; margin-top:2px; font-size:12px; color:var(--nav-mute); text-transform:capitalize; }
+  .ms-close { width:42px; height:42px; border-radius:50%; border:none; background:rgba(255,255,255,.07); color:#c7cbe0; font-size:15px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .ms-scroll { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; padding:0 14px 6px; border-top:1px solid var(--border); }
+  .ms-group h4 { padding:14px 6px 9px; font-size:10.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--nav-mute); }
+  .ms-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .ms-tile { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; min-height:88px; padding:12px 6px; border-radius:18px; background:rgba(255,255,255,.03); border:1px solid var(--border); color:#c7cbe0; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background .2s, border-color .2s, transform .15s; }
+  .ms-tile:active { transform:scale(.95); }
+  .ms-tile.active { background:linear-gradient(135deg,rgba(99,102,241,.28),rgba(168,85,247,.16)); border-color:rgba(129,140,248,.55); color:#fff; }
+  .ms-ico { position:relative; width:40px; height:40px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:16px; color:#a5b4fc; background:rgba(99,102,241,.13); }
+  .ms-tile.active .ms-ico { background:linear-gradient(135deg,#4f46e5,#7c3aed); color:#fff; }
+  .ms-badge { top:-6px; right:-8px; border-color:#14152c; }
+  .ms-lbl { font-size:11.5px; font-weight:600; line-height:1.2; text-align:center; }
+  .ms-foot { padding:10px 14px 14px; border-top:1px solid var(--border); }
+  .ms-logout { width:100%; height:48px; display:flex; align-items:center; justify-content:center; gap:9px; border-radius:14px; cursor:pointer; font-size:14px; font-weight:600; color:#f87171; background:rgba(239,68,68,.09); border:1px solid rgba(239,68,68,.22); }
+  .ms-logout:active { background:rgba(239,68,68,.2); }
+
+  /* ── normalized mobile layout: one spacing / sizing scale everywhere ── */
+  .kba-body { padding:12px 12px calc(var(--bnav-h) + 36px + env(safe-area-inset-bottom)); overscroll-behavior-y:contain; -webkit-overflow-scrolling:touch; }
+  .kb-page { gap:12px; }
+  .pg-head { flex-direction:column; align-items:stretch; gap:10px; }
+  .pg-head h2 { font-size:1.1rem; }
+  .pg-acts { width:100%; }
+  .pg-acts > * { flex:1 1 auto; min-width:0; }
+  .srch-box { width:100%; }
+  .srch-box input { min-width:0; flex:1; }
+  .circ-row { grid-template-columns:repeat(2,1fr); gap:8px; }
+  .circ-card { padding:12px; gap:10px; }
+  .cc-ring-wrap, .cc-ring { width:48px; height:48px; }
+  .cc-pct { font-size:10.5px; }
+  .cc-value { font-size:1.1rem; }
+  .dash-mid, .dash-bot { flex-direction:column; gap:12px; }
+  .activity-box, .donut-box { width:100%; min-width:0; }
+  .chart-box, .kb-card { padding:14px; border-radius:16px; }
+  .notif-grid, .sec-grid, .ai-grid { grid-template-columns:1fr; }
+  .kb-table { border-radius:16px; -webkit-overflow-scrolling:touch; }
+  .log-viewer { overflow-x:auto; }
+  .log-line { min-width:560px; }
+
+  /* touch-friendly controls (44px targets, 16px text stops iOS zoom) */
+  .kb-input, .kb-sel, .cbx-sel, .srch-box input, select, textarea { font-size:16px; }
+  .kb-input, .kb-sel, .srch-box { min-height:44px; }
+  .btn-primary, .btn-outline, .btn-danger { min-height:44px; }
+  .tb { width:36px; height:36px; border-radius:9px; }
+  .mtr-acts button { width:34px; height:34px; }
+
+  /* modals become bottom sheets; toast floats above the nav */
+  .kb-overlay { align-items:flex-end; }
+  .kb-modal, .kb-modal.large { width:100%; max-height:92vh; max-height:92dvh; border-radius:24px 24px 0 0; border-bottom:none; padding-bottom:env(safe-area-inset-bottom); }
+  .kb-toast { left:12px; right:12px; bottom:calc(var(--bnav-h) + 24px + env(safe-area-inset-bottom)); }
+}
+
+@media(max-width:360px){
+  .circ-row { grid-template-columns:1fr; }
+  .ms-grid { gap:6px; }
+  .ms-lbl { font-size:11px; }
+  .bn-lbl { font-size:10px; }
+}
+@media(prefers-reduced-motion:reduce){
+  .ms-sheet, .bn-item, .bn-ico, .bn-item::before, .mt-btn { transition:none !important; }
+}
 </style>

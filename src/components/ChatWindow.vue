@@ -46,9 +46,6 @@
               <span style="color:var(--text-2);font-size:.65em;font-weight:400">innovation at your command</span>
             </template>
           </h1>
-          <div class="powered-badge">
-            <i class="fas fa-bolt"></i> POWERED BY AFASA
-          </div>
           <p class="welcome-desc">
             <template v-if="guest">
               Ask anything, attach documents or images, or talk with your voice —
