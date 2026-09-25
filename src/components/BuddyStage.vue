@@ -64,19 +64,6 @@ const targetLevel = { v: 0 }
 
 watch(() => props.audioLevel, (v) => { targetLevel.v = Math.max(0, Math.min(1, v)) })
 
-function radialTexture(stops, size = 256) {
-  const c = document.createElement('canvas')
-  c.width = c.height = size
-  const g = c.getContext('2d')
-  const grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
-  stops.forEach(([o, col]) => grad.addColorStop(o, col))
-  g.fillStyle = grad
-  g.fillRect(0, 0, size, size)
-  const tex = new THREE.CanvasTexture(c)
-  tex.colorSpace = THREE.SRGBColorSpace
-  return tex
-}
-
 onMounted(() => {
   const host = hostRef.value
   try {
@@ -135,8 +122,8 @@ onMounted(() => {
   ro = new ResizeObserver(fit)
   ro.observe(host)
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0xaebbd6, 0.7))
-  const key = new THREE.DirectionalLight(0xfff1de, 2.4)
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xc7cad1, 0.65))
+  const key = new THREE.DirectionalLight(0xffffff, 2.3)
   key.position.set(2.2, 3.6, 3.4)
   key.castShadow = true
   key.shadow.mapSize.set(1024, 1024)
@@ -145,21 +132,19 @@ onMounted(() => {
   key.shadow.camera.near = 0.5; key.shadow.camera.far = 12
   key.shadow.bias = -0.0004; key.shadow.normalBias = 0.02
   scene.add(key)
-  const rim = new THREE.DirectionalLight(0xbfd2ff, 1.6)
+  const rim = new THREE.DirectionalLight(0xd7dbe3, 1.4)
   rim.position.set(-3, 2.6, -2.6)
   scene.add(rim)
 
-  const glow = new THREE.Mesh(
-    new THREE.PlaneGeometry(4.2, 4.2),
-    new THREE.MeshBasicMaterial({
-      map: radialTexture([[0, 'rgba(196,181,253,0.55)'], [0.55, 'rgba(196,181,253,0.2)'], [1, 'rgba(196,181,253,0)']]),
-      transparent: true, depthWrite: false, toneMapped: false,
-    }),
+  const groundColor = new THREE.Color(getComputedStyle(host).getPropertyValue('--vm-accent') || '#f5a524')
+  const spot = new THREE.Mesh(
+    new THREE.CircleGeometry(0.62, 40),
+    new THREE.MeshBasicMaterial({ color: groundColor, transparent: true, opacity: 0.1, depthWrite: false, toneMapped: false }),
   )
-  glow.rotation.x = -Math.PI / 2
-  glow.position.y = 0.001
-  scene.add(glow)
-  const shadowCatcher = new THREE.Mesh(new THREE.PlaneGeometry(6, 6), new THREE.ShadowMaterial({ opacity: 0.2 }))
+  spot.rotation.x = -Math.PI / 2
+  spot.position.y = 0.001
+  scene.add(spot)
+  const shadowCatcher = new THREE.Mesh(new THREE.PlaneGeometry(6, 6), new THREE.ShadowMaterial({ opacity: 0.22 }))
   shadowCatcher.rotation.x = -Math.PI / 2
   shadowCatcher.position.y = 0.002
   shadowCatcher.receiveShadow = true
@@ -274,11 +259,11 @@ onMounted(() => {
     }
 
     const lift = Math.max(0, (props.controller.lastPose?.hipsY || 0) / 100)
-    const s = 1 - Math.min(lift / 0.7, 0.55)
-    glow.scale.setScalar(s)
-    glow.material.opacity = 0.9 * (1 - Math.min(lift / 0.8, 0.7))
-    glow.position.x = container.position.x
-    glow.position.z = container.position.z
+    const s = 1 - Math.min(lift / 0.7, 0.6)
+    spot.scale.setScalar(Math.max(0.35, s))
+    spot.material.opacity = 0.1 * (1 - Math.min(lift / 0.8, 0.8))
+    spot.position.x = container.position.x
+    spot.position.z = container.position.z
 
     controls.update()
     renderer.render(scene, camera)
@@ -327,5 +312,5 @@ onBeforeUnmount(() => {
 }
 .buddy-loading.is-error i { font-size: 26px; color: #fca5a5; margin-bottom: 4px; }
 .buddy-bar { width: 180px; height: 6px; border-radius: 99px; background: rgba(255,255,255,.14); overflow: hidden; }
-.buddy-bar span { display: block; height: 100%; background: linear-gradient(90deg,#8b5cf6,#c084fc); transition: width .15s ease; }
+.buddy-bar span { display: block; height: 100%; background: var(--vm-accent, #f5a524); transition: width .15s ease; }
 </style>

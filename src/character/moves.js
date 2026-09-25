@@ -45,3 +45,14 @@ export function matchReactionMove(text) {
   if (/\?\s*$/.test(t)) return 'nod'
   return null
 }
+
+/**
+ * A quiet, low-probability ambient gesture used only when nothing else
+ * matched — keeps Buddy feeling alive without ever asking the user to
+ * pick a move themselves.
+ */
+const AMBIENT = ['nod', 'shrug']
+export function pickAmbientMove(chance = 0.25) {
+  if (Math.random() > chance) return null
+  return AMBIENT[Math.floor(Math.random() * AMBIENT.length)]
+}
