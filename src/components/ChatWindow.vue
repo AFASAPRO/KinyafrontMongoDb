@@ -149,13 +149,15 @@
 </template>
 
 <script setup>
-import { ref, nextTick, watch, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, nextTick, watch, computed, onMounted, onBeforeUnmount, defineAsyncComponent } from 'vue'
 import { useChatStore } from '../stores/chat'
 import { getSocket } from '../socket'
 import api from '../api'
 import MessageBubble from './MessageBubble.vue'
 import InputBox from './InputBox.vue'
-import VoiceMode from './VoiceMode.vue'
+// Lazy-loaded: Voice Mode pulls in three.js + the 3D character, so it
+// should only be downloaded when the person actually opens it.
+const VoiceMode = defineAsyncComponent(() => import('./VoiceMode.vue'))
 
 const props = defineProps({
   guest: { type: Boolean, default: false },

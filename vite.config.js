@@ -23,7 +23,8 @@ export default defineConfig({
           'vendor-firebase': ['firebase/app', 'firebase/auth'],
           'vendor-markdown': ['marked', 'highlight.js'],
           'vendor-socket': ['socket.io-client'],
-          'vendor-axios': ['axios']
+          'vendor-axios': ['axios'],
+          'vendor-three': ['three']
         }
       }
     }
