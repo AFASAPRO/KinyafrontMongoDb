@@ -596,15 +596,44 @@
                   <div class="mt-head"><span>Admin</span><span>Role</span><span>Last Login</span><span>Action</span></div>
                   <div v-for="a in admins" :key="a.id" class="mt-row">
                     <div class="mtr-user"><div class="mtr-av" :style="{background:hColor(a.username)}">{{ a.username?.[0]?.toUpperCase() }}</div><div><div class="mtr-name">{{ a.username }}</div><div class="mtr-sub">{{ a.email }}</div></div></div>
-                    <span class="badge green" style="font-size:10px">{{ a.role?.replace('_',' ') }}</span>
+                    <select v-if="me?.role==='super_admin' && a.id!==me?.id" class="role-select" :value="a.role" @change="changeRole(a, $event.target.value)">
+                      <option value="super_admin">super admin</option>
+                      <option value="admin">admin</option>
+                      <option value="moderator">moderator</option>
+                    </select>
+                    <span v-else class="badge green" style="font-size:10px">{{ a.role?.replace('_',' ') }}</span>
                     <span class="muted">{{ shortDate(a.last_login) }}</span>
-                    <button v-if="a.id!==me?.id" class="tb danger" @click="delAdmin(a)"><i class="fas fa-trash"></i></button>
-                    <span v-else class="muted" style="font-size:11px">You</span>
+                    <button v-if="a.id!==me?.id && me?.role==='super_admin'" class="tb danger" @click="delAdmin(a)"><i class="fas fa-trash"></i></button>
+                    <span v-else class="muted" style="font-size:11px">{{ a.id===me?.id ? 'You' : '—' }}</span>
                   </div>
                 </div>
-                <button class="btn-outline" style="margin-top:.75rem;width:100%" @click="$router.push('/admin')">
+                <button v-if="me?.role==='super_admin'" class="btn-outline" style="margin-top:.75rem;width:100%" @click="openNewAdmin">
                   <i class="fas fa-user-plus"></i> Add New Admin
                 </button>
+                <p v-else class="muted" style="font-size:11.5px;margin-top:.75rem">Only a super admin can add admins or change roles.</p>
+              </div>
+              <div class="kb-card full">
+                <div class="kbc-head"><i class="fas fa-lock"></i><h3>Role Permissions</h3></div>
+                <p class="muted" style="font-size:12.5px;margin:-.25rem 0 1rem">Granular access per role. Super Admin always has full access and can't be edited.</p>
+                <div class="perm-matrix" v-if="rolePerms.permission_keys.length">
+                  <div class="perm-row perm-head">
+                    <span>Permission</span><span>Super Admin</span><span>Admin</span><span>Moderator</span>
+                  </div>
+                  <div class="perm-row" v-for="p in rolePerms.permission_keys" :key="p.key">
+                    <span class="perm-label">{{ p.label }}</span>
+                    <span class="perm-cell"><i class="fas fa-check" style="color:#34a853;font-size:12px"></i></span>
+                    <span class="perm-cell">
+                      <button class="perm-tog" :class="{on: rolePerms.role_permissions.admin?.[p.key]}" :disabled="!rolePerms.editable"
+                        @click="rolePerms.role_permissions.admin[p.key] = !rolePerms.role_permissions.admin[p.key]"><span class="tog-knob"></span></button>
+                    </span>
+                    <span class="perm-cell">
+                      <button class="perm-tog" :class="{on: rolePerms.role_permissions.moderator?.[p.key]}" :disabled="!rolePerms.editable"
+                        @click="rolePerms.role_permissions.moderator[p.key] = !rolePerms.role_permissions.moderator[p.key]"><span class="tog-knob"></span></button>
+                    </span>
+                  </div>
+                </div>
+                <button v-if="rolePerms.editable" class="btn-primary" style="margin-top:1rem" @click="savePermissions"><i class="fas fa-save"></i> Save Permissions</button>
+                <p v-else class="muted" style="font-size:12px;margin-top:.75rem">Only a super admin can edit role permissions.</p>
               </div>
               <div class="kb-card full">
                 <div class="kbc-head"><i class="fas fa-info-circle"></i><h3>System Info</h3></div>
@@ -917,6 +946,37 @@
       </div>
     </transition>
 
+    <!-- ════════ ADD ADMIN MODAL ════════ -->
+    <transition name="modal">
+      <div v-if="newAdminModal" class="kb-overlay" @click.self="newAdminModal=null">
+        <div class="kb-modal">
+          <div class="km-head">
+            <h3><i class="fas fa-user-plus" style="color:#8b5cf6;margin-right:8px"></i>Add New Admin</h3>
+            <button @click="newAdminModal=null"><i class="fas fa-xmark"></i></button>
+          </div>
+          <div class="km-body">
+            <div class="kbf"><label>Username</label><input v-model.trim="newAdminModal.username" class="kb-input" autocomplete="off"/></div>
+            <div class="kbf"><label>Email</label><input v-model.trim="newAdminModal.email" type="email" class="kb-input" autocomplete="off"/></div>
+            <div class="kbf"><label>Password</label><input v-model="newAdminModal.password" type="password" class="kb-input" autocomplete="new-password"/></div>
+            <div class="kbf"><label>Role</label>
+              <select v-model="newAdminModal.role" class="kb-input">
+                <option value="admin">Admin</option>
+                <option value="moderator">Moderator</option>
+                <option value="super_admin">Super Admin</option>
+              </select>
+            </div>
+            <p v-if="newAdminError" style="color:#f28b82;font-size:12.5px;margin-top:-.3rem">{{ newAdminError }}</p>
+          </div>
+          <div class="km-foot">
+            <button class="btn-outline" @click="newAdminModal=null">Cancel</button>
+            <button class="btn-primary" :disabled="creatingAdmin" @click="createAdmin">
+              <i class="fas" :class="creatingAdmin?'fa-spinner fa-spin':'fa-user-plus'"></i> Create Admin
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- ════════ CONFIRM MODAL ════════ -->
     <transition name="modal">
       <div v-if="confirmM" class="kb-overlay" @click.self="confirmM=null">
@@ -975,6 +1035,10 @@ const logs       = ref([])
 const filesD     = ref({ files:[], total_size:0 })
 const secData    = ref({ blocked_ips:[], suspicious:[] })
 const admins     = ref([])
+const rolePerms  = reactive({ permission_keys: [], role_permissions: {}, editable: false })
+const newAdminModal = ref(null)
+const creatingAdmin = ref(false)
+const newAdminError = ref('')
 const usageD     = ref({ total_tokens:0, total_requests:0, success_requests:0, total_cost:'0', by_user:[], by_day:[], plans:[] })
 const moderationD = ref([])
 const knowledgeD = ref([])
@@ -1161,7 +1225,7 @@ const analyticsCards = computed(()=>[
 async function refresh(){
   loading.value=true
   try {
-    const [d,an,v,n,l,f,s,adm,st,us,mod,kb,perf] = await Promise.all([
+    const [d,an,v,n,l,f,s,adm,st,us,mod,kb,perf,rp] = await Promise.all([
       api('get','/admin/dashboard'),
       api('get','/admin/analytics'),
       api('get','/admin/visitors'),
@@ -1175,6 +1239,7 @@ async function refresh(){
       api('get','/admin/moderation'),
       api('get','/admin/knowledge'),
       api('get','/admin/performance'),
+      api('get','/admin/role-permissions'),
     ])
     dash.value        = d.data
     analyticsD.value  = an.data
@@ -1186,6 +1251,9 @@ async function refresh(){
     ;(f.data.files||[]).filter(x=>x.type==='image').slice(0,24).forEach(loadFileBlob)
     secData.value     = s.data
     admins.value      = adm.data
+    rolePerms.permission_keys  = rp.data.permission_keys
+    rolePerms.role_permissions = rp.data.role_permissions
+    rolePerms.editable         = rp.data.editable
     usageD.value      = us.data
     moderationD.value = mod.data
     knowledgeD.value  = kb.data
@@ -1291,7 +1359,43 @@ async function saveAI(){ try{ await api('put','/admin/settings',{...cfg}); showT
 async function deleteFile(f){ if(!confirm(`Delete "${f.name}"?`)) return; await api('delete',`/admin/files/${encodeURIComponent(f.name)}`); filesD.value.files=filesD.value.files.filter(x=>x.name!==f.name); showToast('success','File deleted') }
 async function blockIp(){ if(!newIp.value.trim()) return; await api('post','/admin/security/block-ip',{ip:newIp.value.trim()}); if(!secData.value.blocked_ips) secData.value.blocked_ips=[]; secData.value.blocked_ips.push(newIp.value.trim()); newIp.value=''; showToast('success','IP blocked') }
 async function unblockIp(ip){ await api('delete',`/admin/security/block-ip/${ip}`); secData.value.blocked_ips=secData.value.blocked_ips.filter(i=>i!==ip) }
-async function delAdmin(a){ if(!confirm(`Delete admin "${a.username}"?`)) return; await api('delete',`/admin/admins/${a.id}`); admins.value=admins.value.filter(x=>x.id!==a.id) }
+async function delAdmin(a){
+  if(!confirm(`Delete admin "${a.username}"?`)) return
+  try { await api('delete',`/admin/admins/${a.id}`); admins.value=admins.value.filter(x=>x.id!==a.id); showToast('success','Admin deleted') }
+  catch(e){ showToast('error', e.response?.data?.error || 'Failed to delete admin') }
+}
+async function changeRole(a, role){
+  if(role===a.role) return
+  const prevRole = a.role
+  try {
+    await api('put', `/admin/admins/${a.id}/role`, { role })
+    a.role = role
+    showToast('success', `${a.username}'s role updated to ${role.replace('_',' ')}`)
+  } catch(e){
+    showToast('error', e.response?.data?.error || 'Failed to update role')
+    a.role = prevRole
+  }
+}
+function openNewAdmin(){ newAdminModal.value = { username:'', email:'', password:'', role:'admin' }; newAdminError.value = '' }
+async function createAdmin(){
+  const f = newAdminModal.value
+  if(!f.username || !f.email || !f.password) { newAdminError.value = 'All fields are required'; return }
+  if(f.password.length < 8) { newAdminError.value = 'Password must be at least 8 characters'; return }
+  creatingAdmin.value = true; newAdminError.value = ''
+  try {
+    const { data } = await api('post', '/admin/admins', f)
+    admins.value.push({ id: data.id, username: data.username, email: data.email, role: data.role, created_at: new Date().toISOString(), last_login: null })
+    showToast('success', 'Admin account created')
+    newAdminModal.value = null
+  } catch(e){ newAdminError.value = e.response?.data?.error || 'Failed to create admin' }
+  finally { creatingAdmin.value = false }
+}
+async function savePermissions(){
+  try {
+    await api('put', '/admin/role-permissions', { role_permissions: rolePerms.role_permissions })
+    showToast('success', 'Role permissions saved')
+  } catch(e){ showToast('error', e.response?.data?.error || 'Failed to save permissions') }
+}
 
 function exportAnalytics(){
   const txt=`KinyaBot Analytics Export\n${new Date().toLocaleString()}\n\nTotal Users: ${dash.value.total_users||0}\nTotal Messages: ${dash.value.total_messages||0}\nTotal Chats: ${dash.value.total_chats||0}`
@@ -1566,6 +1670,27 @@ onBeforeUnmount(()=>{ clearInterval(tInt); clearInterval(rInt); window.removeEve
 .mtr-acts button.danger:hover { background:rgba(239,68,68,.2); }
 .mt-empty { padding:1.5rem; text-align:center; color:var(--t3); font-size:12.5px; grid-column:1/-1; }
 
+/* ROLE SELECT (admins table) */
+.role-select {
+  background:var(--s3); border:1px solid var(--border); color:var(--t1);
+  font-size:11px; font-weight:600; padding:5px 8px; border-radius:7px;
+  cursor:pointer; font-family:inherit; max-width:110px;
+}
+.role-select:hover { border-color:rgba(139,92,246,.4); }
+
+/* ROLE PERMISSION MATRIX */
+.perm-matrix { display:flex; flex-direction:column; overflow-x:auto; }
+.perm-row { display:grid; grid-template-columns:2fr repeat(3, 90px); gap:6px; align-items:center; padding:9px 6px; border-bottom:1px solid rgba(99,102,241,.06); min-width:460px; }
+.perm-row:last-child { border-bottom:none; }
+.perm-head { font-size:10.5px; font-weight:700; color:var(--t3); text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid var(--border); }
+.perm-label { font-size:12.5px; color:var(--t1); font-weight:500; }
+.perm-cell { display:flex; justify-content:center; }
+.perm-tog { width:36px; height:20px; border-radius:99px; background:rgba(148,163,184,.25); border:none; position:relative; cursor:pointer; transition:background .2s; flex-shrink:0; padding:0; }
+.perm-tog .tog-knob { position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,.3); }
+.perm-tog.on { background:#8b5cf6; }
+.perm-tog.on .tog-knob { transform:translateX(16px); }
+.perm-tog:disabled { cursor:not-allowed; opacity:.55; }
+
 /* ════════════════════════════════════
    ANALYTICS
 ════════════════════════════════════ */
@@ -1775,6 +1900,7 @@ onBeforeUnmount(()=>{ clearInterval(tInt); clearInterval(rInt); window.removeEve
 .km-meta { display:flex; gap:14px; padding:.7rem 1.25rem; border-bottom:1px solid rgba(99,102,241,.07); font-size:12px; color:var(--t3); flex-wrap:wrap; }
 .km-meta span { display:flex; align-items:center; gap:6px; }
 .km-txt { padding:1.25rem; font-size:13.5px; color:var(--t2); line-height:1.6; }
+.km-body { padding:1.1rem 1.25rem 0; overflow-y:auto; }
 .km-foot { display:flex; gap:8px; justify-content:flex-end; padding:.75rem 1.25rem; border-top:1px solid rgba(99,102,241,.07); }
 .km-transcript { padding:1rem 1.25rem; overflow-y:auto; display:flex; flex-direction:column; gap:8px; flex:1; }
 .kmt-msg { padding:10px 12px; border-radius:10px; }
