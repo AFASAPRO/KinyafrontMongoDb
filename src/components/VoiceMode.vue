@@ -460,6 +460,7 @@ const POKES = [
   ['laugh', 'Hehe, that tickles!'],
   ['wow', 'Oh! You surprised me!'],
   ['cheer', 'Yay, you found me!'],
+  ['wink', 'Hehe, gotcha!'],
 ]
 function onPoke() {
   if (phase.value !== 'idle') { controller.perform('wow'); return }

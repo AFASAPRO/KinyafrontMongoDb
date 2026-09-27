@@ -1,115 +1,132 @@
 <template>
-  <div class="al-screen">
-    <!-- Soft flat decoration (solid color blobs only — no gradients) -->
-    <div class="al-decor" aria-hidden="true">
-      <span class="al-blob al-blob-a"></span>
-      <span class="al-blob al-blob-b"></span>
+  <div class="admin-auth">
+    <!-- Animated background -->
+    <div class="ab-bg">
+      <div class="ab-orb ab-orb1"></div>
+      <div class="ab-orb ab-orb2"></div>
+      <div class="ab-orb ab-orb3"></div>
+      <div class="ab-grid"></div>
+      <!-- Floating particles -->
+      <div v-for="i in 10" :key="i" class="ab-particle" :style="particleStyle(i)"></div>
     </div>
 
-    <div class="al-card">
-      <div class="al-brand">
-        <div class="al-mark">
-          <img src="/logo.png" alt="" class="al-mark-img" />
-          <span class="al-mark-badge"><i class="fas fa-shield-halved"></i></span>
+    <div class="ab-card">
+      <!-- ── Header ── -->
+      <div class="ab-header">
+        <div class="ab-logo-wrap">
+          <img src="/logo.png" alt="KinyaBot" class="ab-logo" />
+          <div class="ab-shield"><i class="fas fa-shield-halved"></i></div>
         </div>
-        <h1 class="al-title">Admin Portal</h1>
-        <p class="al-subtitle">Sign in to the KinyaBot management console</p>
+        <h1 class="ab-title">Admin Portal</h1>
+        <p class="ab-sub">KinyaBot AI — Management Console</p>
       </div>
 
-      <form class="al-form" @submit.prevent="handleLogin" novalidate>
-        <label class="al-field" :class="{ 'has-error': loginErrors.email }">
-          <span class="al-field-label">Email address</span>
-          <span class="al-field-box">
-            <i class="fas fa-envelope al-field-icon"></i>
-            <input
-              v-model.trim="loginForm.email"
-              type="email"
-              class="al-input"
-              placeholder="you@kinyabot.ai"
-              autocomplete="email"
-              autocapitalize="off"
-              @keyup.enter="focusPassword"
-            />
-          </span>
-          <span v-if="loginErrors.email" class="al-field-error">
-            <i class="fas fa-circle-exclamation"></i>{{ loginErrors.email }}
-          </span>
-        </label>
+      <!-- ── Tabs ── -->
+      <div class="ab-tabs">
+        <button class="ab-tab" :class="{ active: mode === 'login' }" @click="switchMode('login')">
+          <i class="fas fa-right-to-bracket"></i>
+          Sign In
+        </button>
+        <!-- Animated tab indicator -->
+        <div class="ab-tab-line" :style="{ left: mode === 'login' ? '0' : '50%' }"></div>
+      </div>
 
-        <label class="al-field" :class="{ 'has-error': loginErrors.password }">
-          <span class="al-field-label">Password</span>
-          <span class="al-field-box">
-            <i class="fas fa-lock al-field-icon"></i>
+      <!-- ── Login Form ── -->
+      <transition name="form-slide" mode="out-in">
+        <div v-if="mode === 'login'" key="login" class="ab-form">
+          <div class="ab-field" :class="{ focused: focus.email, hasVal: loginForm.email }">
+            <div class="ab-field-icon"><i class="fas fa-envelope"></i></div>
             <input
-              ref="passwordInput"
+              v-model="loginForm.email"
+              type="email"
+              placeholder="Admin email"
+              class="ab-input"
+              autocomplete="email"
+              @focus="focus.email = true"
+              @blur="focus.email = false"
+              @keyup.enter="$refs.loginPassRef?.focus()"
+            />
+          </div>
+          <span v-if="loginErrors.email" class="ab-err">
+            <i class="fas fa-circle-exclamation"></i> {{ loginErrors.email }}
+          </span>
+
+          <div class="ab-field" :class="{ focused: focus.password, hasVal: loginForm.password }">
+            <div class="ab-field-icon"><i class="fas fa-lock"></i></div>
+            <input
+              ref="loginPassRef"
               v-model="loginForm.password"
-              :type="showPassword ? 'text' : 'password'"
-              class="al-input"
-              placeholder="••••••••"
+              :type="showLoginPass ? 'text' : 'password'"
+              placeholder="Password"
+              class="ab-input"
               autocomplete="current-password"
+              @focus="focus.password = true"
+              @blur="focus.password = false"
               @keyup.enter="handleLogin"
             />
-            <button type="button" class="al-field-toggle" tabindex="-1" @click="showPassword = !showPassword">
-              <i :class="showPassword ? 'far fa-eye-slash' : 'far fa-eye'"></i>
+            <button type="button" class="ab-eye" @click="showLoginPass = !showLoginPass">
+              <i :class="showLoginPass ? 'far fa-eye-slash' : 'far fa-eye'"></i>
             </button>
+          </div>
+          <span v-if="loginErrors.password" class="ab-err">
+            <i class="fas fa-circle-exclamation"></i> {{ loginErrors.password }}
           </span>
-          <span v-if="loginErrors.password" class="al-field-error">
-            <i class="fas fa-circle-exclamation"></i>{{ loginErrors.password }}
-          </span>
-        </label>
 
-        <p v-if="loginError" class="al-alert">
-          <i class="fas fa-triangle-exclamation"></i>{{ loginError }}
-        </p>
+          <div v-if="loginError" class="ab-server-err">
+            <i class="fas fa-circle-exclamation"></i> {{ loginError }}
+          </div>
 
-        <button type="submit" class="al-btn al-btn-primary" :disabled="loginLoading">
-          <i v-if="loginLoading" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-right-to-bracket"></i>
-          {{ loginLoading ? 'Signing in…' : 'Sign In to Dashboard' }}
-        </button>
+          <button class="ab-btn" :disabled="loginLoading" @click="handleLogin">
+            <span v-if="loginLoading" class="ab-btn-inner">
+              <i class="fas fa-spinner fa-spin"></i> Authenticating…
+            </span>
+            <span v-else class="ab-btn-inner">
+              <i class="fas fa-right-to-bracket"></i> Sign In to Dashboard
+            </span>
+          </button>
 
-        <button type="button" class="al-btn al-btn-ghost" @click="handleInstallApp">
-          <i class="fas fa-download"></i>
-          Install Admin App
-        </button>
-      </form>
+          <!-- ── PWA: Install the Admin app ── -->
+          <button class="ab-btn ab-btn-ghost" type="button" @click="handleInstallApp">
+            <span class="ab-btn-inner">
+              <i class="fas fa-download"></i> Download App
+            </span>
+          </button>
+          <p class="ab-install-note">
+            <i class="fas fa-shield-halved"></i>
+            Install KinyaBot Admin on your phone — opens directly on this login page.
+          </p>
 
-      <p class="al-hint">
-        <i class="fas fa-shield-halved"></i>
-        Installing opens the KinyaBot Admin app straight to this sign-in page.
-      </p>
+  
+        </div>
+      </transition>
 
-      <router-link to="/" class="al-back">
-        <i class="fas fa-arrow-left"></i>
-        Back to KinyaBot
+
+      <router-link to="/" class="ab-back">
+        <i class="fas fa-arrow-left"></i> Back to KinyaBot
       </router-link>
     </div>
 
-    <!-- Install instructions modal (iOS / unsupported browsers) -->
-    <transition name="al-fade">
-      <div v-if="installModal" class="al-modal-overlay" @click.self="installModal = false">
-        <div class="al-modal" role="dialog" aria-modal="true">
-          <button class="al-modal-close" @click="installModal = false" aria-label="Close">
-            <i class="fas fa-xmark"></i>
-          </button>
-          <img src="/admin-icon-192.png" alt="KinyaBot Admin" class="al-modal-icon" />
+    <!-- ── Install instructions modal (iOS / unsupported browsers) ── -->
+    <transition name="fade">
+      <div v-if="installModal" class="ab-modal-overlay" @click.self="installModal=false">
+        <div class="ab-modal" role="dialog" aria-modal="true">
+          <button class="ab-modal-close" @click="installModal=false" aria-label="Close"><i class="fas fa-xmark"></i></button>
+          <img src="/admin-icon-192.png" alt="KinyaBot Admin" class="ab-modal-icon" />
           <h3>{{ installDone ? 'Admin App Installed' : 'Install KinyaBot Admin' }}</h3>
-
-          <p v-if="installDone" class="al-modal-lead">
+          <p v-if="installDone" class="ab-modal-lead">
             KinyaBot Admin was added to your device. Open it from your home screen —
-            it starts right here on the sign-in page.
+            it starts right here on the Admin login.
           </p>
           <template v-else>
-            <p v-if="isIOS" class="al-modal-lead">Add KinyaBot Admin to your iPhone / iPad home screen:</p>
-            <p v-else class="al-modal-lead">Your browser doesn't support one-tap install. Add it from the browser menu:</p>
-            <ol class="al-modal-steps">
-              <li><i class="fas fa-up-right-from-square"></i> Tap <strong>Share</strong> (iOS) or open the <strong>⋮ menu</strong> (Android)</li>
+            <p v-if="isIOS" class="ab-modal-lead">Add KinyaBot Admin to your iPhone / iPad home screen:</p>
+            <p v-else class="ab-modal-lead">Your browser doesn't support one-tap install. Add it from the browser menu:</p>
+            <ol class="ab-modal-steps">
+              <li><i class="fas fa-up-right-from-square"></i> Tap the <strong>Share</strong> button (iOS) or open the <strong>⋮ menu</strong> (Android)</li>
               <li><i class="fas fa-square-plus"></i> Choose <strong>Add to Home Screen</strong> / <strong>Install app</strong></li>
               <li><i class="fas fa-check"></i> Confirm — the Admin app appears on your home screen</li>
             </ol>
           </template>
-
-          <button class="al-btn al-btn-primary" @click="installModal = false">Got it</button>
+          <button class="ab-btn" @click="installModal=false">Got it</button>
         </div>
       </div>
     </transition>
@@ -117,7 +134,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { usePwaInstall } from '../../composables/usePwaInstall'
@@ -125,10 +142,10 @@ import { usePwaInstall } from '../../composables/usePwaInstall'
 const router = useRouter()
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
-/* ── Admin PWA install ─────────────────────────────────────────── */
+// ── Admin PWA install ────────────────────────────────────────
 const { canInstall, installed, isIOS, promptInstall } = usePwaInstall()
-const installModal = ref(false)
-const installDone = ref(false)
+const installModal = ref(false)   // manual instructions (iOS / unsupported)
+const installDone = ref(false)    // success note
 
 async function handleInstallApp() {
   if (installed.value) { installDone.value = true; installModal.value = true; return }
@@ -138,38 +155,44 @@ async function handleInstallApp() {
       installDone.value = true
       installModal.value = true
     } else if (outcome === 'error' || outcome === 'unavailable') {
+      // Native prompt unusable → fall back to manual instructions
       installDone.value = false
       installModal.value = true
     }
     return
   }
+  // iOS Safari & browsers without the native prompt → clear instructions
   installDone.value = false
   installModal.value = true
 }
 
-/* ── Login ─────────────────────────────────────────────────────── */
-const loginForm = reactive({ email: '', password: '' })
-const loginErrors = reactive({ email: '', password: '' })
-const loginLoading = ref(false)
-const loginError = ref('')
-const showPassword = ref(false)
-const passwordInput = ref(null)
+const mode = ref('login')
 
-function focusPassword() { passwordInput.value?.focus() }
+// ── Focus state ──────────────────────────────────────────────
+const focus = reactive({
+  email: false, password: false,
+  rUsername: false, rEmail: false, rPassword: false, rConfirm: false, rRole: false, rInvite: false
+})
+
+// ── Login ────────────────────────────────────────────────────
+const loginForm    = reactive({ email: '', password: '' })
+const loginErrors  = reactive({ email: '', password: '' })
+const loginLoading = ref(false)
+const loginError   = ref('')
+const showLoginPass = ref(false)
+const loginPassRef  = ref(null)
 
 function validateLogin() {
-  loginErrors.email = ''
-  loginErrors.password = ''
+  loginErrors.email = ''; loginErrors.password = ''
   let ok = true
-  if (!loginForm.email) { loginErrors.email = 'Email is required'; ok = false }
+  if (!loginForm.email)    { loginErrors.email    = 'Email is required'; ok = false }
   if (!loginForm.password) { loginErrors.password = 'Password is required'; ok = false }
   return ok
 }
 
 async function handleLogin() {
   if (!validateLogin()) return
-  loginError.value = ''
-  loginLoading.value = true
+  loginError.value = ''; loginLoading.value = true
   try {
     const { data } = await axios.post(`${API}/admin/login`, {
       email: loginForm.email,
@@ -184,182 +207,417 @@ async function handleLogin() {
     loginLoading.value = false
   }
 }
+
+// ── Register ─────────────────────────────────────────────────
+const regForm = reactive({
+  username: '', email: '', password: '', confirm: '',
+  role: 'admin', invite_code: ''
+})
+const regErrors   = reactive({ username: '', email: '', password: '', invite_code: '' })
+const regLoading  = ref(false)
+const regError    = ref('')
+const showRegPass = ref(false)
+const registered  = ref(false)
+const registeredName = ref('')
+
+const strength = computed(() => {
+  const p = regForm.password; let s = 0
+  if (p.length >= 8)  s += 25
+  if (p.length >= 12) s += 15
+  if (/[A-Z]/.test(p)) s += 20
+  if (/[0-9]/.test(p)) s += 20
+  if (/[^A-Za-z0-9]/.test(p)) s += 20
+  s = Math.min(s, 100)
+  return {
+    pct: s,
+    color: s < 40 ? '#f28b82' : s < 70 ? '#fbbc04' : '#34d399'
+  }
+})
+
+const isRegFormValid = computed(() =>
+  regForm.username.length >= 3 &&
+  regForm.email.includes('@') &&
+  regForm.password.length >= 8 &&
+  regForm.password === regForm.confirm &&
+  regForm.invite_code.trim().length > 0
+)
+
+function validateReg() {
+  regErrors.username = ''; regErrors.email = ''
+  regErrors.password = ''; regErrors.invite_code = ''
+  let ok = true
+  if (!regForm.username || regForm.username.length < 3) {
+    regErrors.username = 'At least 3 characters'; ok = false
+  }
+  if (!regForm.email || !/^\S+@\S+\.\S+$/.test(regForm.email)) {
+    regErrors.email = 'Valid email required'; ok = false
+  }
+  if (!regForm.password || regForm.password.length < 8) {
+    regErrors.password = 'At least 8 characters'; ok = false
+  }
+  if (regForm.password !== regForm.confirm) {
+    regErrors.password = 'Passwords do not match'; ok = false
+  }
+  if (!regForm.invite_code.trim()) {
+    regErrors.invite_code = 'Invite code is required'; ok = false
+  }
+  return ok
+}
+
+async function handleRegister() {
+  if (!validateReg()) return
+  regError.value = ''; regLoading.value = true
+  try {
+    const { data } = await axios.post(`${API}/admin/register`, {
+      username:    regForm.username,
+      email:       regForm.email,
+      password:    regForm.password,
+      role:        regForm.role,
+      invite_code: regForm.invite_code
+    })
+    localStorage.setItem('kb_admin_token', data.token)
+    localStorage.setItem('kb_admin', JSON.stringify(data.admin))
+    registeredName.value = data.admin.username
+    registered.value = true
+  } catch (err) {
+    regError.value = err.response?.data?.error || 'Registration failed. Please try again.'
+  } finally {
+    regLoading.value = false
+  }
+}
+
+function goToDashboard() {
+  router.push('/admin/dashboard')
+}
+
+function switchMode(m) {
+  mode.value = m
+  loginError.value = ''
+  regError.value   = ''
+  registered.value = false
+  // Auto-fill the default invite code when opening register tab
+  if (m === 'register' && !regForm.invite_code) {
+    regForm.invite_code = 'KinyaBot-Admin-2024'
+  }
+}
+
+function particleStyle(i) {
+  return {
+    left:              (5 + i * 9.5) + '%',
+    top:               (8 + (i * 13) % 84) + '%',
+    width:             (3 + i % 4) + 'px',
+    height:            (3 + i % 4) + 'px',
+    animationDelay:    (i * 0.45) + 's',
+    animationDuration: (4 + i % 3) + 's'
+  }
+}
 </script>
 
 <style scoped>
-/* ── Root ──────────────────────────────────────────────────────── */
-.al-screen {
+/* ── Root ───────────────────────────────────────────────── */
+.admin-auth {
   min-height: 100vh;
   min-height: 100dvh;
   width: 100%;
-  background: #0a0a12;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow-y: auto;
+  background: #05050d;
+  display: flex; align-items: center; justify-content: center;
   padding: 1.5rem 1rem;
   padding-top: max(1.5rem, env(safe-area-inset-top));
   padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
   position: relative;
-  overflow-y: auto;
-  overflow-x: hidden;
 }
 
-/* ── Decoration: flat solid shapes only, no gradients ─────────── */
-.al-decor { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-.al-blob { position: absolute; border-radius: 50%; background: rgba(99, 102, 241, .10); filter: blur(90px); }
-.al-blob-a { width: 480px; height: 480px; top: -140px; left: -120px; }
-.al-blob-b { width: 380px; height: 380px; background: rgba(6, 182, 212, .08); bottom: -120px; right: -100px; }
-
-/* ── Card ──────────────────────────────────────────────────────── */
-.al-card {
-  position: relative; z-index: 1;
-  width: min(420px, 100%);
-  background: #101018;
-  border: 1px solid rgba(255, 255, 255, .08);
-  border-radius: 20px;
-  padding: 2.25rem 1.9rem 1.75rem;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, .5);
+/* ── Background ─────────────────────────────────────────────── */
+.ab-bg { position: absolute; inset: 0; pointer-events: none; }
+.ab-orb { position: absolute; border-radius: 50%; filter: blur(100px); }
+.ab-orb1 { width: 600px; height: 600px; background: radial-gradient(circle, rgba(79,70,229,.18), transparent); top: -150px; left: -150px; }
+.ab-orb2 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(14,165,233,.14), transparent); bottom: -100px; right: -100px; }
+.ab-orb3 { width: 300px; height: 300px; background: radial-gradient(circle, rgba(168,85,247,.12), transparent); top: 40%; left: 50%; transform: translate(-50%,-50%); }
+.ab-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(99,102,241,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99,102,241,.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+.ab-particle {
+  position: absolute; border-radius: 50%;
+  background: rgba(99,102,241,.35);
+  animation: float ease-in-out infinite alternate;
+}
+@keyframes float {
+  from { transform: translateY(0) scale(1); opacity: .35; }
+  to   { transform: translateY(-22px) scale(1.4); opacity: .08; }
 }
 
-/* ── Brand header ──────────────────────────────────────────────── */
-.al-brand { text-align: center; margin-bottom: 1.6rem; }
-.al-mark { position: relative; display: inline-block; margin-bottom: .85rem; }
-.al-mark-img {
-  width: 60px; height: 60px; border-radius: 16px; object-fit: contain;
-  background: #16161f;
-  border: 1px solid rgba(255, 255, 255, .08);
+/* ── Card ───────────────────────────────────────────────────── */
+.ab-card {
+  background: rgba(10,10,20,.92);
+  border: 1px solid rgba(99,102,241,.22);
+  border-radius: 24px;
+  padding: 2.25rem 2rem 1.75rem;
+  width: min(440px, 100%);
+  position: relative; z-index: 2;
+  box-shadow:
+    0 0 0 1px rgba(99,102,241,.08),
+    0 0 60px rgba(79,70,229,.12),
+    0 32px 64px rgba(0,0,0,.65);
+  animation: fadeUp .45s cubic-bezier(.34,1.56,.64,1);
+  backdrop-filter: blur(20px);
 }
-.al-mark-badge {
-  position: absolute; bottom: -4px; right: -4px;
-  width: 22px; height: 22px; border-radius: 50%;
-  background: #4f46e5;
-  border: 2.5px solid #101018;
+
+/* ── Header ─────────────────────────────────────────────────── */
+.ab-header { text-align: center; margin-bottom: 1.75rem; }
+.ab-logo-wrap { position: relative; display: inline-block; margin-bottom: .9rem; }
+.ab-logo {
+  width: 68px; height: 68px; border-radius: 18px; object-fit: contain;
+  box-shadow: 0 0 0 1px rgba(99,102,241,.3), 0 0 30px rgba(79,70,229,.45);
+  animation: pulse-logo 3s ease-in-out infinite;
+}
+@keyframes pulse-logo {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(99,102,241,.3), 0 0 24px rgba(79,70,229,.35); }
+  50%       { box-shadow: 0 0 0 1px rgba(99,102,241,.5), 0 0 44px rgba(79,70,229,.55); }
+}
+.ab-shield {
+  position: absolute; bottom: -5px; right: -5px;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
   display: flex; align-items: center; justify-content: center;
-  font-size: 9.5px; color: #fff;
+  font-size: 10px; color: #fff;
+  border: 2.5px solid rgba(10,10,20,.92);
+  box-shadow: 0 2px 8px rgba(79,70,229,.5);
 }
-.al-title { font-size: 1.3rem; font-weight: 700; color: #fff; letter-spacing: -.3px; margin-bottom: 3px; }
-.al-subtitle { font-size: 12.5px; color: #6b7280; }
+.ab-title { font-size: 1.35rem; font-weight: 800; color: #fff; margin-bottom: 4px; letter-spacing: -.4px; }
+.ab-sub   { font-size: 12.5px; color: #4b5563; }
 
-/* ── Form ──────────────────────────────────────────────────────── */
-.al-form { display: flex; flex-direction: column; gap: .95rem; }
-.al-field { display: flex; flex-direction: column; gap: 6px; }
-.al-field-label { font-size: 11.5px; font-weight: 600; color: #8b8fa3; text-transform: uppercase; letter-spacing: .04em; }
-.al-field-box {
-  display: flex; align-items: center; gap: 10px;
-  background: #16161f;
-  border: 1px solid rgba(255, 255, 255, .09);
-  border-radius: 11px;
-  padding: 0 13px;
-  transition: border-color .18s ease, background .18s ease;
+/* ── Tabs ───────────────────────────────────────────────────── */
+.ab-tabs {
+  display: flex; position: relative;
+  background: rgba(99,102,241,.06);
+  border: 1px solid rgba(99,102,241,.12);
+  border-radius: 12px; overflow: hidden;
+  margin-bottom: 1.5rem;
 }
-.al-field-box:focus-within {
-  border-color: rgba(99, 102, 241, .55);
-  background: #17171f;
+.ab-tab {
+  flex: 1; padding: 10px 12px;
+  background: none; border: none;
+  color: #6b7280; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: color .25s;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  position: relative; z-index: 1;
 }
-.al-field.has-error .al-field-box { border-color: rgba(242, 139, 130, .5); }
-.al-field-icon { font-size: 13px; color: #565a6e; flex-shrink: 0; }
-.al-field-box:focus-within .al-field-icon { color: #818cf8; }
-.al-input {
-  flex: 1; min-width: 0; padding: 12px 0;
+.ab-tab i { font-size: 13px; }
+.ab-tab.active { color: #e0e0ff; font-weight: 600; }
+.ab-tab-line {
+  position: absolute; bottom: 0; height: 2px; width: 50%;
+  background: linear-gradient(90deg, #4f46e5, #a855f7);
+  border-radius: 99px;
+  transition: left .3s cubic-bezier(.34,1.56,.64,1);
+}
+
+/* ── Form ───────────────────────────────────────────────────── */
+.ab-form { display: flex; flex-direction: column; gap: 3px; }
+
+.ab-field {
+  display: flex; align-items: center;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(99,102,241,.14);
+  border-radius: 11px; overflow: hidden;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+  margin-bottom: 1px;
+}
+.ab-field.focused {
+  border-color: rgba(99,102,241,.5);
+  box-shadow: 0 0 0 3px rgba(99,102,241,.1);
+  background: rgba(99,102,241,.05);
+}
+.ab-field.ab-field-error {
+  border-color: rgba(242,139,130,.45);
+}
+.ab-field-icon {
+  width: 44px; display: flex; align-items: center; justify-content: center;
+  color: #4b5563; font-size: 14px; flex-shrink: 0;
+  transition: color .2s;
+}
+.ab-field.focused .ab-field-icon { color: #818cf8; }
+
+.ab-input {
+  flex: 1; padding: 12px 10px 12px 0;
   background: none; border: none; outline: none;
-  color: #e5e7eb; font-size: 13.5px; font-family: inherit;
+  color: #e2e8f0; font-size: 13.5px;
+  font-family: inherit;
 }
-.al-input::placeholder { color: #4b5065; }
-.al-field-toggle {
-  background: none; border: none; color: #565a6e; cursor: pointer;
-  font-size: 14px; padding: 6px; flex-shrink: 0; transition: color .15s;
+.ab-input::placeholder { color: #374151; }
+.ab-select {
+  appearance: none; cursor: pointer;
+  padding-right: 32px !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236b7280'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
 }
-.al-field-toggle:hover { color: #c7c9d9; }
-.al-field-error {
-  display: flex; align-items: center; gap: 5px;
+.ab-select option { background: #1e1e2e; color: #e2e8f0; }
+.ab-eye {
+  background: none; border: none; color: #4b5563; padding: 10px 12px;
+  font-size: 14px; cursor: pointer; transition: color .2s; flex-shrink: 0;
+}
+.ab-eye:hover { color: #e2e8f0; }
+.ab-match-icon { padding: 0 12px; font-size: 14px; }
+
+.ab-err {
   font-size: 11.5px; color: #f28b82;
+  display: flex; align-items: center; gap: 5px;
+  padding: 2px 4px 6px;
 }
+.ab-err i { font-size: 11px; }
 
-.al-alert {
+/* Strength bar */
+.ab-strength-bar {
+  height: 3px; background: rgba(255,255,255,.07);
+  border-radius: 99px; overflow: hidden; margin: 2px 0 4px;
+}
+.ab-strength-fill { height: 100%; border-radius: 99px; transition: width .4s ease, background .4s ease; }
+
+.ab-server-err {
   display: flex; align-items: center; gap: 8px;
-  background: rgba(242, 139, 130, .08);
-  border: 1px solid rgba(242, 139, 130, .25);
-  color: #f28b82; font-size: 12.5px;
-  padding: 9px 12px; border-radius: 9px;
+  background: rgba(242,139,130,.1); border: 1px solid rgba(242,139,130,.25);
+  color: #f28b82; padding: 9px 12px; border-radius: 9px; font-size: 12.5px;
+  margin: 4px 0;
 }
 
-/* ── Buttons ───────────────────────────────────────────────────── */
-.al-btn {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  width: 100%; padding: 12.5px; border-radius: 11px;
-  font-size: 13.5px; font-weight: 600; font-family: inherit;
-  cursor: pointer; transition: filter .15s ease, transform .1s ease, background .15s ease;
-  border: none;
+/* ── Button ─────────────────────────────────────────────────── */
+.ab-btn {
+  width: 100%; padding: 13px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  border: none; border-radius: 11px; color: #fff;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: all .25s; margin-top: 8px;
+  box-shadow: 0 4px 20px rgba(79,70,229,.35);
+  font-family: inherit;
 }
-.al-btn-primary { background: #4f46e5; color: #fff; }
-.al-btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
-.al-btn-primary:active:not(:disabled) { transform: translateY(1px); }
-.al-btn-primary:disabled { opacity: .5; cursor: not-allowed; }
-.al-btn-ghost {
+.ab-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(79,70,229,.5);
+}
+.ab-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+.ab-btn-inner { display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+/* Secondary (Download App) button */
+.ab-btn-ghost {
   background: rgba(99, 102, 241, .08);
-  border: 1px solid rgba(99, 102, 241, .3);
-  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, .4);
+  color: #c7d2fe;
+  box-shadow: none;
+  margin-top: 10px;
 }
-.al-btn-ghost:hover { background: rgba(99, 102, 241, .16); }
-
-.al-hint {
+.ab-btn-ghost:hover:not(:disabled) {
+  background: rgba(99, 102, 241, .18);
+  box-shadow: 0 4px 18px rgba(79, 70, 229, .25);
+  transform: translateY(-1px);
+}
+.ab-install-note {
   display: flex; align-items: center; justify-content: center; gap: 7px;
-  margin-top: 12px; font-size: 11.5px; color: #565a6e; text-align: center; line-height: 1.5;
+  margin-top: 9px;
+  font-size: 11.5px; color: #4b5563; text-align: center; line-height: 1.5;
 }
-.al-hint i { color: #6366f1; flex-shrink: 0; }
+.ab-install-note i { color: #6366f1; font-size: 11px; flex-shrink: 0; }
 
-.al-back {
+/* ── Hints ──────────────────────────────────────────────────── */
+.ab-hint, .ab-invite-hint {
+  display: flex; align-items: flex-start; gap: 9px;
+  background: rgba(99,102,241,.07); border: 1px solid rgba(99,102,241,.14);
+  border-radius: 9px; padding: 10px 12px; margin-top: 12px;
+  font-size: 12px; color: #6b7280; line-height: 1.55;
+}
+.ab-hint i, .ab-invite-hint i { color: #6366f1; margin-top: 1px; flex-shrink: 0; font-size: 13px; }
+.ab-hint code, .ab-invite-hint code {
+  color: #c4b5fd; background: rgba(99,102,241,.12);
+  padding: 1px 5px; border-radius: 4px; font-size: 11px;
+}
+.ab-code-click {
+  cursor: pointer !important;
+  border-bottom: 1px dashed rgba(196,181,253,.5);
+  transition: background .15s;
+}
+.ab-code-click:hover { background: rgba(99,102,241,.22) !important; }
+.ab-hint-note {
+  display: block; margin-top: 4px; font-size: 11px; color: #374151;
+  font-style: italic;
+}
+
+/* ── Success state ──────────────────────────────────────────── */
+.ab-success {
+  text-align: center; padding: 1rem 0;
+  animation: fadeUp .35s ease;
+}
+.ab-success-icon {
+  font-size: 3rem; color: #34d399; margin-bottom: 1rem;
+  animation: popIn .5s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes popIn {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.ab-success h3 { font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: .5rem; }
+.ab-success p  { font-size: 13.5px; color: #9ca3af; margin-bottom: 1.25rem; }
+
+/* ── Back link ──────────────────────────────────────────────── */
+.ab-back {
   display: flex; align-items: center; justify-content: center; gap: 7px;
-  margin-top: 1.4rem; font-size: 13px; color: #565a6e; text-decoration: none;
-  transition: color .15s;
+  margin-top: 1.25rem; font-size: 13px; color: #374151;
+  text-decoration: none; transition: color .2s;
 }
-.al-back:hover { color: #a5b4fc; }
+.ab-back:hover { color: #8ab4f8; }
 
-/* ── Install modal ─────────────────────────────────────────────── */
-.al-modal-overlay {
+/* ── Transitions ────────────────────────────────────────────── */
+.form-slide-enter-active, .form-slide-leave-active {
+  transition: all .28s ease;
+}
+.form-slide-enter-from { opacity: 0; transform: translateX(20px); }
+.form-slide-leave-to   { opacity: 0; transform: translateX(-20px); }
+
+.fade-enter-active, .fade-leave-active { transition: opacity .25s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+@media (max-width: 480px) {
+  .ab-card { padding: 1.75rem 1.25rem 1.5rem; }
+  .ab-title { font-size: 1.2rem; }
+}
+
+/* ── Install instructions modal ─────────────────────────────── */
+.ab-modal-overlay {
   position: fixed; inset: 0; z-index: 1000;
-  background: rgba(0, 0, 0, .68);
+  background: rgba(0, 0, 0, .7); backdrop-filter: blur(6px);
   display: flex; align-items: center; justify-content: center;
   padding: 16px;
 }
-.al-modal {
+.ab-modal {
   position: relative; width: min(400px, 100%);
-  background: #101018;
-  border: 1px solid rgba(255, 255, 255, .1);
-  border-radius: 18px;
-  padding: 26px 22px 20px;
-  text-align: center;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, .55);
+  background: #0b0b18; border: 1px solid rgba(99, 102, 241, .35);
+  border-radius: 20px; padding: 28px 22px 20px; text-align: center;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .65), 0 0 60px rgba(79, 70, 229, .12);
+  animation: fadeUp .3s cubic-bezier(.34, 1.56, .64, 1);
   max-height: 86dvh; overflow-y: auto;
 }
-.al-modal-close {
-  position: absolute; top: 12px; right: 12px;
-  width: 30px; height: 30px; border-radius: 8px;
-  background: rgba(255, 255, 255, .06); border: none;
-  color: #9ca3af; font-size: 13px; cursor: pointer;
+.ab-modal-close {
+  position: absolute; top: 12px; right: 12px; width: 32px; height: 32px;
+  border-radius: 9px; background: rgba(255, 255, 255, .06); border: none;
+  color: #9ca3af; font-size: 14px; cursor: pointer;
 }
-.al-modal-close:hover { background: rgba(255, 255, 255, .12); color: #fff; }
-.al-modal-icon { width: 60px; height: 60px; border-radius: 14px; margin-bottom: 10px; }
-.al-modal h3 { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 8px; }
-.al-modal-lead { font-size: 12.5px; color: #9ca3af; line-height: 1.6; margin-bottom: 14px; }
-.al-modal-steps {
-  list-style: none; text-align: left; display: flex; flex-direction: column; gap: 9px;
-  margin-bottom: 16px;
+.ab-modal-close:hover { background: rgba(255, 255, 255, .12); color: #fff; }
+.ab-modal-icon { width: 64px; height: 64px; border-radius: 15px; margin-bottom: 10px; }
+.ab-modal h3 { font-size: 16.5px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+.ab-modal-lead { font-size: 13px; color: #9ca3af; line-height: 1.6; margin-bottom: 14px; }
+.ab-modal-steps {
+  list-style: none; text-align: left; counter-reset: step;
+  display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px;
 }
-.al-modal-steps li {
-  display: flex; align-items: center; gap: 10px;
-  background: rgba(255, 255, 255, .03);
-  border: 1px solid rgba(255, 255, 255, .07);
-  border-radius: 10px; padding: 10px 12px;
-  font-size: 12.5px; color: #d1d5db; line-height: 1.4;
+.ab-modal-steps li {
+  display: flex; align-items: center; gap: 11px;
+  background: rgba(99, 102, 241, .06); border: 1px solid rgba(99, 102, 241, .16);
+  border-radius: 11px; padding: 11px 13px;
+  font-size: 13px; color: #d1d5db; line-height: 1.45;
 }
-.al-modal-steps li i { color: #818cf8; font-size: 13px; width: 16px; text-align: center; flex-shrink: 0; }
-
-.al-fade-enter-active, .al-fade-leave-active { transition: opacity .2s ease; }
-.al-fade-enter-from, .al-fade-leave-to { opacity: 0; }
-
-@media (max-width: 420px) {
-  .al-card { padding: 1.9rem 1.35rem 1.5rem; border-radius: 16px; }
-  .al-title { font-size: 1.15rem; }
-}
+.ab-modal-steps li i { color: #818cf8; font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
 </style>
