@@ -3,6 +3,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import './assets/global.css'
+import './assets/mobile.css'
 import { initViewportShim } from './utils/viewport'
 
 // Keyboard / visual-viewport shim (keeps the mobile composer above the keyboard)

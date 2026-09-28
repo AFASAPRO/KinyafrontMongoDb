@@ -1,108 +1,200 @@
 <template>
-  <AuthLayout>
-    <h1 class="au-title">Welcome back! <span aria-hidden="true">👋</span></h1>
-    <p class="au-lead">Log in to KinyaBot to continue your AI journey.</p>
-
-    <!-- Session expired while using the app → friendly notice, no black screen -->
-    <div v-if="sessionExpiredNotice" class="au-notice is-warn" role="status">
-      <i class="fas fa-clock" aria-hidden="true"></i>
-      <span>Your session expired. Please sign in again to continue.</span>
+  <!-- ═══ MOBILE LAYOUT (≤768px) ═══ -->
+  <MobileAuthShell v-if="isMobile" title="Login" subtitle="Welcome back! Log in to continue.">
+    <div v-if="sessionExpiredNotice" class="m-notice warn">
+      <i class="fas fa-clock"></i><span>Your session expired. Please sign in again to continue.</span>
     </div>
-
-    <div class="au-social-group">
-      <button type="button" class="au-social" :disabled="loading" @click="onSocial('Google')">
-        <svg viewBox="0 0 48 48" aria-hidden="true">
-          <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/>
-          <path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.1 5.3-4.5 7l7.1 5.5c4.2-3.8 7.1-9.5 7.1-17z"/>
-          <path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.9-4.7l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.9-6.1z"/>
-          <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.1-5.5c-2 1.4-4.6 2.3-8.8 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/>
-        </svg>
-        <span>Continue with Google</span>
-      </button>
-      <button type="button" class="au-social" :disabled="loading" @click="onSocial('Apple')">
-        <i class="fab fa-apple" aria-hidden="true"></i>
-        <span>Continue with Apple</span>
-      </button>
-    </div>
-
-    <!-- Apple sign-in isn't wired up yet — say so instead of failing silently -->
-    <div v-if="oauthNotice" class="au-notice is-info" role="status" style="margin-top:.8rem;margin-bottom:0">
-      <i class="fas fa-circle-info" aria-hidden="true"></i>
-      <span>{{ oauthNotice }} sign-in is coming soon. Please use email or Google for now.</span>
-    </div>
-
-    <div class="au-divider" role="separator"><span>OR</span></div>
 
     <form @submit.prevent="handleLogin" novalidate>
-      <div class="au-field">
-        <label class="au-label" for="login-email">Email</label>
-        <div class="au-inputbox" :class="{ 'is-error': errors.email }">
-          <i class="far fa-envelope au-input-icon" aria-hidden="true"></i>
-          <input
-            id="login-email" v-model.trim="form.email" type="email" class="au-input"
-            placeholder="your@email.com" autocomplete="email" inputmode="email"
-            autocapitalize="off" spellcheck="false"
-            :aria-invalid="!!errors.email" :aria-describedby="errors.email ? 'login-email-err' : undefined"
-          />
-        </div>
-        <p v-if="errors.email" id="login-email-err" class="au-error-text" role="alert">
-          <i class="fas fa-circle-exclamation" aria-hidden="true"></i>{{ errors.email }}
-        </p>
+      <div class="m-field">
+        <label class="m-label" for="m-email">Email</label>
+        <input id="m-email" v-model="form.email" type="email" inputmode="email" class="m-input" :class="{error:errors.email}" placeholder="your@email.com" autocomplete="email" autocapitalize="none" />
+        <span v-if="errors.email" class="m-err">{{ errors.email }}</span>
       </div>
 
-      <div class="au-field">
-        <div class="au-label-row">
-          <label class="au-label" for="login-password">Password</label>
-          <router-link to="/forgot-password" class="au-link">Forgot password?</router-link>
-        </div>
-        <div class="au-inputbox" :class="{ 'is-error': errors.password }">
-          <i class="fas fa-lock au-input-icon" aria-hidden="true"></i>
-          <input
-            id="login-password" v-model="form.password" :type="showPass ? 'text' : 'password'" class="au-input"
-            placeholder="••••••••" autocomplete="current-password"
-            :aria-invalid="!!errors.password" :aria-describedby="errors.password ? 'login-password-err' : undefined"
-          />
-          <button type="button" class="au-icon-btn" :aria-label="showPass ? 'Hide password' : 'Show password'" :aria-pressed="showPass" @click="showPass = !showPass">
-            <i :class="showPass ? 'far fa-eye-slash' : 'far fa-eye'" aria-hidden="true"></i>
+      <div class="m-field">
+        <label class="m-label" for="m-pass">Password</label>
+        <div class="m-input-wrap">
+          <input id="m-pass" v-model="form.password" :type="showPass?'text':'password'" class="m-input" :class="{error:errors.password}" placeholder="••••••••" autocomplete="current-password" />
+          <button type="button" class="m-eye" @click="showPass=!showPass" :aria-label="showPass?'Hide password':'Show password'">
+            <i :class="showPass?'far fa-eye-slash':'far fa-eye'"></i>
           </button>
         </div>
-        <p v-if="errors.password" id="login-password-err" class="au-error-text" role="alert">
-          <i class="fas fa-circle-exclamation" aria-hidden="true"></i>{{ errors.password }}
-        </p>
+        <span v-if="errors.password" class="m-err">{{ errors.password }}</span>
       </div>
 
-      <label class="au-check">
-        <input type="checkbox" v-model="rememberMe" />
-        <span class="au-check-box" aria-hidden="true"></span>
-        <span>Remember me for 30 days</span>
-      </label>
-
-      <div v-if="serverError" class="au-notice is-error" role="alert">
-        <i class="fas fa-circle-exclamation" aria-hidden="true"></i><span>{{ serverError }}</span>
+      <div class="m-row">
+        <label class="m-check">
+          <input type="checkbox" v-model="rememberMe" /><span class="box"></span><span>Remember me</span>
+        </label>
+        <button type="button" class="m-link" @click="$router.push('/forgot-password')">Forgot password?</button>
       </div>
 
-      <button type="submit" class="au-btn au-btn-primary" :disabled="loading">
-        <i v-if="loading" class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        {{ loading ? 'Logging in…' : 'Log in' }}
+      <div v-if="serverError" class="m-notice err"><i class="fas fa-circle-exclamation"></i><span>{{ serverError }}</span></div>
+
+      <button type="submit" class="m-btn" :disabled="loading">
+        <i v-if="loading" class="fas fa-spinner fa-spin"></i>
+        {{ loading ? 'Logging in…' : 'Login' }}
       </button>
     </form>
 
-    <p class="au-switch">Don't have an account? <router-link to="/register">Create one</router-link></p>
-
-    <!-- PWA install (Chromium: native prompt · iOS: instructions) -->
-    <div v-if="showInstall" class="au-install">
-      <InstallHint variant="button" label="Install KinyaBot App" compact />
+    <div class="m-or"><span>Or</span></div>
+    <div class="m-social">
+      <button type="button" @click="showOAuth('Google')" aria-label="Continue with Google"><i class="fab fa-google"></i></button>
+      <button type="button" @click="showOAuth('Apple')" aria-label="Continue with Apple"><i class="fab fa-apple"></i></button>
     </div>
-  </AuthLayout>
+    <transition name="fade">
+      <div v-if="oauthToast" class="m-notice info m-toast"><i class="fas fa-circle-info"></i><span>{{ oauthToast }} sign-in is coming soon! Use email for now.</span></div>
+    </transition>
+
+    <p class="m-switch">Don't have an account?<router-link to="/register">Sign up</router-link></p>
+    <div v-if="showInstall" class="m-install"><InstallHint variant="button" label="Install KinyaBot App" compact /></div>
+  </MobileAuthShell>
+
+  <!-- ═══ DESKTOP LAYOUT ═══ -->
+  <div v-else class="auth-root" :class="{ light: isLight }">
+    <button class="theme-toggle" type="button" @click="toggleThemeMode" :title="isLight ? 'Switch to dark mode' : 'Switch to light mode'" :aria-label="isLight ? 'Switch to dark mode' : 'Switch to light mode'">
+      <i :class="isLight ? 'fas fa-moon' : 'fas fa-sun'"></i>
+    </button>
+    <div class="auth-left">
+      <div class="auth-logo">
+        <img :src="isLight ? '/logo.png' : '/logo.png'" alt="KinyaBot" class="logo-img" :class="{ 'logo-light': isLight }" />
+        <span class="logo-text">KinyaBot</span>
+      </div>
+
+      <div class="auth-form-wrap">
+        <h1 class="auth-heading">Welcome back! 👋</h1>
+        <p class="auth-sub">Log in to KinyaBot to continue your AI journey.</p>
+
+        <!-- Session expired while using the app → friendly notice, no black screen -->
+        <div v-if="sessionExpiredNotice" class="notice warn-notice">
+          <i class="fas fa-clock"></i> Your session expired. Please sign in again to continue.
+        </div>
+
+        <!-- Show forgot password form inline -->
+        <div v-if="showForgot">
+          <div class="back-link" @click="showForgot=false">
+            <i class="fas fa-arrow-left"></i> Back to login
+          </div>
+          <h2 class="sub-heading">Reset your password</h2>
+          <p class="auth-sub">Enter your email and we'll send you a reset link.</p>
+          <div class="field">
+            <label class="field-label">Email address</label>
+            <input v-model="forgotEmail" type="email" class="field-input" placeholder="your@email.com" @keyup.enter="handleForgot" />
+          </div>
+          <div v-if="forgotMsg" class="notice" :class="forgotMsg.type">
+            <i :class="forgotMsg.type==='ok'?'fas fa-check-circle':'fas fa-circle-exclamation'"></i>
+            {{ forgotMsg.text }}
+          </div>
+          <button class="submit-btn" :disabled="forgotLoading" @click="handleForgot">
+            <i v-if="forgotLoading" class="fas fa-spinner fa-spin"></i>
+            {{ forgotLoading ? 'Sending…' : 'Send Reset Link' }}
+          </button>
+        </div>
+
+        <form v-else @submit.prevent="handleLogin" novalidate>
+          <div class="social-btns">
+            <button type="button" class="social-btn" @click="showOAuth('Google')">
+              <i class="fab fa-google"></i><span>Continue with Google</span>
+            </button>
+            <button type="button" class="social-btn" @click="showOAuth('Apple')">
+              <i class="fab fa-apple"></i><span>Continue with Apple</span>
+            </button>
+          </div>
+
+          <!-- OAuth coming soon toast -->
+          <transition name="fade">
+            <div v-if="oauthToast" class="oauth-toast">
+              <i class="fas fa-circle-info"></i>
+              <span>{{ oauthToast }} OAuth is coming soon! Use email login for now.</span>
+            </div>
+          </transition>
+          <div class="divider"><span>OR</span></div>
+
+          <div class="field">
+            <label class="field-label">Email</label>
+            <input v-model="form.email" type="email" class="field-input" :class="{error:errors.email}" placeholder="your@email.com" autocomplete="email" />
+            <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
+          </div>
+
+          <div class="field">
+            <div class="field-header">
+              <label class="field-label">Password</label>
+              <span class="forgot-link" @click="$router.push('/forgot-password')">Forgot password?</span>
+            </div>
+            <div class="pass-wrap">
+              <input v-model="form.password" :type="showPass?'text':'password'" class="field-input" :class="{error:errors.password}" placeholder="••••••••" autocomplete="current-password" />
+              <button type="button" class="eye-btn" @click="showPass=!showPass">
+                <i :class="showPass?'far fa-eye-slash':'far fa-eye'"></i>
+              </button>
+            </div>
+            <span v-if="errors.password" class="field-error">{{ errors.password }}</span>
+          </div>
+
+          <!-- Remember me -->
+          <div class="remember-row">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="rememberMe" />
+              <span class="checkmark"></span>
+              <span>Remember me for 30 days</span>
+            </label>
+          </div>
+
+          <div v-if="serverError" class="notice error-notice">
+            <i class="fas fa-circle-exclamation"></i> {{ serverError }}
+          </div>
+
+          <button type="submit" class="submit-btn" :disabled="loading">
+            <i v-if="loading" class="fas fa-spinner fa-spin"></i>
+            {{ loading ? 'Logging in…' : 'Log in' }}
+          </button>
+        </form>
+
+        <p class="switch-text">
+          Don't have an account? <router-link to="/register">Create one</router-link>
+        </p>
+
+        <!-- PWA install (Chromium: native prompt · iOS: instructions) -->
+        <div v-if="showInstall" class="auth-install">
+          <InstallHint variant="button" label="Install KinyaBot App" compact />
+        </div>
+      </div>
+    </div>
+
+    <div class="auth-right">
+      <div class="hero-content">
+        <h2 class="hero-headline">Your AI,<br /><span class="g-text">Always Ready.</span></h2>
+        <p class="hero-desc">Powered by advanced AI to answer anything, generate code, images, and more — in English and beyond.</p>
+        <div class="hero-stats">
+          <div class="stat"><span class="stat-num">10K+</span><span class="stat-lbl">Users</span></div>
+          <div class="stat-divider"></div>
+          <div class="stat"><span class="stat-num">1M+</span><span class="stat-lbl">Messages</span></div>
+          <div class="stat-divider"></div>
+          <div class="stat"><span class="stat-num">99.9%</span><span class="stat-lbl">Uptime</span></div>
+        </div>
+      </div>
+      <div class="hero-deco">
+        <div class="deco-ring ring1"></div>
+        <div class="deco-ring ring2"></div>
+        <div class="deco-cube">
+          <img src="/logo.png" alt="" class="deco-logo" :class="{'logo-light':isLight}" />
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { usePwaInstall } from '../composables/usePwaInstall'
 import InstallHint from '../components/InstallHint.vue'
-import AuthLayout from '../components/auth/AuthLayout.vue'
+import { isLightMode, toggleThemeMode } from '../theme'
+import MobileAuthShell from '../components/mobile/MobileAuthShell.vue'
+import { useIsMobile } from '../composables/useIsMobile'
+
+const isMobile = useIsMobile()
 
 const router = useRouter()
 const route = useRoute()
@@ -122,7 +214,11 @@ const loading = ref(false)
 const showPass = ref(false)
 const rememberMe = ref(false)
 const serverError = ref('')
-const oauthNotice = ref('')
+const showForgot = ref(false)
+const forgotEmail = ref('')
+const forgotLoading = ref(false)
+const forgotMsg = ref(null)
+const oauthToast = ref('')
 
 // Chat-first: after authentication the user returns to the chat
 // (`/`). A redirect target is set by the guest auth gate.
@@ -138,22 +234,25 @@ function afterAuth(result) {
   else router.push(redirectTarget)
 }
 
-async function onSocial(provider) {
-  if (provider !== 'Google') {
-    oauthNotice.value = provider
-    setTimeout(() => { oauthNotice.value = '' }, 4000)
-    return
-  }
-  serverError.value = ''; loading.value = true
-  try {
-    afterAuth(await auth.loginWithGoogle())
-  } catch (err) {
-    // Closing the Google popup isn't an error worth shouting about
-    if (err?.code !== 'auth/popup-closed-by-user' && err?.code !== 'auth/cancelled-popup-request') {
+async function showOAuth(provider) {
+  if (provider === 'Google') {
+    serverError.value = ''; loading.value = true
+    try {
+      const result = await auth.loginWithGoogle()
+      afterAuth(result)
+    } catch (err) {
       serverError.value = err.response?.data?.error || 'Google login failed. Please try again.'
-    }
-  } finally { loading.value = false }
+    } finally { loading.value = false }
+  } else {
+    oauthToast.value = provider
+    setTimeout(() => { oauthToast.value = '' }, 3500)
+  }
 }
+
+// Reactive theme state — shared across the whole app (see src/theme.js).
+// Toggling here re-skins this screen immediately AND persists for every
+// screen that follows (register, onboarding, chat, ...).
+const isLight = isLightMode
 
 function validate() {
   errors.email = ''; errors.password = ''
@@ -167,9 +266,154 @@ async function handleLogin() {
   if (!validate()) return
   serverError.value = ''; loading.value = true
   try {
-    afterAuth(await auth.login(form.email, form.password, rememberMe.value))
+    const result = await auth.login(form.email, form.password, rememberMe.value)
+    afterAuth(result)
   } catch (err) {
     serverError.value = err.response?.data?.error || 'Login failed. Please try again.'
   } finally { loading.value = false }
 }
+
+async function handleForgot() {
+  if (!forgotEmail.value) return
+  forgotLoading.value = true; forgotMsg.value = null
+  try {
+    await auth.forgotPassword(forgotEmail.value)
+    forgotMsg.value = { type: 'ok', text: 'If that email exists, a reset link has been sent. Check your inbox.' }
+  } catch { forgotMsg.value = { type: 'err', text: 'Something went wrong. Please try again.' } }
+  finally { forgotLoading.value = false }
+}
 </script>
+
+<style scoped>
+.auth-root { display:flex; min-height:100vh; min-height:100dvh; width:100%; overflow:hidden; background:#0d0d0f; transition:background .3s; }
+.auth-root.light { background:#f0f2f5; }
+
+.theme-toggle {
+  position:fixed; top:16px; right:16px; z-index:50;
+  width:40px; height:40px; border-radius:50%;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+  color:#e3e3e3; font-size:15px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:background .2s, color .2s, transform .15s;
+}
+.theme-toggle:hover { background:rgba(255,255,255,.12); }
+.theme-toggle:active { transform:scale(.92); }
+.auth-root.light .theme-toggle { background:#fff; border-color:#e0e0e0; color:#5f6368; box-shadow:0 2px 8px rgba(0,0,0,.08); }
+.auth-root.light .theme-toggle:hover { background:#f8f9fa; }
+
+.auth-left { width:460px; min-width:460px; display:flex; flex-direction:column; padding:2rem 2.5rem; padding-top:max(2rem, env(safe-area-inset-top)); background:#111112; overflow-y:auto; transition:background .3s; }
+.auth-root.light .auth-left { background:#ffffff; box-shadow:4px 0 20px rgba(0,0,0,.06); }
+
+.auth-logo { display:flex; align-items:center; gap:10px; margin-bottom:2.25rem; }
+.logo-img { width:36px; height:36px; border-radius:9px; object-fit:cover; }
+.logo-img.logo-light { filter:none; }
+.logo-text { font-size:1.15rem; font-weight:700; color:var(--text-1); }
+.auth-root.light .logo-text { color:#1a1a2e; }
+
+.auth-form-wrap { flex:1; display:flex; flex-direction:column; justify-content:center; max-width:370px; }
+.auth-heading { font-size:1.7rem; font-weight:700; color:#fff; margin-bottom:5px; }
+.auth-root.light .auth-heading { color:#1a1a2e; }
+.sub-heading { font-size:1.2rem; font-weight:600; color:#fff; margin-bottom:.5rem; }
+.auth-root.light .sub-heading { color:#1a1a2e; }
+.auth-sub { font-size:13px; color:var(--text-2); margin-bottom:1.5rem; }
+.auth-root.light .auth-sub { color:#5f6368; }
+
+.back-link { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--blue); cursor:pointer; margin-bottom:1.25rem; font-weight:500; }
+.back-link:hover { text-decoration:underline; }
+
+.social-btns { display:flex; flex-direction:column; gap:9px; margin-bottom:1.1rem; }
+.social-btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:10px 16px; background:#1e1f20; border:1px solid var(--border-md); border-radius:var(--r-sm); color:var(--text-1); font-size:13px; font-weight:500; cursor:pointer; transition:all .2s; }
+.auth-root.light .social-btn { background:#f8f9fa; border-color:#e0e0e0; color:#202124; }
+.social-btn:hover { background:var(--bg-hover); }
+.auth-root.light .social-btn:hover { background:#e8eaed; }
+.fa-google { color:#ea4335; } .fa-apple { color:#fff; }
+.auth-root.light .fa-apple { color:#000; }
+
+.divider { display:flex; align-items:center; gap:10px; color:var(--text-3); font-size:12px; margin-bottom:1.1rem; }
+.divider::before,.divider::after { content:''; flex:1; height:1px; background:var(--border-md); }
+.auth-root.light .divider { color:#9aa0a6; }
+.auth-root.light .divider::before,.auth-root.light .divider::after { background:#e0e0e0; }
+
+.field { margin-bottom:.9rem; }
+.field-label { display:block; font-size:13px; font-weight:500; color:var(--text-2); margin-bottom:5px; }
+.auth-root.light .field-label { color:#5f6368; }
+.field-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:5px; }
+.forgot-link { font-size:12.5px; color:var(--blue); cursor:pointer; }
+.forgot-link:hover { text-decoration:underline; }
+
+.field-input { width:100%; padding:10px 13px; background:#1a1a1c; border:1px solid var(--border-md); border-radius:var(--r-sm); color:var(--text-1); font-size:13.5px; transition:border-color .2s,box-shadow .2s; outline:none; }
+.auth-root.light .field-input { background:#f8f9fa; border-color:#dadce0; color:#202124; }
+.field-input::placeholder { color:var(--text-3); }
+.field-input:focus { border-color:#6d28d9; box-shadow:0 0 0 3px rgba(109,40,217,.18); }
+.field-input.error { border-color:var(--red); }
+.field-error { font-size:11.5px; color:var(--red); margin-top:3px; display:block; }
+
+.pass-wrap { position:relative; }
+.pass-wrap .field-input { padding-right:42px; }
+.eye-btn { position:absolute; right:11px; top:50%; transform:translateY(-50%); background:none; color:var(--text-2); font-size:14px; padding:4px; transition:color .2s; }
+.eye-btn:hover { color:var(--text-1); }
+
+/* Remember me */
+.remember-row { margin-bottom:1rem; }
+.checkbox-label { display:flex; align-items:center; gap:9px; cursor:pointer; font-size:13px; color:var(--text-2); user-select:none; }
+.auth-root.light .checkbox-label { color:#5f6368; }
+.checkbox-label input[type=checkbox] { display:none; }
+.checkmark { width:17px; height:17px; border:1.5px solid var(--border-md); border-radius:4px; display:flex; align-items:center; justify-content:center; transition:all .2s; flex-shrink:0; }
+.auth-root.light .checkmark { border-color:#dadce0; }
+.checkbox-label input:checked + .checkmark { background:#6d28d9; border-color:#6d28d9; }
+.checkbox-label input:checked + .checkmark::after { content:'✓'; color:#fff; font-size:11px; font-weight:700; }
+
+.notice { padding:9px 12px; border-radius:var(--r-sm); font-size:12.5px; display:flex; align-items:center; gap:7px; margin-bottom:.9rem; }
+.notice.ok { background:rgba(52,168,83,.1); border:1px solid rgba(52,168,83,.3); color:#34a853; }
+.notice.err,.error-notice { background:rgba(242,139,130,.1); border:1px solid rgba(242,139,130,.25); color:var(--red); }
+.notice.warn-notice { background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.3); color:#fcd34d; }
+
+.submit-btn { width:100%; padding:11px; background:#3c3c42; border:1px solid rgba(255,255,255,.1); border-radius:var(--r-sm); color:var(--text-2); font-size:14px; font-weight:500; cursor:pointer; transition:all .2s; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:1.1rem; }
+.auth-root.light .submit-btn { background:#e8eaed; border-color:#dadce0; color:#5f6368; }
+.submit-btn:not(:disabled):hover { background:#6d28d9; border-color:#6d28d9; color:#fff; }
+.submit-btn:disabled { opacity:.55; cursor:not-allowed; }
+
+.switch-text { font-size:13px; color:var(--text-2); text-align:center; }
+.auth-root.light .switch-text { color:#5f6368; }
+.switch-text a { color:var(--blue); font-weight:500; }
+.switch-text a:hover { text-decoration:underline; }
+
+.oauth-toast {
+  background: rgba(99,102,241,.1); border: 1px solid rgba(99,102,241,.25);
+  color: #c4b5fd; padding: 9px 12px; border-radius: var(--r-sm);
+  font-size: 12.5px; display: flex; align-items: center; gap: 7px;
+  margin-bottom: .9rem;
+}
+.auth-root.light .oauth-toast { background: rgba(99,102,241,.08); color: #6d28d9; }
+
+.auth-right { flex:1; background:#0d0d0f; display:flex; align-items:center; justify-content:space-around; padding:3rem; position:relative; overflow:hidden; transition:background .3s; }
+.auth-root.light .auth-right { background:#f0f2f5; }
+.auth-right::before { content:''; position:absolute; inset:0; background-image:linear-gradient(rgba(109,40,217,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(109,40,217,.04) 1px,transparent 1px); background-size:48px 48px; pointer-events:none; }
+
+.hero-content { position:relative; z-index:2; max-width:360px; }
+.hero-headline { font-size:clamp(1.5rem,2.8vw,2.3rem); font-weight:700; color:#fff; line-height:1.25; margin-bottom:1rem; }
+.auth-root.light .hero-headline { color:#1a1a2e; }
+.hero-desc { font-size:14px; color:var(--text-2); line-height:1.75; margin-bottom:2rem; }
+.hero-stats { display:flex; align-items:center; gap:20px; }
+.stat { display:flex; flex-direction:column; }
+.stat-num { font-size:1.4rem; font-weight:700; color:#fff; }
+.auth-root.light .stat-num { color:#1a1a2e; }
+.stat-lbl { font-size:12px; color:var(--text-2); }
+.stat-divider { width:1px; height:36px; background:var(--border-md); }
+
+.hero-deco { position:relative; z-index:2; width:240px; height:240px; display:flex; align-items:center; justify-content:center; }
+.deco-ring { position:absolute; border-radius:50%; border:1.5px solid rgba(109,40,217,.3); animation:spin linear infinite; }
+.ring1{width:210px;height:210px;animation-duration:14s}
+.ring2{width:150px;height:150px;animation-duration:9s;animation-direction:reverse;border-color:rgba(168,85,247,.22)}
+.deco-cube { width:84px; height:84px; background:linear-gradient(135deg,#1e1f24,#2a2b30); border-radius:20px; border:1px solid rgba(109,40,217,.4); display:flex; align-items:center; justify-content:center; animation:glow-pulse 3s ease-in-out infinite; }
+.auth-root.light .deco-cube { background:linear-gradient(135deg,#e8eaed,#f1f3f4); border-color:rgba(109,40,217,.25); }
+@keyframes glow-pulse{0%,100%{box-shadow:0 0 20px rgba(109,40,217,.2)}50%{box-shadow:0 0 40px rgba(109,40,217,.45)}}
+.deco-logo { width:56px; height:56px; object-fit:contain; border-radius:12px; }
+
+@media(max-width:860px){.auth-right{display:none}.auth-left{width:100%;min-width:unset}.auth-form-wrap{max-width:100%}}
+@media(max-width:480px){.auth-left{padding:1.5rem 1.25rem}}
+
+/* PWA install entry on the login screen */
+.auth-install { margin-top: 1rem; display: flex; }
+.auth-install .ih-btn { width: 100%; }
+</style>

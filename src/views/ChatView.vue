@@ -26,8 +26,35 @@
     />
 
     <div class="main-col">
+      <!-- ═══ MOBILE HEADER (≤768px) ═══ -->
+      <header v-if="isPhone" class="m-hd" :class="{ 'in-chat': inChat }">
+        <!-- Home: brand pill (opens chat history) + settings -->
+        <template v-if="!inChat">
+          <button class="m-brand" @click="mobileSidebarOpen=true" aria-label="Open chat history">
+            <span class="m-brand-ic"><img src="/logo.png" alt="" /></span>
+            <b>Kinya<span>Bot</span></b>
+            <i class="fas fa-clock-rotate-left"></i>
+          </button>
+          <div class="m-hd-right">
+            <button v-if="isGuest" class="m-signin" @click="goAuth('login')">Sign in</button>
+            <button class="m-circle" @click="showSettings=true" aria-label="Settings"><i class="fas fa-gear"></i></button>
+          </div>
+        </template>
+        <!-- Conversation: back · title + status · new chat -->
+        <template v-else>
+          <button class="m-circle" @click="goHome" aria-label="Back to home"><i class="fas fa-arrow-left"></i></button>
+          <button class="m-title" @click="mobileSidebarOpen=true" aria-label="Open chat history">
+            <b>{{ chatStore.activeChat?.title || 'New Chat' }}</b>
+            <span class="m-status" :class="{ busy: chatStore.sending || chatStore.streaming }">
+              <i></i>{{ chatStore.sending || chatStore.streaming ? 'Typing…' : 'Online' }}
+            </span>
+          </button>
+          <button class="m-circle" @click="handleNewChat" aria-label="New chat"><i class="fas fa-pen-to-square"></i></button>
+        </template>
+      </header>
+
       <!-- Top bar -->
-      <div class="top-bar">
+      <div v-else class="top-bar">
         <!-- ── Authenticated header ── -->
         <template v-if="!isGuest">
           <div class="topbar-left">
@@ -94,6 +121,7 @@
       </transition>
       <ProfileModal v-if="showProfile" @close="showProfile=false" />
     </template>
+    <SettingsModal v-if="showSettings" @close="showSettings=false" />
 
     <!-- ── Guest auth gate: shown BEFORE any AI request is sent ── -->
     <AuthGateModal
@@ -115,6 +143,8 @@ import ChatWindow from '../components/ChatWindow.vue'
 import RightPanel from '../components/RightPanel.vue'
 import ProfileModal from '../components/ProfileModal.vue'
 import AuthGateModal from '../components/AuthGateModal.vue'
+import SettingsModal from '../components/SettingsModal.vue'
+import { useIsMobile } from '../composables/useIsMobile'
 
 const auth = useAuthStore()
 const chatStore = useChatStore()
@@ -123,6 +153,18 @@ const router = useRouter()
 
 const mobileSidebarOpen = ref(false)
 const showProfile = ref(false)
+const showSettings = ref(false)
+
+// Phone layout (≤768px): redesigned header, home screen and composer
+const isPhone = useIsMobile()
+const inChat = computed(() => !!chatStore.activeChat && chatStore.messages.length > 0)
+
+/** Back arrow → return to the home (welcome) screen without losing history. */
+function goHome() {
+  if (chatStore.sending || chatStore.streaming) chatStore.stopGeneration()
+  chatStore.activeChat = null
+  chatStore.messages = []
+}
 
 // ── Guest mode ────────────────────────────────────────────────
 // Guests see the full chat interface but cannot reach the AI until
@@ -322,4 +364,39 @@ onBeforeUnmount(() => {
 @media(max-width:340px) {
   .auth-btn { padding:6px 10px; font-size:12px; }
 }
+
+@media(max-width:768px){ .main-col { background:radial-gradient(120% 55% at 50% 0%, rgba(109,40,217,.22), transparent 62%), var(--bg-base); } }
+
+/* ═══ MOBILE HEADER ═══ */
+.m-hd {
+  display:flex; align-items:center; justify-content:space-between; gap:10px; flex-shrink:0;
+  padding:max(10px, env(safe-area-inset-top)) 16px 8px;
+  background:transparent; position:relative; z-index:5;
+}
+.m-brand {
+  display:flex; align-items:center; gap:9px; height:46px; padding:0 14px 0 6px;
+  background:var(--bg-card); border:1px solid var(--border-md); border-radius:99px;
+  color:var(--text-1); box-shadow:0 6px 18px -8px rgba(0,0,0,.35);
+  transition:transform .15s;
+}
+.m-brand:active { transform:scale(.96); }
+.m-brand-ic { width:34px; height:34px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; }
+.m-brand-ic img { width:20px; height:20px; object-fit:contain; border-radius:5px; }
+.m-brand b { font-size:14.5px; font-weight:700; letter-spacing:.01em; }
+.m-brand b span { color:var(--purple); }
+.m-brand > i { font-size:12px; color:var(--text-3); margin-left:2px; }
+.m-hd-right { display:flex; align-items:center; gap:8px; }
+.m-signin { height:40px; padding:0 16px; border-radius:99px; background:var(--accent); color:#fff; font-size:13px; font-weight:600; box-shadow:0 8px 18px -8px rgba(109,40,217,.6); }
+.m-circle {
+  width:46px; height:46px; border-radius:50%; flex-shrink:0;
+  background:var(--bg-card); border:1px solid var(--border-md);
+  color:var(--purple); font-size:16px; box-shadow:0 6px 18px -8px rgba(0,0,0,.35);
+  display:flex; align-items:center; justify-content:center; transition:transform .15s, background .2s;
+}
+.m-circle:active { transform:scale(.9); background:var(--bg-hover); }
+.m-title { flex:1; min-width:0; background:none; display:flex; flex-direction:column; align-items:center; gap:1px; color:var(--text-1); }
+.m-title b { max-width:100%; font-size:15.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.m-status { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-2); }
+.m-status i { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 0 3px rgba(52,168,83,.2); }
+.m-status.busy i { background:var(--purple); box-shadow:0 0 0 3px rgba(197,138,249,.25); animation:pulse 1s infinite; }
 </style>

@@ -1,0 +1,128 @@
+/* ═══════════════════════════════════════════════════════════════
+   KinyaBot — MOBILE UI (auth screens + shared pieces)
+   Uses ONLY the existing design tokens (--accent, --accent-solid,
+   --bg-*, --text-*, --border-*, --red …) so light / dark / accent
+   colour settings keep working.  Classes are prefixed `m-`.
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Form fields ───────────────────────────────────────────── */
+.m-field { margin-bottom: 14px; }
+.m-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-2); margin: 0 0 6px 4px; }
+.m-label-row { display: flex; justify-content: space-between; align-items: baseline; }
+.m-link { font-size: 12.5px; font-weight: 600; color: var(--purple); background: none; padding: 4px 2px; cursor: pointer; }
+
+.m-input-wrap { position: relative; }
+.m-input {
+  width: 100%; height: 52px; padding: 0 16px;
+  background: var(--bg-card); color: var(--text-1);
+  border: 1.5px solid transparent; border-radius: 16px;
+  font-size: 16px; transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.m-input::placeholder { color: var(--text-3); }
+.m-input:focus { border-color: var(--accent-solid); background: var(--bg-panel); box-shadow: 0 0 0 4px rgba(109,40,217,.14); }
+.m-input.error { border-color: var(--red); }
+.m-input-wrap .m-input { padding-right: 48px; }
+.m-eye {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 40px; height: 40px; border-radius: 50%; background: none;
+  color: var(--text-2); font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+}
+.m-err { display: block; font-size: 11.5px; color: var(--red); margin: 4px 0 0 6px; }
+
+/* strength meter */
+.m-strength { height: 4px; border-radius: 99px; background: var(--border-md); margin: 8px 4px 0; overflow: hidden; }
+.m-strength > div { height: 100%; border-radius: 99px; transition: width .35s, background .35s; }
+.m-strength-txt { font-size: 11px; font-weight: 600; margin: 3px 0 0 6px; display: block; }
+
+/* remember me */
+.m-check { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-2); cursor: pointer; user-select: none; margin: 2px 0 16px 4px; }
+.m-check input { display: none; }
+.m-check .box { width: 20px; height: 20px; border-radius: 7px; border: 1.5px solid var(--border-md); display: flex; align-items: center; justify-content: center; transition: all .2s; flex-shrink: 0; }
+.m-check input:checked + .box { background: var(--accent-solid); border-color: var(--accent-solid); }
+.m-check input:checked + .box::after { content: '✓'; color: #fff; font-size: 12px; font-weight: 700; }
+
+/* notices */
+.m-notice { display: flex; align-items: flex-start; gap: 8px; padding: 11px 14px; border-radius: 14px; font-size: 12.5px; margin-bottom: 14px; line-height: 1.45; }
+.m-notice.err { background: rgba(242,139,130,.12); color: var(--red); }
+.m-notice.warn { background: rgba(251,188,4,.12); color: var(--yellow); }
+.m-notice.info { background: rgba(109,40,217,.12); color: var(--purple); }
+.m-notice.ok { background: rgba(52,168,83,.12); color: var(--green); }
+
+/* primary pill button */
+.m-btn {
+  width: 100%; height: 54px; border-radius: 99px; border: none;
+  background: var(--accent); color: #fff; font-size: 16px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  box-shadow: 0 10px 24px -8px rgba(109,40,217,.55);
+  transition: transform .15s, box-shadow .2s, opacity .2s;
+}
+.m-btn:active:not(:disabled) { transform: scale(.97); }
+.m-btn:disabled { opacity: .5; box-shadow: none; }
+
+/* divider + circular social buttons */
+.m-or { display: flex; align-items: center; gap: 14px; color: var(--text-3); font-size: 12.5px; margin: 22px 0 18px; }
+.m-or::before, .m-or::after { content: ''; flex: 1; height: 1px; background: var(--border-md); }
+.m-social { display: flex; justify-content: center; gap: 16px; }
+.m-social button {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--bg-card); border: 1px solid var(--border-md);
+  color: var(--text-1); font-size: 20px;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .15s, background .2s;
+}
+.m-social button:active { transform: scale(.92); }
+.m-social .fa-google { color: #ea4335; }
+.m-toast { margin: 14px 0 0; }
+
+.m-switch { text-align: center; font-size: 13px; color: var(--text-2); margin-top: 26px; }
+.m-switch a { color: var(--text-1); font-weight: 700; margin-left: 4px; }
+.m-install { margin-top: 14px; display: flex; }
+.m-install .ih-btn { width: 100%; }
+
+/* Center helper for status screens (forgot / reset done) */
+.m-center { text-align: center; padding: 10px 0; }
+.m-bigicon { width: 84px; height: 84px; border-radius: 50%; margin: 6px auto 16px; background: rgba(109,40,217,.14); color: var(--purple); font-size: 34px; display: flex; align-items: center; justify-content: center; }
+
+/* ── Forgot-password flow: mobile re-skin of the existing view ── */
+@media (max-width: 768px) {
+  .fp-root { background: var(--bg-base) !important; padding: 0 !important; align-items: stretch !important; }
+  .fp-bg { display: none !important; }
+  .fp-card {
+    background: transparent !important; border: none !important; box-shadow: none !important;
+    max-width: 100% !important; width: 100% !important; border-radius: 0 !important;
+    padding: max(22px, calc(env(safe-area-inset-top) + 12px)) 24px calc(28px + env(safe-area-inset-bottom)) !important;
+  }
+  .fp-title { color: var(--text-1) !important; }
+  .fp-sub { color: var(--text-2) !important; }
+  .fp-field label { color: var(--text-2) !important; }
+  .fp-input-wrap { background: var(--bg-card) !important; border: 1.5px solid transparent !important; border-radius: 16px !important; min-height: 52px; }
+  .fp-input-wrap.focused { border-color: var(--accent-solid) !important; box-shadow: 0 0 0 4px rgba(109,40,217,.14) !important; }
+  .fp-input-wrap.error { border-color: var(--red) !important; }
+  .fp-input-wrap input { color: var(--text-1) !important; font-size: 16px !important; }
+  .fp-btn { background: var(--accent) !important; color: #fff !important; border: none !important; border-radius: 99px !important; min-height: 54px; font-size: 16px !important; box-shadow: 0 10px 24px -8px rgba(109,40,217,.55) !important; }
+  .otp-box { background: var(--bg-card) !important; color: var(--text-1) !important; border-radius: 14px !important; border: 1.5px solid transparent !important; }
+  .otp-box:focus, .otp-box.filled { border-color: var(--accent-solid) !important; }
+}
+
+/* ── Onboarding: mobile re-skin (rounded, app-like) ── */
+@media (max-width: 768px) {
+  .ob-root { background: var(--bg-base) !important; }
+  .ob-bg { display: none !important; }
+  .ob-card { background: transparent !important; border: none !important; box-shadow: none !important; padding: 8px 20px 20px !important; margin: 0 !important; max-width: 100% !important; }
+  .ob-title { color: var(--text-1) !important; }
+  .ob-desc { color: var(--text-2) !important; }
+  .ob-input, .custom-box { background: var(--bg-card) !important; border: 1.5px solid transparent !important; border-radius: 16px !important; color: var(--text-1) !important; min-height: 52px; font-size: 16px !important; }
+  .ob-input:focus, .custom-box.active { border-color: var(--accent-solid) !important; }
+  .custom-box input { color: var(--text-1) !important; font-size: 16px !important; }
+  .option-card, .starter-row { background: var(--bg-card) !important; border: 1.5px solid transparent !important; border-radius: 18px !important; transition: transform .15s, border-color .2s; }
+  .option-card:active, .starter-row:active { transform: scale(.97); }
+  .option-card.selected, .starter-row.selected { border-color: var(--accent-solid) !important; background: rgba(109,40,217,.12) !important; }
+  .oc-label, .sr-title { color: var(--text-1) !important; }
+  .ob-next-btn, .ob-finish-btn { background: var(--accent) !important; color: #fff !important; border: none !important; border-radius: 99px !important; min-height: 52px; box-shadow: 0 10px 24px -8px rgba(109,40,217,.55); }
+  .ob-back-btn { border-radius: 99px !important; min-height: 52px; }
+  .ob-progress-fill { background: var(--accent) !important; }
+}
+
+.m-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 16px; }
+.m-row .m-check { margin: 0 0 0 4px; }

@@ -1,6 +1,6 @@
 <template>
   <div class="chat-window">
-    <div class="chat-topbar">
+    <div v-if="!isPhone || hasMessages" class="chat-topbar">
       <button class="model-pill">
         <i class="fas fa-star" style="color:#a855f7;font-size:11px"></i>
         <span>KinyaBot AI</span>
@@ -31,7 +31,29 @@
     <!-- Messages area -->
     <div class="msg-area" ref="msgArea" @scroll="handleScroll">
       <!-- Welcome screen -->
-      <div v-if="!chatStore.activeChat || !chatStore.messages.length" class="welcome">
+      <!-- ═══ MOBILE HOME ═══ -->
+      <div v-if="isPhone && !hasMessages" class="m-home">
+        <button class="m-orb" :class="{ pop: orbPop }" @click="popOrb" aria-label="KinyaBot">
+          <span class="o o1"></span><span class="o o2"></span><span class="o o3"></span>
+          <img src="/logo.png" alt="" class="o-logo" />
+        </button>
+        <span class="m-tag"><i class="fas fa-wand-magic-sparkles"></i> AI assistant</span>
+        <h1 class="m-greet">
+          Greetings, <em>{{ firstName }}!</em><br />
+          How may I <em>assist you</em><br />today?
+        </h1>
+        <div class="m-chips">
+          <div v-for="(row, ri) in mobileChipRows" :key="ri" class="m-chip-row" :class="`r${ri}`">
+            <button v-for="c in row" :key="c.lead" class="m-chip" @click="useChip(c.prompt)">
+              <span class="ic"><i :class="c.icon"></i></span>
+              <span>{{ c.lead }} <b>{{ c.accent }}</b></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Welcome screen (desktop) -->
+      <div v-else-if="!hasMessages" class="welcome">
         <div class="welcome-inner">
           <div class="welcome-logo">
             <img src="/logo.png" alt="KinyaBot" class="wl-img" />
@@ -89,7 +111,8 @@
       </div>
 
       <!-- Message list -->
-      <transition-group v-else name="msg" tag="div" class="msgs-list">
+      <div v-if="hasMessages && isPhone" class="m-day"><span>Today</span></div>
+      <transition-group v-if="hasMessages" name="msg" tag="div" class="msgs-list">
         <MessageBubble
           v-for="(msg, i) in chatStore.messages"
           :key="msg.id"
@@ -102,6 +125,15 @@
           @regenerate="handleRegenerate"
         />
       </transition-group>
+
+      <!-- Suggested follow-ups (phones) -->
+      <transition name="fade">
+        <div v-if="isPhone && showFollowups" class="m-follow">
+          <button v-for="f in followups" :key="f" @click="handleSend({ content: f, file: null })">
+            <i class="fas fa-wand-magic-sparkles"></i>{{ f }}
+          </button>
+        </div>
+      </transition>
 
       <!-- Stop generation -->
       <transition name="fade">
@@ -151,6 +183,8 @@
 <script setup>
 import { ref, nextTick, watch, computed, onMounted, onBeforeUnmount, defineAsyncComponent } from 'vue'
 import { useChatStore } from '../stores/chat'
+import { useAuthStore } from '../stores/auth'
+import { useIsMobile } from '../composables/useIsMobile'
 import { getSocket } from '../socket'
 import api from '../api'
 import MessageBubble from './MessageBubble.vue'
@@ -167,6 +201,38 @@ const props = defineProps({
 const emit = defineEmits(['toggle-sidebar', 'auth-required', 'draft-consumed'])
 
 const chatStore = useChatStore()
+const auth = useAuthStore()
+const isPhone = useIsMobile()
+const hasMessages = computed(() => !!chatStore.activeChat && chatStore.messages.length > 0)
+const firstName = computed(() => {
+  const n = (auth.user?.username || '').trim().split(/\s+/)[0]
+  return !props.guest && n ? n : 'friend'
+})
+
+// Mobile home: interactive orb + two swipeable suggestion rows
+const orbPop = ref(false)
+function popOrb() { orbPop.value = false; requestAnimationFrame(() => { orbPop.value = true; setTimeout(() => { orbPop.value = false }, 700) }) }
+const mobileChipRows = [
+  [
+    { icon:'fas fa-lightbulb', lead:'Tell me', accent:'a fun fact', prompt:'Tell me a fun fact I probably do not know' },
+    { icon:'fas fa-language', lead:'Translate', accent:'a text', prompt:'Help me translate a text. Ask me for the text and the target language.' },
+    { icon:'fas fa-pen-nib', lead:'Help me', accent:'write', prompt:'Help me write a professional cover letter' },
+    { icon:'fas fa-code', lead:'Generate', accent:'code', prompt:'Write a responsive HTML/CSS landing page with a modern dark theme' },
+  ],
+  [
+    { icon:'fas fa-book-open', lead:'Start', accent:'learning', prompt:'Create a beginner-friendly learning plan for a topic I choose. Ask me which topic.' },
+    { icon:'fas fa-wand-magic-sparkles', lead:'Give me', accent:'ideas', prompt:'Give me 10 creative project ideas I can start this weekend' },
+    { icon:'fas fa-earth-africa', lead:'Quiz me', accent:'on world capitals', prompt:'Quiz me on world capitals, one question at a time' },
+    { icon:'fas fa-film', lead:'Recommend', accent:'a movie', prompt:'Recommend a good movie and tell me why I would like it' },
+  ]
+]
+const followups = ['Tell me more', 'Give an example', 'Make it shorter']
+const showFollowups = computed(() => {
+  if (props.guest || chatStore.sending || chatStore.streaming) return false
+  const last = chatStore.messages[chatStore.messages.length - 1]
+  return !!last && last.role === 'assistant' && !last._error && !last._system && !last._typing && !!(last.content || '').trim()
+})
+watch(showFollowups, (v) => { if (v) scrollBottom() })
 const msgArea = ref(null)
 const showScrollBtn = ref(false)
 const copyToast = ref(false)
@@ -423,4 +489,59 @@ onBeforeUnmount(() => {
 .notif-drop-enter-from, .notif-drop-leave-to { opacity:0; transform:translateY(-100%); max-height:0; }
 
 @media(max-width:600px){.msg-area{padding:8px 8px}.welcome-inner{padding:12px 6px}.nb-text{flex-direction:column;gap:2px}}
+
+/* ═══════════ MOBILE (≤768px): home + conversation ═══════════ */
+@media(max-width:768px){
+  .chat-window { background:transparent; }
+  .chat-topbar { padding:0 16px 2px; justify-content:flex-end; }
+  .chat-topbar .model-pill, .chat-topbar .chat-title-pill { display:none; }
+  .voice-pill { margin-left:0; height:34px; background:rgba(109,40,217,.14); color:var(--purple); border-color:rgba(109,40,217,.3); }
+  .voice-pill .vp-label { display:inline; }
+  .msg-area { padding:6px 16px 10px !important; }
+
+  .m-day { align-self:center; margin:6px 0 10px; padding:4px 16px; border-radius:99px; background:var(--bg-card); border:1px solid var(--border); color:var(--text-3); font-size:11.5px; }
+
+  /* Home */
+  .m-home { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:100%; padding:0 0 8px; animation:fadeUp .5s ease both; }
+  .m-orb { position:relative; width:min(62vw,250px); aspect-ratio:1; margin-bottom:14px; background:none; -webkit-tap-highlight-color:transparent; transition:transform .3s cubic-bezier(.34,1.56,.64,1); animation:orbFloat 6s ease-in-out infinite; }
+  .m-orb:active { transform:scale(.92); }
+  .m-orb.pop { animation:orbPop .7s cubic-bezier(.34,1.56,.64,1), orbFloat 6s ease-in-out infinite; }
+  .m-orb .o { position:absolute; display:block; border-radius:46% 54% 58% 42% / 48% 44% 56% 52%; animation:orbMorph 9s ease-in-out infinite; }
+  .m-orb .o1 { inset:6%; background:radial-gradient(circle at 30% 25%, #c4b5fd 0%, var(--accent-solid) 55%, #4f46e5 100%); opacity:.92; box-shadow:0 26px 50px -14px rgba(109,40,217,.6); }
+  .m-orb .o2 { inset:18% 8% 10% 22%; background:radial-gradient(circle at 60% 30%, rgba(255,255,255,.5), rgba(168,85,247,.55) 60%, transparent 100%); animation-duration:11s; animation-direction:reverse; mix-blend-mode:screen; }
+  .m-orb .o3 { inset:0 24% 42% 0; background:radial-gradient(circle at 40% 40%, rgba(255,255,255,.65), transparent 70%); filter:blur(6px); animation-duration:13s; }
+  .m-orb .o-logo { position:absolute; left:50%; top:50%; width:26%; transform:translate(-50%,-50%); border-radius:14px; filter:drop-shadow(0 4px 10px rgba(0,0,0,.35)); }
+
+  .m-tag { display:inline-flex; align-items:center; gap:6px; padding:7px 16px; border-radius:99px; background:var(--bg-card); border:1px solid var(--border-md); color:var(--text-1); font-size:12.5px; font-weight:600; box-shadow:0 6px 16px -8px rgba(0,0,0,.35); }
+  .m-tag i { color:var(--purple); font-size:11px; }
+  .m-greet { margin:16px 0 20px; font-size:clamp(1.6rem,7.4vw,2.05rem); line-height:1.2; font-weight:800; letter-spacing:-.01em; color:var(--text-1); }
+  .m-greet em { font-style:normal; color:var(--purple); }
+
+  .m-chips { width:calc(100% + 32px); margin:0; display:flex; flex-direction:column; gap:10px; }
+  .m-chip-row { display:flex; gap:10px; overflow-x:auto; padding:2px 16px 6px; scroll-snap-type:x proximity; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+  .m-chip-row::-webkit-scrollbar { display:none; }
+  .m-chip-row.r1 { padding-left:38px; }
+  .m-chip { flex:0 0 auto; scroll-snap-align:start; display:flex; align-items:center; gap:10px; height:50px; padding:0 18px 0 10px; border-radius:99px; background:var(--bg-card); border:1px solid var(--border-md); color:var(--text-1); font-size:13.5px; white-space:nowrap; box-shadow:0 6px 16px -10px rgba(0,0,0,.4); transition:transform .15s, border-color .2s; }
+  .m-chip:active { transform:scale(.95); border-color:var(--accent-solid); }
+  .m-chip b { color:var(--purple); font-weight:600; }
+  .m-chip .ic { width:30px; height:30px; border-radius:50%; background:rgba(109,40,217,.16); color:var(--purple); font-size:12.5px; display:flex; align-items:center; justify-content:center; }
+
+  /* Follow-up suggestions */
+  .m-follow { display:flex; flex-wrap:wrap; gap:8px; margin:2px 0 10px 42px; }
+  .m-follow button { display:inline-flex; align-items:center; gap:7px; height:38px; padding:0 15px; border-radius:99px; background:var(--bg-card); border:1px solid var(--border-md); color:var(--purple); font-size:13px; font-weight:600; transition:transform .15s, background .2s; }
+  .m-follow button:active { transform:scale(.94); background:rgba(109,40,217,.16); }
+  .m-follow i { font-size:11px; }
+
+  .stop-btn { border-radius:99px; height:38px; }
+  .scroll-fab { bottom:96px; right:16px; width:40px; height:40px; }
+  .copy-toast { bottom:100px; }
+}
+@keyframes orbMorph {
+  0%,100% { border-radius:46% 54% 58% 42% / 48% 44% 56% 52%; transform:rotate(0); }
+  33% { border-radius:58% 42% 44% 56% / 54% 58% 42% 46%; transform:rotate(60deg); }
+  66% { border-radius:42% 58% 52% 48% / 44% 50% 50% 56%; transform:rotate(-40deg); }
+}
+@keyframes orbFloat { 0%,100% { translate:0 0; } 50% { translate:0 -10px; } }
+@keyframes orbPop { 0% { scale:1; } 40% { scale:1.14; } 100% { scale:1; } }
+@media (prefers-reduced-motion: reduce) { .m-orb, .m-orb .o { animation:none !important; } }
 </style>

@@ -22,7 +22,7 @@
       </div>
     </transition>
 
-    <div class="input-box" :class="{ focused, sending: disabled }">
+    <div class="input-box" :class="{ focused, sending: disabled, 'has-text': !!(inputVal.trim() || selectedFile) }">
       <!-- Voice waveform -->
       <transition name="fade">
         <div v-if="isRec || transcribing" class="wave-bar">
@@ -211,7 +211,7 @@ function onDocClick(e) {
 
 /* ── Composer basics ─────────────────────────────────────────── */
 const placeholder = computed(() =>
-  window.innerWidth < 480 ? 'Ask anything…' : 'Ask me anything…'
+  window.innerWidth <= 768 ? 'Message KinyaBot' : 'Ask me anything…'
 )
 
 /* External text injection (restored pending message, suggestion chips) */
@@ -534,5 +534,31 @@ onBeforeUnmount(() => {
   .wave-info  { font-size:11px; }
   .wave-bars  { height:22px; }
   .attach-menu { left:-100px; min-width:210px; }
+}
+
+/* ═══════════ MOBILE (≤768px): pill composer ═══════════ */
+@media(max-width:768px){
+  .input-area { background:transparent; padding:6px 14px calc(max(12px, env(safe-area-inset-bottom)) + var(--kb, 0px)); }
+  .disclaimer { display:none; }
+  .input-box { display:flex; flex-wrap:wrap; align-items:center; gap:0; padding:6px 6px 6px 8px; border-radius:30px; background:var(--bg-card); border:1px solid var(--border-md); box-shadow:0 14px 30px -16px rgba(0,0,0,.55); }
+  .input-box.focused { border-color:var(--accent-solid); box-shadow:0 0 0 4px rgba(109,40,217,.14), 0 14px 30px -16px rgba(0,0,0,.55); }
+  .wave-bar { order:-1; width:100%; }
+  .toolbar { display:contents; }
+  .tl-left { order:0; }
+  .chat-ta { order:1; flex:1 1 0; width:auto; min-width:0; min-height:44px; padding:12px 8px; font-size:16px; }
+  .tl-right { order:2; }
+  .tb-btn { width:40px; height:40px; padding:0; justify-content:center; border-radius:50%; background:transparent; border:none; color:var(--purple); }
+  .tb-btn i { font-size:16px; }
+  .tl-left > .tb-btn { display:none; } /* Deep Think stays on desktop */
+  .attach-menu { left:0; bottom:calc(100% + 14px); border-radius:18px; }
+  .am-item { min-height:52px; }
+
+  /* mic when empty → send when there is something to send */
+  .tl-right .tb-ico, .send-btn { width:44px; height:44px; border-radius:50%; background:var(--accent); color:#fff; font-size:16px; box-shadow:0 8px 18px -8px rgba(109,40,217,.7); }
+  .tl-right .tb-ico.rec { background:var(--red); color:#fff; }
+  .input-box.has-text .tl-right .tb-ico:not(.rec) { display:none; }
+  .input-box:not(.has-text) .send-btn { display:none; }
+  .send-btn:disabled { opacity:.5; }
+  .fp-row { border-radius:18px; }
 }
 </style>
