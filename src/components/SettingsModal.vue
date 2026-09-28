@@ -218,6 +218,7 @@
 import { ref, reactive } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useChatStore } from '../stores/chat'
+import { themeMode, setThemeMode } from '../theme'
 
 defineEmits(['close'])
 const auth = useAuthStore()
@@ -239,14 +240,10 @@ const modes = [
   { id:'light',  icon:'fas fa-sun',      label:'Light' },
   { id:'system', icon:'fas fa-desktop',  label:'System' },
 ]
-const displayMode = ref(localStorage.getItem('kb_mode') || 'dark')
+const displayMode = themeMode
 
 function setMode(id) {
-  displayMode.value = id
-  localStorage.setItem('kb_mode', id)
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  const isDark = id === 'dark' || (id === 'system' && prefersDark)
-  document.documentElement.classList.toggle('light-mode', !isDark)
+  setThemeMode(id)
 }
 
 // ── Accent color ──

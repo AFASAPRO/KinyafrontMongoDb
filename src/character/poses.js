@@ -366,18 +366,6 @@ function sad(t) {
   };
 }
 
-function wink(t) {
-  const dur = 1.6;
-  const e = env(t, dur, 0.12, 0.35);
-  const blink = Math.max(0, sin((t / dur) * Math.PI * 1.4));
-  return {
-    headZ: 0.1 * e + 0.05 * blink,
-    headY: -0.12 * e,
-    shrugR: 0.1 * blink * e,
-    spineY: -0.03 * e,
-  };
-}
-
 const thinkAction = (t) => {
   const e = env(t, 3.6, 0.4, 0.5);
   const m = think(t);
@@ -405,7 +393,6 @@ export const MOVES = {
   shake: { label: 'No', emoji: '🙅', dur: 1.9, fn: shake },
   think: { label: 'Think', emoji: '🤔', dur: 3.6, fn: thinkAction },
   sad: { label: 'Sad', emoji: '🥺', dur: 3.8, fn: sad },
-  wink: { label: 'Wink', emoji: '😉', dur: 1.6, fn: wink, blendIn: 0.1, blendOut: 0.25 },
 };
 
 export const MOVE_NAMES = Object.keys(MOVES);

@@ -13,15 +13,6 @@
       </svg>
     </div>
 
-    <ExpressionBadge
-      v-if="phase === 'ready'"
-      :expression="expression"
-      :x="badgePos.x"
-      :y="badgePos.y"
-      :scale="badgePos.scale"
-      :visible="badgePos.visible"
-    />
-
     <div v-if="phase !== 'ready'" class="buddy-loading" :class="{ 'is-error': phase === 'error' }" role="status">
       <template v-if="phase === 'error'">
         <i class="fas fa-triangle-exclamation"></i>
@@ -39,16 +30,10 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { Rig } from '../character/rig.js'
-import ExpressionBadge from './ExpressionBadge.vue'
-import { deriveExpression } from '../character/expressions.js'
-
-// The model is normalized to this height (metres) so every numeric pose
-// value in poses.js — authored for an assumed 160cm character — lines up
-// without any extra scale factor (see Rig in character/rig.js).
-const TARGET_HEIGHT = 1.6
 
 const props = defineProps({
   controller: { type: Object, required: true },
@@ -72,13 +57,7 @@ const mouthStyle = computed(() => ({
   opacity: mouthPos.value.visible ? 1 : 0,
 }))
 
-// Screen-space expression badge, floating above the head.
-const badgePos = ref({ x: 0, y: 0, scale: 1, visible: false })
-const expression = ref('cool')
-let ambientWinkUntil = 0
-let nextAmbientWinkAt = performance.now() + 6000 + Math.random() * 6000
-
-let renderer, scene, camera, controls, ro, mouthAnchor, badgeAnchor, container, unsubscribe
+let renderer, scene, camera, controls, ro, headBone, container
 let disposed = false
 let el, hitbox, pokeDown = null
 const targetLevel = { v: 0 }
@@ -94,9 +73,6 @@ onMounted(() => {
     error.value = 'Your browser could not start WebGL, which is needed to show your buddy.'
     return
   }
-  // kinya-character.glb is now a proper rigged, retopologized mesh (~15k
-  // vertices, one draw call) rather than the old 725k-vertex static scan —
-  // cheap enough to afford a real shadow pass for extra depth.
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
@@ -160,9 +136,10 @@ onMounted(() => {
   rim.position.set(-3, 2.6, -2.6)
   scene.add(rim)
 
+  const groundColor = new THREE.Color(getComputedStyle(host).getPropertyValue('--vm-accent') || '#f5a524')
   const spot = new THREE.Mesh(
     new THREE.CircleGeometry(0.62, 40),
-    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.16, depthWrite: false, toneMapped: false }),
+    new THREE.MeshBasicMaterial({ color: groundColor, transparent: true, opacity: 0.1, depthWrite: false, toneMapped: false }),
   )
   spot.rotation.x = -Math.PI / 2
   spot.position.y = 0.001
@@ -212,54 +189,23 @@ onMounted(() => {
   let model = null
 
   const loader = new GLTFLoader()
+  loader.setMeshoptDecoder(MeshoptDecoder)
   loader.load(
-    `${import.meta.env.BASE_URL}models/kinya-character.glb`,
+    `${import.meta.env.BASE_URL}models/character.glb`,
     (gltf) => {
       if (disposed) return
       const obj = gltf.scene
-
-      // kinya-character.glb is centred on the origin rather than grounded,
-      // so measure it and normalize to TARGET_HEIGHT with feet at y = 0.
-      // (Rig itself is invariant to this — see character/rig.js — this is
-      // purely for camera framing / lighting / hitbox placement.)
-      const box = new THREE.Box3().setFromObject(obj)
-      const size = box.getSize(new THREE.Vector3())
-      const center = box.getCenter(new THREE.Vector3())
-      const scaleFactor = size.y > 0 ? TARGET_HEIGHT / size.y : 1
-      obj.scale.setScalar(scaleFactor)
-      obj.position.set(-center.x * scaleFactor, -box.min.y * scaleFactor, -center.z * scaleFactor)
-      obj.updateMatrixWorld(true)
-
+      obj.scale.setScalar(0.01) // model is authored in ~160cm units
       obj.traverse((o) => {
-        if (!o.isMesh && !o.isSkinnedMesh) return
+        if (!o.isMesh) return
         o.castShadow = true
         o.receiveShadow = true
         o.frustumCulled = false
+        if (o.isBone) return
         const mat = o.material
         if (mat) { mat.envMapIntensity = 0.55; if (mat.map) mat.map.anisotropy = 8 }
       })
-
-      // Anchor the 2D mouth + expression overlays to the REAL Head /
-      // HeadTop_End bones so they track head turns/nods from the IK rig.
-      // We compute the desired world-space point once (from the bind-pose
-      // geometry) and convert it into the bone's local space, so the
-      // anchor is correctly placed regardless of the bone's own rest
-      // orientation.
-      const headBone = obj.getObjectByName('Head')
-      const topBone = obj.getObjectByName('HeadTop_End') || headBone
-      if (headBone) {
-        const mouthWorld = new THREE.Vector3(0, TARGET_HEIGHT * 0.735, size.z * scaleFactor * 0.32)
-        mouthAnchor = new THREE.Object3D()
-        mouthAnchor.position.copy(headBone.worldToLocal(mouthWorld))
-        headBone.add(mouthAnchor)
-      }
-      if (topBone) {
-        const badgeWorld = new THREE.Vector3(size.x * scaleFactor * 0.42, TARGET_HEIGHT * 1.05, 0)
-        badgeAnchor = new THREE.Object3D()
-        badgeAnchor.position.copy(topBone.worldToLocal(badgeWorld))
-        topBone.add(badgeAnchor)
-      }
-
+      obj.traverse((o) => { if (o.isBone && /Head$/.test(o.name)) headBone = o })
       container.add(obj)
       model = obj
       try {
@@ -275,7 +221,7 @@ onMounted(() => {
     },
     (e) => {
       if (disposed) return
-      const total = e.lengthComputable && e.total ? e.total : 3200000
+      const total = e.lengthComputable && e.total ? e.total : 1000000
       progress.value = Math.min(0.99, e.loaded / total)
     },
     (e) => {
@@ -288,57 +234,34 @@ onMounted(() => {
 
   const tmpV = new THREE.Vector3()
   const clock = new THREE.Clock()
-
-  // Anchors are now children of real bones (Head / HeadTop_End). The
-  // skeleton is small (27 nodes), so a full recursive matrix update each
-  // frame is cheap and keeps the overlays perfectly in sync with the IK
-  // rig's head/neck rotation — no lag.
-  const projectAnchor = (anchor, host, zOffset = 0) => {
-    anchor.getWorldPosition(tmpV)
-    tmpV.z += zOffset
-    const dist = camera.position.distanceTo(tmpV)
-    const ndc = tmpV.clone().project(camera)
-    const w = host.clientWidth, h = host.clientHeight
-    return {
-      x: (ndc.x * 0.5 + 0.5) * w,
-      y: (-ndc.y * 0.5 + 0.5) * h,
-      scale: Math.max(0.5, Math.min(1.6, 2.4 / dist)),
-      visible: ndc.z < 1,
-    }
-  }
-
-  let currentAction = null
-  unsubscribe = props.controller.subscribe((action) => { currentAction = action })
-
   renderer.setAnimationLoop(() => {
     const dt = clock.getDelta()
     props.controller.update(dt)
-    if (model) container.updateMatrixWorld(true)
 
     // mouth level: smooth toward target, add a little idle wobble while talking
     const k = 1 - Math.exp(-dt * 12)
     mouthOpen.value += (targetLevel.v - mouthOpen.value) * k
     if (props.talking) mouthOpen.value = Math.max(mouthOpen.value, 0.06 + 0.04 * Math.sin(performance.now() / 90))
 
-    if (mouthAnchor && host) mouthPos.value = projectAnchor(mouthAnchor, host)
-    if (badgeAnchor && host) badgePos.value = projectAnchor(badgeAnchor, host)
-
-    // Expression badge: driven by conversation mode + active move, with an
-    // occasional idle "wink" flourish so all six expressions get shown.
-    const now = performance.now()
-    if (props.controller.mode === 'idle' && !currentAction && now > nextAmbientWinkAt) {
-      ambientWinkUntil = now + 1100
-      nextAmbientWinkAt = now + 8000 + Math.random() * 9000
+    if (headBone && host) {
+      headBone.getWorldPosition(tmpV)
+      tmpV.applyMatrix4(container.matrixWorld)
+      // small offset down/forward from the head pivot to sit roughly at the mouth
+      const local = tmpV.clone()
+      local.y -= 0.12
+      local.z += 0.01
+      local.project(camera)
+      const w = host.clientWidth, h = host.clientHeight
+      const x = (local.x * 0.5 + 0.5) * w
+      const y = (-local.y * 0.5 + 0.5) * h
+      const dist = camera.position.distanceTo(tmpV)
+      mouthPos.value = { x, y, scale: Math.max(0.5, Math.min(1.6, 2.4 / dist)), visible: local.z < 1 }
     }
-    const winking = now < ambientWinkUntil
-    expression.value = winking
-      ? 'winking'
-      : deriveExpression({ mode: props.controller.mode, move: currentAction, energy: props.controller.ctx?.energy || 0 })
 
     const lift = Math.max(0, (props.controller.lastPose?.hipsY || 0) / 100)
     const s = 1 - Math.min(lift / 0.7, 0.6)
     spot.scale.setScalar(Math.max(0.35, s))
-    spot.material.opacity = 0.16 * (1 - Math.min(lift / 0.8, 0.8))
+    spot.material.opacity = 0.1 * (1 - Math.min(lift / 0.8, 0.8))
     spot.position.x = container.position.x
     spot.position.z = container.position.z
 
@@ -350,7 +273,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   disposed = true
   if (renderer) renderer.setAnimationLoop(null)
-  unsubscribe?.()
   ro?.disconnect()
   if (el) {
     el.replaceWith?.(el.cloneNode(false)) // drop listeners quickly; full dispose below is enough for GC

@@ -107,19 +107,13 @@ export class Rig {
     this.foreArm = dist('LeftForeArm', 'LeftHand') || 25;
     this.legLength = dist('LeftUpLeg', 'LeftLeg') + dist('LeftLeg', 'LeftFoot') || 47;
     let top = -Infinity;
-    let bottom = Infinity;
     root.traverse((o) => {
       if (o.isSkinnedMesh) {
         o.geometry.computeBoundingBox();
         top = Math.max(top, o.geometry.boundingBox.max.y);
-        bottom = Math.min(bottom, o.geometry.boundingBox.min.y);
       }
     });
-    // Use the full vertical span rather than just the top: some exports
-    // (e.g. kinya-character.glb) are centred on the origin instead of
-    // grounded at y = 0, in which case boundingBox.max.y alone would only
-    // capture half the character's true height.
-    this.height = Number.isFinite(top) && Number.isFinite(bottom) && top - bottom > 0 ? top - bottom : 160;
+    this.height = Number.isFinite(top) && top > 0 ? top : 160;
     // targets in poses.js were authored for a 160-unit tall character
     this.k = this.height / 160;
 

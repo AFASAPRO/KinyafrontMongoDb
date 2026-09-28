@@ -20,7 +20,6 @@ const COMMANDS = [
   [/\b(surprise|wow|shock|whoa)\b/i, 'wow'],
   [/\b(nod|say yes)\b/i, 'nod'],
   [/\b(shake (your )?head|say no)\b/i, 'shake'],
-  [/\b(wink)\b/i, 'wink'],
 ]
 
 const isRequest = (t) =>
@@ -52,7 +51,7 @@ export function matchReactionMove(text) {
  * matched — keeps Buddy feeling alive without ever asking the user to
  * pick a move themselves.
  */
-const AMBIENT = ['nod', 'shrug', 'wink']
+const AMBIENT = ['nod', 'shrug']
 export function pickAmbientMove(chance = 0.25) {
   if (Math.random() > chance) return null
   return AMBIENT[Math.floor(Math.random() * AMBIENT.length)]

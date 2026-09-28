@@ -58,6 +58,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { isLightMode } from '../theme'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
@@ -71,7 +72,8 @@ const showPass = ref(false)
 const loading = ref(false)
 const error = ref('')
 const done = ref(false)
-const isLight = computed(() => document.documentElement.classList.contains('light-mode'))
+// Reactive theme state — shared with the rest of the app (src/theme.js)
+const isLight = isLightMode
 
 const strength = computed(() => {
   const p = password.value; let s = 0

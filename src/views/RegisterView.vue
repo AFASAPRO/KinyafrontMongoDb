@@ -64,6 +64,7 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue'
+import { isLightMode } from '../theme'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
@@ -72,7 +73,8 @@ const auth = useAuthStore()
 const form = reactive({ username:'', email:'', password:'' })
 const errors = reactive({ username:'', email:'', password:'' })
 const loading = ref(false); const showPass = ref(false); const serverError = ref('')
-const isLight = computed(() => document.documentElement.classList.contains('light-mode'))
+// Reactive theme state — shared with the rest of the app (src/theme.js)
+const isLight = isLightMode
 const features = [
   { icon:'fas fa-comments', text:'Context-aware multi-turn conversations' },
   { icon:'fas fa-code', text:'Code generation & debugging' },

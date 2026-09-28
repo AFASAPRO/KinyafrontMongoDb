@@ -105,6 +105,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
+import { isLightMode as sharedIsLightMode } from '../theme'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useChatStore } from '../stores/chat'
@@ -143,7 +144,8 @@ function onMqChange(e) {
 }
 const rightOpen = ref(!mqMobile.matches && window.innerWidth > 1200)
 
-const isLightMode = computed(() => document.documentElement.classList.contains('light-mode'))
+// Reactive theme state — shared with the rest of the app (src/theme.js)
+const isLightMode = sharedIsLightMode
 
 onMounted(async () => {
   if (!isGuest.value) {

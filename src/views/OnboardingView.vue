@@ -153,6 +153,7 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue'
+import { isLightMode } from '../theme'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useChatStore } from '../stores/chat'
@@ -165,7 +166,8 @@ const step = ref(1)
 const totalSteps = 4
 const saving = ref(false)
 const customPrompt = ref('')
-const isLight = computed(() => document.documentElement.classList.contains('light-mode'))
+// Reactive theme state — shared with the rest of the app (src/theme.js)
+const isLight = isLightMode
 const form = reactive({ name: auth.user?.username || '', referral: '', profession: '', firstPrompt: '' })
 
 function particleStyle(i) {

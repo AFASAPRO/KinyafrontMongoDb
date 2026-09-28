@@ -1,5 +1,8 @@
 <template>
   <div class="auth-root" :class="{ light: isLight }">
+    <button class="theme-toggle" type="button" @click="toggleThemeMode" :title="isLight ? 'Switch to dark mode' : 'Switch to light mode'" :aria-label="isLight ? 'Switch to dark mode' : 'Switch to light mode'">
+      <i :class="isLight ? 'fas fa-moon' : 'fas fa-sun'"></i>
+    </button>
     <div class="auth-left">
       <div class="auth-logo">
         <img :src="isLight ? '/logo.png' : '/logo.png'" alt="KinyaBot" class="logo-img" :class="{ 'logo-light': isLight }" />
@@ -134,6 +137,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { usePwaInstall } from '../composables/usePwaInstall'
 import InstallHint from '../components/InstallHint.vue'
+import { isLightMode, toggleThemeMode } from '../theme'
 
 const router = useRouter()
 const route = useRoute()
@@ -188,8 +192,10 @@ async function showOAuth(provider) {
   }
 }
 
-// Detect system theme
-const isLight = computed(() => document.documentElement.classList.contains('light-mode'))
+// Reactive theme state — shared across the whole app (see src/theme.js).
+// Toggling here re-skins this screen immediately AND persists for every
+// screen that follows (register, onboarding, chat, ...).
+const isLight = isLightMode
 
 function validate() {
   errors.email = ''; errors.password = ''
@@ -224,6 +230,19 @@ async function handleForgot() {
 <style scoped>
 .auth-root { display:flex; min-height:100vh; min-height:100dvh; width:100%; overflow:hidden; background:#0d0d0f; transition:background .3s; }
 .auth-root.light { background:#f0f2f5; }
+
+.theme-toggle {
+  position:fixed; top:16px; right:16px; z-index:50;
+  width:40px; height:40px; border-radius:50%;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+  color:#e3e3e3; font-size:15px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:background .2s, color .2s, transform .15s;
+}
+.theme-toggle:hover { background:rgba(255,255,255,.12); }
+.theme-toggle:active { transform:scale(.92); }
+.auth-root.light .theme-toggle { background:#fff; border-color:#e0e0e0; color:#5f6368; box-shadow:0 2px 8px rgba(0,0,0,.08); }
+.auth-root.light .theme-toggle:hover { background:#f8f9fa; }
 
 .auth-left { width:460px; min-width:460px; display:flex; flex-direction:column; padding:2rem 2.5rem; padding-top:max(2rem, env(safe-area-inset-top)); background:#111112; overflow-y:auto; transition:background .3s; }
 .auth-root.light .auth-left { background:#ffffff; box-shadow:4px 0 20px rgba(0,0,0,.06); }

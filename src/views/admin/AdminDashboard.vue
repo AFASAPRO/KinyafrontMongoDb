@@ -1,24 +1,81 @@
 <template>
-  <div class="kb-admin" :class="{collapsed: sidebar.collapsed}">
+  <div class="kb-admin" :class="{collapsed: sidebar.collapsed, 'mobile-nav-open': mobileNav.open, 'light-theme': adminTheme==='light'}">
 
     <!-- ════════════════════════════════════════════════════════
-         SIDEBAR  (Outrunix-style left nav)
+         MOBILE TOP NAVBAR  (hidden on desktop — see media query)
     ════════════════════════════════════════════════════════ -->
-    <aside class="kba-sidebar">
+    <header class="kba-mobile-bar">
+      <div class="kmb-brand">
+        <img src="/logo.png" alt="" class="kmb-logo" />
+        <span>KinyaBot</span>
+      </div>
+      <div class="kmb-right">
+        <button class="kmb-icon" @click="toggleAdminTheme" :aria-label="adminTheme==='light' ? 'Switch to dark mode' : 'Switch to light mode'">
+          <i :class="adminTheme==='light' ? 'fas fa-moon' : 'fas fa-sun'"></i>
+        </button>
+        <button class="kmb-icon" @click="mobileSearchOpen = !mobileSearchOpen" aria-label="Search">
+          <i class="fas fa-magnifying-glass"></i>
+        </button>
+        <button class="kmb-icon" @click="selectTab('notifications')" aria-label="Notifications">
+          <i class="fas fa-bell"></i>
+          <span v-if="unread" class="kmb-badge">{{ unread }}</span>
+        </button>
+        <button class="kmb-avatar" @click="selectTab('settings')" aria-label="Profile">
+          {{ me?.username?.[0]?.toUpperCase() }}
+        </button>
+      </div>
+    </header>
+    <transition name="kmb-slide">
+      <div v-if="mobileSearchOpen" class="kmb-search-bar">
+        <i class="fas fa-magnifying-glass"></i>
+        <input v-model="gSearch" placeholder="Search anything…" autofocus
+          @keyup.enter="runSearch(); mobileSearchOpen=false"/>
+        <button @click="mobileSearchOpen=false" aria-label="Close search"><i class="fas fa-xmark"></i></button>
+      </div>
+    </transition>
+
+    <!-- Backdrop for the off-canvas mobile drawer -->
+    <transition name="kmb-fade">
+      <div v-if="mobileNav.open" class="kba-backdrop" @click="mobileNav.open=false"></div>
+    </transition>
+
+    <!-- ════════════════════════════════════════════════════════
+         MOBILE BOTTOM NAV  (floating pill, hidden on desktop) —
+         the active tab pops up as a filled circle above the bar;
+         "More" opens the full sidebar drawer for every other page.
+    ════════════════════════════════════════════════════════ -->
+    <nav class="kbn-bar">
+      <button v-for="item in bottomNavItems" :key="item.id"
+        class="kbn-item" :class="{active: tab===item.id}"
+        @click="selectTab(item.id)">
+        <span class="kbn-circle"><i :class="item.icon"></i></span>
+        <span class="kbn-label">{{ item.label }}</span>
+      </button>
+      <button class="kbn-item" :class="{active: isMoreActive}" @click="mobileNav.open = true">
+        <span class="kbn-circle"><i class="fas fa-ellipsis"></i></span>
+        <span class="kbn-label">More</span>
+      </button>
+    </nav>
+
+    <!-- ════════════════════════════════════════════════════════
+         SIDEBAR  (Outrunix-style left nav — collapsible on desktop,
+         off-canvas drawer on mobile)
+    ════════════════════════════════════════════════════════ -->
+    <aside class="kba-sidebar" :class="{'mobile-open': mobileNav.open}">
       <div class="kbs-brand">
         <div class="kbs-logo"><img src="/logo.png" alt=""/></div>
         <span class="kbs-name">KinyaBot</span>
-        <button class="kbs-toggle" @click="sidebar.collapsed=!sidebar.collapsed">
-          <i :class="sidebar.collapsed ? 'fas fa-bars' : 'fas fa-bars-staggered'"></i>
+        <button class="kbs-toggle" @click="toggleSidebar" :aria-label="sidebar.collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+          <i :class="mobileNav.open ? 'fas fa-xmark' : (sidebar.collapsed ? 'fas fa-bars' : 'fas fa-bars-staggered')"></i>
         </button>
       </div>
 
       <nav class="kbs-nav">
         <template v-for="g in navGroups" :key="g.id">
-          <div class="kbs-group-label" v-show="!sidebar.collapsed">{{ g.label }}</div>
+          <div class="kbs-group-label">{{ g.label }}</div>
           <button v-for="item in g.items" :key="item.id"
             class="kbs-item" :class="{active: tab===item.id}"
-            @click="tab=item.id" :title="sidebar.collapsed ? item.label : ''">
+            @click="selectTab(item.id)" :title="sidebar.collapsed ? item.label : ''">
             <div class="kbs-icon"><i :class="item.icon"></i></div>
             <span class="kbs-label">{{ item.label }}</span>
             <div v-if="item.count" class="kbs-count">{{ item.count }}</div>
@@ -28,7 +85,11 @@
       </nav>
 
       <div class="kbs-foot">
-        <div class="kbs-help" @click="tab='settings'">
+        <div class="kbs-help" @click="toggleAdminTheme">
+          <div class="kbs-icon"><i :class="adminTheme==='light' ? 'fas fa-moon' : 'fas fa-sun'"></i></div>
+          <span class="kbs-label">{{ adminTheme==='light' ? 'Dark Mode' : 'Light Mode' }}</span>
+        </div>
+        <div class="kbs-help" @click="selectTab('settings')">
           <div class="kbs-icon"><i class="fas fa-circle-question"></i></div>
           <span class="kbs-label">Help &amp; Support</span>
         </div>
@@ -44,7 +105,7 @@
     ════════════════════════════════════════════════════════ -->
     <div class="kba-main">
 
-      <!-- ── TOP BAR ── -->
+      <!-- ── TOP BAR (desktop) ── -->
       <header class="kba-topbar">
         <div class="kbt-left">
           <div>
@@ -60,6 +121,9 @@
           </div>
         </div>
         <div class="kbt-right">
+          <button class="kbt-icon-btn" @click="toggleAdminTheme" :title="adminTheme==='light' ? 'Switch to dark mode' : 'Switch to light mode'">
+            <i :class="adminTheme==='light' ? 'fas fa-moon' : 'fas fa-sun'"></i>
+          </button>
           <button class="kbt-icon-btn" @click="refresh" :class="{spin:loading}" title="Refresh data">
             <i class="fas fa-rotate-right"></i>
           </button>
@@ -160,7 +224,7 @@
               <div class="chart-box activity-box">
                 <div class="cbx-head">
                   <h3>Live Activity</h3>
-                  <span class="live-badge"><span class="live-pulse"></span>Real-time updates</span>
+                  <span class="live-badge"><span class="live-pulse"></span>{{ onlineCount }} online now</span>
                 </div>
                 <div class="act-feed">
                   <transition-group name="af-item">
@@ -169,7 +233,7 @@
                       <div class="af-body">
                         <div class="af-name">{{ a.name }}</div>
                         <div class="af-act">{{ a.action }}</div>
-                        <div class="af-ago">{{ a.ago }}</div>
+                        <div class="af-ago">{{ timeAgo(a.created_at) }}</div>
                       </div>
                       <span class="af-tag" :class="a.cls">{{ a.tag }}</span>
                     </div>
@@ -640,7 +704,7 @@
                 <div class="cbx-head"><h3>Daily Token Usage</h3><p class="cbx-sub">Last 30 days</p></div>
                 <div class="heat-chart tall">
                   <div v-for="(d,i) in (usageD.by_day||[]).slice(-24)" :key="i" class="hc-col">
-                    <div class="hc-bar" style="background:linear-gradient(180deg,#f59e0b,rgba(245,158,11,.3))" :style="{height: barH(d.tokens, usageD.by_day,'tokens')+'%'}"></div>
+                    <div class="hc-bar" style="background:#f59e0b" :style="{height: barH(d.tokens, usageD.by_day,'tokens')+'%'}"></div>
                     <span class="hc-lbl" v-if="i%4===0">{{ d.date?.slice(5) }}</span>
                   </div>
                 </div>
@@ -652,7 +716,7 @@
                     <span class="tu-rank">#{{ i+1 }}</span>
                     <div class="tu-av" :style="{background:hColor(u.username)}">{{ u.username?.[0]?.toUpperCase() }}</div>
                     <div class="tu-info"><div class="tu-name">{{ u.username }}</div></div>
-                    <div class="tu-bar-wrap"><div class="tu-bar" style="background:linear-gradient(90deg,#f59e0b,#f97316)" :style="{width: tuW(u.tokens, usageD.by_user,'tokens')+'%'}"></div></div>
+                    <div class="tu-bar-wrap"><div class="tu-bar" style="background:#f97316" :style="{width: tuW(u.tokens, usageD.by_user,'tokens')+'%'}"></div></div>
                     <span class="tu-count" style="color:#f59e0b">{{ fmtNum(u.tokens) }}</span>
                   </div>
                   <div v-if="!usageD.by_user?.length" class="mt-empty">No usage data yet</div>
@@ -756,7 +820,7 @@
               <div class="cbx-head"><h3>Response Time by Hour</h3><p class="cbx-sub">Average ms per hour (24h)</p></div>
               <div class="heat-chart tall">
                 <div v-for="(h,i) in (performD.by_hour||[])" :key="i" class="hc-col">
-                  <div class="hc-bar" style="background:linear-gradient(180deg,#34a853,rgba(52,168,83,.3))"
+                  <div class="hc-bar" style="background:#34a853"
                     :style="{height: barH(h.avg_ms||0, performD.by_hour||[],'avg_ms')+'%'}"
                     :title="`${h.hour}:00 — ${Math.round(h.avg_ms||0)}ms avg`"></div>
                   <span class="hc-lbl" v-if="i%4===0">{{ h.hour }}h</span>
@@ -859,10 +923,12 @@
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import { io } from 'socket.io-client'
 
 const router  = useRouter()
 const API     = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 const BASE    = API.replace('/api','')
+const SOCKET_URL = BASE
 const tok     = ref(localStorage.getItem('kb_admin_token')||'')
 const me      = ref(JSON.parse(localStorage.getItem('kb_admin')||'null'))
 const hdrs    = computed(()=>({ Authorization:`Bearer ${tok.value}` }))
@@ -870,11 +936,33 @@ async function api(method,url,data){ return axios({method,url:API+url,data,heade
 
 /* ── state ─────────────────────────────────────────────────── */
 const sidebar  = reactive({ collapsed: false })
+const mobileNav = reactive({ open: false })
+const mobileSearchOpen = ref(false)
 const tab      = ref('dashboard')
 const loading  = ref(false)
 const gSearch  = ref('')
 const unread   = ref(0)
 const serverUptime = ref('—')
+const onlineCount  = ref(0)
+
+/* ── ADMIN THEME (dark default, persisted separately from the
+   user-facing app's theme) ───────────────────────────────────── */
+const adminTheme = ref(localStorage.getItem('kb_admin_theme') || 'dark')
+function toggleAdminTheme(){
+  adminTheme.value = adminTheme.value === 'light' ? 'dark' : 'light'
+  localStorage.setItem('kb_admin_theme', adminTheme.value)
+}
+
+/* ── MOBILE BOTTOM NAV (matches the app's reference nav-bar
+   design — active tab pops up as a filled circle; everything
+   else lives behind "More" to keep the bar to 5 icons) ───────── */
+const bottomNavItems = [
+  { id:'dashboard', icon:'fas fa-house',      label:'Home' },
+  { id:'users',     icon:'fas fa-users',      label:'Users' },
+  { id:'chats',     icon:'fas fa-comments',   label:'Chats' },
+  { id:'analytics', icon:'fas fa-chart-line', label:'Stats' },
+]
+const isMoreActive = computed(() => !bottomNavItems.some(i => i.id === tab.value))
 
 /* data */
 const dash       = ref({})
@@ -1072,7 +1160,7 @@ async function refresh(){
     if(st.data.uptime) serverUptime.value = fmtUptime(st.data.uptime)
     Object.assign(cfg, await api('get','/admin/settings').then(r=>r.data))
     await loadUsers()
-    injectLiveActivity()
+    await loadActivity()
   } catch(e){
     if(e.response?.status===403) doLogout()
   } finally { loading.value=false }
@@ -1140,7 +1228,6 @@ async function toggleBan(u){
   await api('put',`/admin/users/${u.id}/ban`,{banned:!u.is_banned})
   u.is_banned=!u.is_banned
   showToast('success',`User ${u.is_banned?'banned':'unbanned'}`)
-  pushActivity({name:u.username,action:u.is_banned?'was banned':'was unbanned',ago:'just now',cls:u.is_banned?'warn':'ok',tag:u.is_banned?'🚫 Banned':'✅ Active'})
 }
 function delUser(u){ openConfirm('user',u) }
 function openConfirm(type,item){ confirmM.value={type,item} }
@@ -1159,7 +1246,6 @@ async function broadcast(){
     notifs.value.unshift(data); unread.value=notifs.value.filter(x=>x.is_active).length
     nf.title=''; nf.message=''; nf.type='info'; nf.expires_at=''
     showToast('success','Notification broadcast to all users!')
-    pushActivity({name:me.value?.username,action:'broadcast a notification',ago:'just now',cls:'ok',tag:'📢 Broadcast'})
   } catch(e){ showToast('error',e.response?.data?.error||'Failed') }
   finally{ sending.value=false }
 }
@@ -1223,26 +1309,97 @@ async function viewFile(f){
 }
 function nIcon(t){ return {info:'fas fa-circle-info',success:'fas fa-circle-check',warning:'fas fa-triangle-exclamation',error:'fas fa-circle-exclamation'}[t]||'fas fa-bell' }
 
-function pushActivity(a){ liveActivity.value.unshift({id:Date.now(),...a}); if(liveActivity.value.length>8) liveActivity.value.pop() }
-function injectLiveActivity(){
-  const users = usersD.value.users||[]; if(!users.length) return
-  const actions=['signed in','sent a message','started a new chat','completed onboarding','updated profile']
-  const tags=['Active','Sent','New Chat','Onboarded','Updated']
-  users.slice(0,6).forEach((u,i)=>setTimeout(()=>pushActivity({ name:u.username, action:actions[i%5], ago:`${i*2+1}m ago`, cls:'ok', tag:'+'+tags[i%5] }),i*400))
+/* ── LIVE ACTIVITY (real, event-sourced) ───────────────────────
+   Backed entirely by /api/admin/activity (real history) plus a live
+   'admin_activity' Socket.IO event pushed the instant something real
+   happens on the server (see backend logActivity()). Nothing here is
+   randomized, sampled, or simulated — a user only ever appears as
+   "online"/"active" when they truly have a live connection. */
+const ACTIVITY_MAP = {
+  register:    { verb:'created an account',          cls:'ok',    tag:'🆕 New User' },
+  login:       { verb:'signed in',                    cls:'ok',    tag:'✅ Active' },
+  onboarded:   { verb:'completed onboarding',         cls:'ok',    tag:'🎉 Onboarded' },
+  new_chat:    { verb:'started a new chat',           cls:'ok',    tag:'💬 New Chat' },
+  message:     { verb:'sent a message',               cls:'ok',    tag:'✉️ Message' },
+  online:      { verb:'came online',                  cls:'ok',    tag:'🟢 Online' },
+  offline:     { verb:'went offline',                 cls:'muted', tag:'⚪ Offline' },
+  banned:      { verb:'was banned',                   cls:'warn',  tag:'🚫 Banned' },
+  unbanned:    { verb:'was unbanned',                 cls:'ok',    tag:'✅ Unbanned' },
+  broadcast:   { verb:'broadcast a notification',     cls:'ok',    tag:'📢 Broadcast' },
+  admin_login: { verb:'logged into the admin panel',  cls:'ok',    tag:'🛡️ Admin' },
+}
+function mapActivity(e){
+  const m = ACTIVITY_MAP[e.action] || { verb: e.action, cls:'ok', tag: e.action }
+  return { id: e.id, name: e.username || 'Someone', action: m.verb, cls: m.cls, tag: m.tag, created_at: e.created_at }
+}
+function pushActivity(e){
+  liveActivity.value.unshift(mapActivity(e))
+  if (liveActivity.value.length > 8) liveActivity.value.pop()
+}
+async function loadActivity(){
+  try {
+    const { data } = await api('get','/admin/activity?limit=20')
+    liveActivity.value = (data.events||[]).map(mapActivity)
+    onlineCount.value = data.online_count || 0
+  } catch {}
+}
+const nowTick = ref(0)
+function timeAgo(ts){
+  nowTick.value // reactive dependency so this recomputes on each tick
+  if (!ts) return 'just now'
+  const diff = Math.max(0, Date.now() - new Date(ts).getTime())
+  const s = Math.floor(diff/1000)
+  if (s < 5) return 'just now'
+  if (s < 60) return `${s}s ago`
+  const m = Math.floor(s/60)
+  if (m < 60) return `${m}m ago`
+  const h = Math.floor(m/60)
+  if (h < 24) return `${h}h ago`
+  return `${Math.floor(h/24)}d ago`
 }
 
 function showToast(cls,msg){ toast.value={cls,msg,icon:cls==='success'?'fas fa-circle-check':'fas fa-circle-exclamation'}; setTimeout(()=>toast.value=null,3500) }
 function doLogout(){ localStorage.removeItem('kb_admin_token'); localStorage.removeItem('kb_admin'); router.push('/admin') }
 
+/* ── SIDEBAR / MOBILE NAV ─────────────────────────────────────── */
+function toggleSidebar(){
+  if (window.innerWidth <= 768) mobileNav.open = !mobileNav.open
+  else sidebar.collapsed = !sidebar.collapsed
+}
+function selectTab(id){
+  tab.value = id
+  mobileNav.open = false
+  mobileSearchOpen.value = false
+}
+function handleResize(){ if (window.innerWidth > 768) mobileNav.open = false }
+
 /* ── LIFECYCLE ──────────────────────────────────────────────── */
-let tInt, rInt
+let tInt, rInt, adminSocket
 onMounted(async()=>{
   if(!tok.value){ router.push('/admin'); return }
   refresh()
-  tInt = setInterval(()=>{},1000)
+  // Ticks the relative "Xm ago" labels in the Live Activity feed forward
+  // in real time — no data changes here, just re-renders elapsed time.
+  tInt = setInterval(()=>{ nowTick.value++ }, 30000)
   rInt = setInterval(refresh, 30000)
+  window.addEventListener('resize', handleResize)
+
+  // Real-time push: the backend emits 'admin_activity' the instant a
+  // genuine event happens (login, message, ban, …) — see logActivity()
+  // in backend/app.js. This is what keeps the feed truly live.
+  adminSocket = io(SOCKET_URL, {
+    auth: { adminToken: tok.value },
+    transports: ['websocket','polling'],
+    reconnectionAttempts: 5,
+    reconnectionDelay: 2000,
+  })
+  adminSocket.on('admin_activity', e => { pushActivity(e); if (e.action==='online') onlineCount.value++; if (e.action==='offline') onlineCount.value = Math.max(0, onlineCount.value-1) })
 })
-onBeforeUnmount(()=>{ clearInterval(tInt); clearInterval(rInt) })
+onBeforeUnmount(()=>{
+  clearInterval(tInt); clearInterval(rInt)
+  window.removeEventListener('resize', handleResize)
+  adminSocket?.disconnect()
+})
 </script>
 
 <style scoped>
@@ -1250,6 +1407,61 @@ onBeforeUnmount(()=>{ clearInterval(tInt); clearInterval(rInt) })
    TOKENS
 ════════════════════════════════════ */
 :root { --s1:#0a0b12; --s2:#0d0e1b; --s3:#111220; --border:rgba(99,102,241,.12); --border2:rgba(99,102,241,.22); --t1:#e2e8f0; --t2:#9ca3af; --t3:#4b5563; --t4:#374151; --acc:#6366f1; --acc2:#a855f7; }
+
+/* ── LIGHT THEME ───────────────────────────────────────────────
+   Redefining the same custom properties on the light-theme root
+   cascades to every descendant automatically, since the whole
+   dashboard already reads colors through var(--s1) / var(--t1) / etc.
+   A handful of components also use hardcoded whites for text/hover
+   states (buttons, badges, hero numbers) — those get explicit
+   overrides further down. ─────────────────────────────────────── */
+.kb-admin.light-theme {
+  --s1:#f3f4f9; --s2:#ffffff; --s3:#f7f8fc;
+  --border:rgba(79,70,229,.14); --border2:rgba(79,70,229,.26);
+  --t1:#12141f; --t2:#525569; --t3:#8a8da3; --t4:#c3c6d6;
+}
+.kb-admin.light-theme .kba-sidebar,
+.kb-admin.light-theme .kba-topbar,
+.kb-admin.light-theme .kba-mobile-bar { box-shadow:0 1px 0 rgba(17,24,39,.03); }
+.kb-admin.light-theme .kbs-name,
+.kb-admin.light-theme .kmb-brand,
+.kb-admin.light-theme .kbt-greeting,
+.kb-admin.light-theme h1, .kb-admin.light-theme h2, .kb-admin.light-theme h3 { color: var(--t1); }
+.kb-admin.light-theme .kbs-item:hover { background:rgba(79,70,229,.07); color:#4338ca; }
+.kb-admin.light-theme .kbs-item.active { background:rgba(79,70,229,.12); color:#4338ca; }
+.kb-admin.light-theme .kbs-help:hover { background:rgba(79,70,229,.07); }
+.kb-admin.light-theme .kbt-icon-btn,
+.kb-admin.light-theme .kmb-icon,
+.kb-admin.light-theme .kbt-search,
+.kb-admin.light-theme .kbt-profile,
+.kb-admin.light-theme .kbs-toggle { background:rgba(79,70,229,.06); }
+.kb-admin.light-theme .kbt-icon-btn:hover { background:rgba(79,70,229,.14); color:#4338ca; }
+.kb-admin.light-theme .kbt-search input::placeholder,
+.kb-admin.light-theme .kbt-search kbd { color:var(--t3); }
+.kb-admin.light-theme ::-webkit-scrollbar-thumb { background:rgba(79,70,229,.18); }
+.kb-admin.light-theme .modal-box,
+.kb-admin.light-theme .toast { box-shadow:0 12px 40px rgba(17,24,39,.12); }
+.kb-admin.light-theme .cc-value,
+.kb-admin.light-theme .cc-pct,
+.kb-admin.light-theme .dm-v,
+.kb-admin.light-theme .sf-v,
+.kb-admin.light-theme .fsr-card b,
+.kb-admin.light-theme .pc-count,
+.kb-admin.light-theme .tc-user b,
+.kb-admin.light-theme .mtr-name,
+.kb-admin.light-theme .stat-value { color: var(--t1); }
+/* Modals / toast were hardcoded to a fixed dark panel colour — make them
+   follow the surface tokens so they actually switch with the theme */
+.kb-admin.light-theme .kb-modal,
+.kb-admin.light-theme .kb-toast { background: var(--s2); border-color: var(--border2); }
+.kb-admin.light-theme .kb-overlay { background: rgba(17,24,39,.45); }
+.kb-admin.light-theme .kb-input,
+.kb-admin.light-theme .kb-sel,
+.kb-admin.light-theme .cbx-sel { background: rgba(79,70,229,.05); }
+.kb-admin.light-theme .kb-sel option,
+.kb-admin.light-theme .cbx-sel option { background:#fff; color:#111827; }
+.kb-admin.light-theme .kb-tog { background: rgba(17,24,39,.1); }
+.kb-admin.light-theme .km-head button:hover { background: rgba(17,24,39,.06); }
 
 /* ════════════════════════════════════
    SHELL
@@ -1262,27 +1474,34 @@ onBeforeUnmount(()=>{ clearInterval(tInt); clearInterval(rInt) })
 .kba-sidebar { width:212px; min-width:212px; background:var(--s2); border-right:1px solid var(--border); display:flex; flex-direction:column; transition:width .3s cubic-bezier(.34,1.56,.64,1), min-width .3s; overflow:hidden; flex-shrink:0; }
 .kb-admin.collapsed .kba-sidebar { width:60px; min-width:60px; }
 
-.kbs-brand { display:flex; align-items:center; gap:9px; padding:1rem .8rem; border-bottom:1px solid var(--border); }
+.kbs-brand { display:flex; align-items:center; gap:9px; padding:1rem .8rem; border-bottom:1px solid var(--border); transition:justify-content .2s, padding .2s; }
+.kb-admin.collapsed .kbs-brand { justify-content:center; padding:1rem .5rem; }
 .kbs-logo { width:32px; height:32px; border-radius:9px; overflow:hidden; flex-shrink:0; }
 .kbs-logo img { width:100%; height:100%; object-fit:contain; }
-.kbs-name { font-size:14px; font-weight:800; color:#fff; letter-spacing:-.3px; white-space:nowrap; flex:1; }
+.kbs-name { font-size:14px; font-weight:800; color:#fff; letter-spacing:-.3px; white-space:nowrap; overflow:hidden; flex:1; opacity:1; max-width:140px; transition:opacity .15s ease, max-width .25s ease, margin .25s ease; }
+.kb-admin.collapsed .kbs-name { opacity:0; max-width:0; margin:0; }
 .kbs-toggle { width:24px; height:24px; border-radius:6px; background:rgba(99,102,241,.1); border:1px solid var(--border2); color:#818cf8; font-size:11px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .2s; flex-shrink:0; }
 .kbs-toggle:hover { background:rgba(99,102,241,.22); }
 
-.kbs-nav { flex:1; overflow-y:auto; padding:.5rem .4rem; display:flex; flex-direction:column; gap:1px; }
+.kbs-nav { flex:1; overflow-y:auto; overflow-x:hidden; padding:.5rem .4rem; display:flex; flex-direction:column; gap:1px; }
 .kbs-nav::-webkit-scrollbar { width:0; }
-.kbs-group-label { font-size:9.5px; font-weight:700; letter-spacing:.1em; color:var(--t3); padding:8px 8px 2px; text-transform:uppercase; white-space:nowrap; overflow:hidden; }
-.kbs-item { display:flex; align-items:center; gap:9px; padding:9px 8px; border-radius:10px; background:none; border:none; color:var(--t3); font-size:12.5px; font-weight:500; cursor:pointer; transition:all .2s; position:relative; width:100%; text-align:left; }
+.kbs-group-label { font-size:9.5px; font-weight:700; letter-spacing:.1em; color:var(--t3); padding:8px 8px 2px; text-transform:uppercase; white-space:nowrap; overflow:hidden; opacity:1; max-height:22px; transition:opacity .18s ease, max-height .2s ease, padding .2s ease, margin .2s ease; }
+.kb-admin.collapsed .kbs-group-label { opacity:0; max-height:0; padding:0; margin:0; pointer-events:none; }
+.kbs-item { display:flex; align-items:center; gap:9px; padding:9px 8px; border-radius:10px; background:none; border:none; color:var(--t3); font-size:12.5px; font-weight:500; cursor:pointer; transition:background .2s, color .2s, justify-content .2s, padding .2s; position:relative; width:100%; text-align:left; }
+.kb-admin.collapsed .kbs-item { justify-content:center; padding:9px 0; }
 .kbs-item:hover { background:rgba(99,102,241,.08); color:#a5b4fc; }
-.kbs-item.active { background:linear-gradient(135deg,rgba(99,102,241,.2),rgba(168,85,247,.12)); color:#c4b5fd; font-weight:600; }
+.kbs-item.active { background:rgba(99,102,241,.18); color:#c4b5fd; font-weight:600; }
 .kbs-icon { width:18px; height:18px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .kbs-icon i { font-size:13.5px; }
-.kbs-label { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; }
-.kbs-count { background:var(--acc); color:#fff; font-size:10px; font-weight:700; padding:1px 6px; border-radius:99px; margin-left:auto; flex-shrink:0; }
-.kbs-pill { position:absolute; right:0; top:50%; transform:translateY(-50%); width:3px; height:20px; background:linear-gradient(180deg,#6366f1,#a855f7); border-radius:99px 0 0 99px; }
+.kbs-label { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; opacity:1; max-width:160px; transition:opacity .15s ease, max-width .25s ease; }
+.kb-admin.collapsed .kbs-label { opacity:0; max-width:0; }
+.kbs-count { background:var(--acc); color:#fff; font-size:10px; font-weight:700; padding:1px 6px; border-radius:99px; margin-left:auto; flex-shrink:0; transition:opacity .15s ease; }
+.kb-admin.collapsed .kbs-count { opacity:0; width:0; padding:0; margin:0; overflow:hidden; }
+.kbs-pill { position:absolute; right:0; top:50%; transform:translateY(-50%); width:3px; height:20px; background:#818cf8; border-radius:99px 0 0 99px; }
 
 .kbs-foot { border-top:1px solid var(--border); padding:.6rem .4rem; display:flex; flex-direction:column; gap:2px; }
-.kbs-help, .kbs-logout-row { display:flex; align-items:center; gap:9px; padding:8px 8px; border-radius:9px; cursor:pointer; transition:all .2s; }
+.kbs-help, .kbs-logout-row { display:flex; align-items:center; gap:9px; padding:8px 8px; border-radius:9px; cursor:pointer; transition:background .2s, justify-content .2s, padding .2s; }
+.kb-admin.collapsed .kbs-help, .kb-admin.collapsed .kbs-logout-row { justify-content:center; padding:8px 0; }
 .kbs-help:hover { background:rgba(99,102,241,.08); }
 .kbs-help .kbs-icon i { color:var(--t3); font-size:13px; }
 .kbs-help .kbs-label { color:var(--t3); font-size:12.5px; }
@@ -1290,6 +1509,16 @@ onBeforeUnmount(()=>{ clearInterval(tInt); clearInterval(rInt) })
 .kbs-logout-row:hover { background:rgba(239,68,68,.14); }
 .logout-icon i { color:#f87171; font-size:13px; }
 .logout-txt { color:#f87171; font-size:12.5px; }
+
+/* ── Off-canvas backdrop (mobile drawer) ── */
+.kba-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:55; }
+.kmb-fade-enter-active, .kmb-fade-leave-active { transition:opacity .2s ease; }
+.kmb-fade-enter-from, .kmb-fade-leave-to { opacity:0; }
+
+/* ── Mobile top navbar (hidden on desktop) ── */
+.kba-mobile-bar { display:none; }
+.kmb-search-bar { display:none; }
+.kbn-bar { display:none; }
 
 /* ════════════════════════════════════
    MAIN
@@ -1316,7 +1545,7 @@ onBeforeUnmount(()=>{ clearInterval(tInt); clearInterval(rInt) })
 .kbt-notif:hover { background:rgba(99,102,241,.12); color:#a5b4fc; }
 .kbt-badge { position:absolute; top:4px; right:4px; width:14px; height:14px; border-radius:50%; background:var(--acc); color:#fff; font-size:8px; font-weight:700; display:flex; align-items:center; justify-content:center; }
 .kbt-profile { display:flex; align-items:center; gap:8px; padding:5px 10px; background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:99px; cursor:pointer; }
-.kbt-avatar { width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg,#4f46e5,#a855f7); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; }
+.kbt-avatar { width:26px; height:26px; border-radius:50%; background:#4f46e5; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; }
 .kbt-pinfo span { display:block; font-size:12px; font-weight:600; color:var(--t1); }
 .kbt-pinfo small { display:block; font-size:10px; color:var(--t3); text-transform:capitalize; }
 
@@ -1382,8 +1611,8 @@ onBeforeUnmount(()=>{ clearInterval(tInt); clearInterval(rInt) })
 .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; }
 .bar-pair { display:flex; gap:2px; align-items:flex-end; height:110px; width:100%; justify-content:center; }
 .bar-item { flex:1; border-radius:3px 3px 0 0; min-height:4px; transition:height .7s cubic-bezier(.34,1.56,.64,1); }
-.bar-item.msg { background:linear-gradient(180deg,#6366f1 0%,rgba(99,102,241,.25) 100%); }
-.bar-item.usr { background:linear-gradient(180deg,#a855f7 0%,rgba(168,85,247,.25) 100%); }
+.bar-item.msg { background:#6366f1; }
+.bar-item.usr { background:#a855f7; }
 .bar-lbl { font-size:9.5px; color:var(--t4); }
 
 /* LINE CHART */
@@ -1405,6 +1634,7 @@ onBeforeUnmount(()=>{ clearInterval(tInt); clearInterval(rInt) })
 .af-tag { font-size:10px; font-weight:600; padding:2px 7px; border-radius:99px; background:rgba(99,102,241,.14); color:#a5b4fc; white-space:nowrap; flex-shrink:0; }
 .af-tag.ok   { background:rgba(52,168,83,.14); color:#34d399; }
 .af-tag.warn { background:rgba(239,68,68,.14); color:#f87171; }
+.af-tag.muted{ background:rgba(255,255,255,.06); color:var(--t3); }
 .af-empty { text-align:center; padding:1.5rem 0; color:var(--t4); font-size:12px; }
 .af-empty i { display:block; font-size:1.5rem; margin-bottom:.4rem; }
 
@@ -1458,13 +1688,13 @@ onBeforeUnmount(()=>{ clearInterval(tInt); clearInterval(rInt) })
 .tu-name { font-size:12px; font-weight:600; color:var(--t1); }
 .tu-email { font-size:10.5px; color:var(--t3); }
 .tu-bar-wrap { flex:1; height:6px; background:rgba(255,255,255,.05); border-radius:99px; overflow:hidden; }
-.tu-bar { height:100%; background:linear-gradient(90deg,#6366f1,#a855f7); border-radius:99px; transition:width .6s ease; }
+.tu-bar { height:100%; background:#6366f1; border-radius:99px; transition:width .6s ease; }
 .tu-count { font-size:12px; font-weight:600; color:#a5b4fc; min-width:30px; text-align:right; }
 .heat-chart { display:flex; align-items:flex-end; gap:3px; height:80px; }
 .heat-chart.tall { height:110px; }
 .hc-col { display:flex; flex-direction:column; align-items:center; flex:1; gap:3px; }
 .hc-bar { width:100%; background:var(--acc); border-radius:2px 2px 0 0; min-height:3px; transition:height .5s ease; }
-.hc-bar.vis { background:linear-gradient(180deg,#06b6d4,#6366f1); }
+.hc-bar.vis { background:#06b6d4; }
 .hc-lbl { font-size:8.5px; color:var(--t4); }
 
 /* ════════════════════════════════════
@@ -1541,7 +1771,7 @@ onBeforeUnmount(()=>{ clearInterval(tInt); clearInterval(rInt) })
 .flag-lbl { font-size:13px; font-weight:500; color:var(--t1); }
 .flag-desc { font-size:11.5px; color:var(--t3); margin-top:1px; }
 .kb-tog { width:38px; height:20px; border-radius:99px; background:rgba(255,255,255,.07); border:1px solid var(--border); position:relative; cursor:pointer; transition:all .25s; flex-shrink:0; }
-.kb-tog.on { background:linear-gradient(135deg,#4f46e5,#7c3aed); border-color:transparent; }
+.kb-tog.on { background:#4f46e5; border-color:transparent; }
 .tog-knob { position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%; background:#fff; transition:transform .25s; box-shadow:0 1px 3px rgba(0,0,0,.3); }
 .kb-tog.on .tog-knob { transform:translateX(18px); }
 .hint-txt { font-size:12px; color:var(--t3); margin-top:6px; display:flex; align-items:center; gap:6px; }
@@ -1613,7 +1843,7 @@ onBeforeUnmount(()=>{ clearInterval(tInt); clearInterval(rInt) })
 .tp-row { display:flex; align-items:center; gap:8px; }
 .tp-pg { font-size:12px; color:var(--t2); min-width:70px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .tp-bar-wrap { flex:1; height:5px; background:rgba(255,255,255,.05); border-radius:99px; overflow:hidden; }
-.tp-bar { height:100%; background:linear-gradient(90deg,#06b6d4,#6366f1); border-radius:99px; transition:width .6s ease; }
+.tp-bar { height:100%; background:#06b6d4; border-radius:99px; transition:width .6s ease; }
 .tp-n { font-size:12px; color:var(--t3); min-width:24px; text-align:right; }
 
 /* ════════════════════════════════════
@@ -1629,7 +1859,9 @@ onBeforeUnmount(()=>{ clearInterval(tInt); clearInterval(rInt) })
 .kb-sel { padding:7px 10px; background:rgba(255,255,255,.04); border:1px solid var(--border); border-radius:8px; color:var(--t2); font-size:12.5px; outline:none; cursor:pointer; font-family:inherit; }
 .kb-sel option { background:#1e1e2e; }
 .kb-range { width:100%; accent-color:#6366f1; }
-.btn-primary { display:inline-flex; align-items:center; gap:7px; padding:8px 16px; background:linear-gradient(135deg,#4f46e5,#7c3aed); border:none; border-radius:9px; color:#fff; font-size:13px; font-weight:500; cursor:pointer; transition:all .2s; font-family:inherit; }
+.btn-primary { display:inline-flex; align-items:center; gap:7px; padding:8px 16px; background:#4f46e5; border:none; border-radius:9px; color:#fff; font-size:13px; font-weight:500; cursor:pointer; transition:filter .2s, transform .1s; font-family:inherit; }
+.btn-primary:hover { filter:brightness(1.1); }
+.btn-primary:active { transform:translateY(1px); }
 .btn-primary.full { width:100%; justify-content:center; }
 .btn-primary:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 4px 14px rgba(79,70,229,.4); }
 .btn-primary:disabled { opacity:.45; cursor:not-allowed; transform:none; }
@@ -1713,5 +1945,118 @@ onBeforeUnmount(()=>{ clearInterval(tInt); clearInterval(rInt) })
 .tr-content { padding:12px 14px; font-size:13.5px; color:var(--t2); line-height:1.65; white-space:pre-wrap; max-height:300px; overflow-y:auto; }
 
 @media(max-width:1100px){ .dash-mid,.dash-bot { flex-direction:column; } .activity-box,.donut-box { width:100%; } .notif-grid,.sec-grid { grid-template-columns:1fr; } }
-@media(max-width:768px){ .kba-topbar { flex-wrap:wrap; } .kbt-center { order:3; width:100%; max-width:100%; } .circ-row { grid-template-columns:repeat(2,1fr); } }
+
+/* ════════════════════════════════════
+   MOBILE NAVBAR + OFF-CANVAS SIDEBAR
+════════════════════════════════════ */
+@media(max-width:768px){
+  /* Desktop topbar is fully replaced by the mobile bar below */
+  .kba-topbar { display:none; }
+
+  .kba-mobile-bar {
+    display:flex; align-items:center; gap:10px;
+    padding:.65rem .85rem;
+    padding-top:max(.65rem, env(safe-area-inset-top));
+    background:var(--s2); border-bottom:1px solid var(--border);
+    position:sticky; top:0; z-index:40; flex-shrink:0;
+  }
+  .kmb-brand { display:flex; align-items:center; gap:8px; flex:1; min-width:0; font-size:14px; font-weight:800; color:#fff; }
+  .kmb-brand span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .kmb-logo { width:26px; height:26px; border-radius:7px; object-fit:contain; flex-shrink:0; }
+  .kmb-right { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+  .kmb-icon {
+    position:relative; width:32px; height:32px; border-radius:8px; flex-shrink:0;
+    background:rgba(255,255,255,.04); border:1px solid var(--border);
+    color:var(--t2); font-size:13px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .kmb-badge {
+    position:absolute; top:1px; right:1px; width:13px; height:13px; border-radius:50%;
+    background:var(--acc); color:#fff; font-size:7.5px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; line-height:1;
+  }
+  .kmb-avatar {
+    width:32px; height:32px; border-radius:50%; flex-shrink:0;
+    background:var(--acc); color:#fff; font-size:12px; font-weight:700; border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  .kmb-search-bar {
+    display:flex; align-items:center; gap:8px;
+    padding:.55rem .85rem; background:var(--s2); border-bottom:1px solid var(--border);
+    position:sticky; top:0; z-index:39;
+  }
+  .kmb-search-bar i { color:var(--t3); font-size:13px; flex-shrink:0; }
+  .kmb-search-bar input {
+    flex:1; min-width:0; background:rgba(255,255,255,.04); border:1px solid var(--border);
+    border-radius:8px; padding:8px 11px; color:var(--t1); font-size:13px; outline:none; font-family:inherit;
+  }
+  .kmb-search-bar button { background:none; border:none; color:var(--t3); font-size:15px; padding:4px; flex-shrink:0; }
+  .kmb-slide-enter-active, .kmb-slide-leave-active { transition:transform .2s ease, opacity .2s ease; }
+  .kmb-slide-enter-from, .kmb-slide-leave-to { transform:translateY(-8px); opacity:0; }
+
+  /* Sidebar becomes a full-height off-canvas drawer */
+  .kba-sidebar {
+    position:fixed; top:0; left:0; z-index:60;
+    height:100dvh;
+    width:270px !important; min-width:270px !important;
+    transform:translateX(-100%);
+    transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+    box-shadow:0 0 48px rgba(0,0,0,.45);
+    padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom);
+  }
+  .kba-sidebar.mobile-open { transform:translateX(0); }
+
+  /* Inside the drawer, always show full labels regardless of the
+     desktop collapsed state — collapsing only makes sense on desktop */
+  .kba-sidebar .kbs-name,
+  .kba-sidebar .kbs-label,
+  .kba-sidebar .kbs-group-label,
+  .kba-sidebar .kbs-count { opacity:1 !important; max-width:210px !important; max-height:24px !important; width:auto !important; padding-left:inherit; margin:inherit; }
+  .kba-sidebar .kbs-item,
+  .kba-sidebar .kbs-help,
+  .kba-sidebar .kbs-logout-row { justify-content:flex-start !important; padding:9px 8px !important; }
+  .kba-sidebar .kbs-brand { justify-content:flex-start !important; padding:1rem .8rem !important; }
+
+  .kba-body { padding:1rem .85rem calc(96px + env(safe-area-inset-bottom)); }
+  .circ-row { grid-template-columns:repeat(2,1fr); }
+  .dash-mid, .dash-bot { flex-direction:column; }
+  .activity-box, .donut-box { width:100%; }
+
+  /* ── Bottom nav bar (matches the reference nav-bar design) ── */
+  .kbn-bar {
+    display:flex; align-items:flex-end; justify-content:space-around;
+    position:fixed; left:12px; right:12px;
+    bottom:calc(12px + env(safe-area-inset-bottom));
+    z-index:50;
+    background:#fff;
+    border-radius:26px;
+    padding:10px 6px 10px;
+    box-shadow:0 12px 34px rgba(0,0,0,.35);
+    overflow:visible;
+  }
+  .kb-admin.light-theme .kbn-bar { background:#fff; box-shadow:0 12px 30px rgba(17,24,39,.14); }
+  .kbn-item {
+    display:flex; flex-direction:column; align-items:center; gap:5px;
+    background:none; border:none; flex:1; min-width:0;
+    padding:2px 2px 0; cursor:pointer;
+  }
+  .kbn-circle {
+    width:24px; height:24px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    color:#4b5563; font-size:16px;
+    transition:all .28s cubic-bezier(.34,1.56,.64,1);
+  }
+  .kbn-label { font-size:10px; font-weight:600; color:#6b7280; transition:color .2s, font-weight .2s; }
+  .kbn-item.active .kbn-circle {
+    width:54px; height:54px; margin-top:-34px;
+    background:linear-gradient(135deg,#7c3aed,#4f46e5 55%,#2563eb);
+    color:#fff; font-size:20px;
+    box-shadow:0 10px 22px rgba(79,70,229,.45);
+    border:4px solid #fff;
+  }
+  .kb-admin.light-theme .kbn-item.active .kbn-circle { border-color:#fff; }
+  .kbn-item.active .kbn-label { color:#111827; font-weight:800; }
+}
+
 </style>
