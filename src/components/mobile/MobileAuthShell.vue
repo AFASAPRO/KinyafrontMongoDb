@@ -31,35 +31,51 @@ defineProps({ title: String, subtitle: String })
   background: var(--bg-base); color: var(--text-1);
   overflow-y: auto; -webkit-overflow-scrolling: touch;
 }
-/* Curved brand header (layout of the reference login, KinyaBot colours) */
+/* Flat brand header — solid accent, no gradient wash, gently curved */
 .mas-hd {
   position: relative; flex-shrink: 0;
-  padding: max(28px, calc(env(safe-area-inset-top) + 16px)) 26px 54px;
-  background: var(--accent); color: #fff;
-  border-bottom-left-radius: 62% 64px;
-  border-bottom-right-radius: 8% 18px;
-  animation: masDrop .5s cubic-bezier(.22,1,.36,1) both;
+  padding: max(20px, calc(env(safe-area-inset-top) + 12px)) 22px 38px;
+  background: var(--accent-solid); color: #fff;
+  border-bottom-left-radius: 50% 34px;
+  border-bottom-right-radius: 6% 12px;
+  animation: masDrop .45s cubic-bezier(.22,1,.36,1) both;
 }
-.mas-hd::before {
-  content: ''; position: absolute; right: -40px; top: -50px;
-  width: 190px; height: 190px; border-radius: 50%;
-  background: rgba(255,255,255,.10); pointer-events: none;
-}
-.mas-brand { display: flex; align-items: center; gap: 10px; margin-top: 14px; position: relative; }
-.mas-brand img { width: 38px; height: 38px; border-radius: 11px; object-fit: contain; background: rgba(255,255,255,.16); padding: 3px; }
-.mas-brand span { font-size: 26px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
-.mas-sub { margin-top: 8px; font-size: 13px; opacity: .82; position: relative; }
+.mas-brand { display: flex; align-items: center; gap: 9px; margin-top: 10px; position: relative; }
+.mas-brand img { width: 32px; height: 32px; border-radius: 9px; object-fit: contain; background: rgba(255,255,255,.14); padding: 3px; }
+.mas-brand span { font-size: 21px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.mas-sub { margin-top: 6px; font-size: 12.5px; opacity: .82; position: relative; }
 .mas-theme {
-  position: absolute; top: max(14px, env(safe-area-inset-top)); right: 16px; z-index: 2;
-  width: 38px; height: 38px; border-radius: 50%;
-  background: rgba(255,255,255,.18); color: #fff; font-size: 14px;
+  position: absolute; top: max(10px, env(safe-area-inset-top)); right: 14px; z-index: 2;
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255,255,255,.16); color: #fff; font-size: 13px;
   display: flex; align-items: center; justify-content: center;
   transition: transform .15s, background .2s;
 }
 .mas-theme:active { transform: scale(.9); }
 
-.mas-body { flex: 1; padding: 22px 26px calc(28px + env(safe-area-inset-bottom)); animation: fadeUp .5s .1s ease both; }
-.mas-title { font-size: 26px; font-weight: 700; margin-bottom: 18px; color: var(--text-1); }
+.mas-body { flex: 1; padding: 20px 22px calc(24px + env(safe-area-inset-bottom)); }
+.mas-title { font-size: 22px; font-weight: 700; margin-bottom: 16px; color: var(--text-1); animation: fadeUp .4s ease both; }
 
-@keyframes masDrop { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: none; } }
+/* Staggered fade/slide-in for every direct field — modern app entrance */
+.mas-body :deep(> form > *),
+.mas-body :deep(> .m-or),
+.mas-body :deep(> .m-social),
+.mas-body :deep(> .m-switch),
+.mas-body :deep(> .m-center) {
+  animation: fieldIn .4s cubic-bezier(.22,1,.36,1) both;
+}
+.mas-body :deep(> form > *:nth-child(1)) { animation-delay: .04s; }
+.mas-body :deep(> form > *:nth-child(2)) { animation-delay: .09s; }
+.mas-body :deep(> form > *:nth-child(3)) { animation-delay: .14s; }
+.mas-body :deep(> form > *:nth-child(4)) { animation-delay: .19s; }
+.mas-body :deep(> form > *:nth-child(5)) { animation-delay: .24s; }
+.mas-body :deep(> .m-or)     { animation-delay: .26s; }
+.mas-body :deep(> .m-social) { animation-delay: .3s; }
+.mas-body :deep(> .m-switch) { animation-delay: .34s; }
+
+@keyframes masDrop { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
+@keyframes fieldIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .mas-hd, .mas-title, .mas-body :deep(*) { animation: none !important; }
+}
 </style>

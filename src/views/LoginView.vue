@@ -48,7 +48,6 @@
     </transition>
 
     <p class="m-switch">Don't have an account?<router-link to="/register">Sign up</router-link></p>
-    <div v-if="showInstall" class="m-install"><InstallHint variant="button" label="Install KinyaBot App" compact /></div>
   </MobileAuthShell>
 
   <!-- ═══ DESKTOP LAYOUT ═══ -->

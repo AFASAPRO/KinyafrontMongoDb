@@ -33,21 +33,24 @@
       <!-- Welcome screen -->
       <!-- ═══ MOBILE HOME ═══ -->
       <div v-if="isPhone && !hasMessages" class="m-home">
-        <button class="m-orb" :class="{ pop: orbPop }" @click="popOrb" aria-label="KinyaBot">
-          <span class="o o1"></span><span class="o o2"></span><span class="o o3"></span>
-          <img src="/logo.png" alt="" class="o-logo" />
+        <button class="m-orb" :class="{ pop: orbPop }" @click="popOrb" aria-label="KinyaBot assistant">
+          <span class="ring r1"></span><span class="ring r2"></span>
+          <span class="o-core"><i class="fas fa-sparkles"></i></span>
         </button>
-        <span class="m-tag"><i class="fas fa-wand-magic-sparkles"></i> AI assistant</span>
+        <span class="m-tag"><i class="fas fa-circle" style="font-size:7px"></i> AI assistant</span>
         <h1 class="m-greet">
-          Greetings, <em>{{ firstName }}!</em><br />
-          How may I <em>assist you</em><br />today?
+          <template v-for="(part, pi) in greeting.parts" :key="pi">
+            <em v-if="part.hl">{{ part.t }}</em><template v-else>{{ part.t }}</template>
+          </template>
         </h1>
         <div class="m-chips">
-          <div v-for="(row, ri) in mobileChipRows" :key="ri" class="m-chip-row" :class="`r${ri}`">
-            <button v-for="c in row" :key="c.lead" class="m-chip" @click="useChip(c.prompt)">
-              <span class="ic"><i :class="c.icon"></i></span>
-              <span>{{ c.lead }} <b>{{ c.accent }}</b></span>
-            </button>
+          <div v-for="(row, ri) in marqueeRows" :key="ri" class="m-chip-row" :class="`r${ri}`">
+            <div class="m-chip-track" :class="`dir${ri}`">
+              <button v-for="(c,ci) in row" :key="ri+'-'+ci" class="m-chip" type="button" @click="useChip(c.prompt)">
+                <span class="ic"><i :class="c.icon"></i></span>
+                <span>{{ c.lead }} <b>{{ c.accent }}</b></span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -206,10 +209,26 @@ const isPhone = useIsMobile()
 const hasMessages = computed(() => !!chatStore.activeChat && chatStore.messages.length > 0)
 const firstName = computed(() => {
   const n = (auth.user?.username || '').trim().split(/\s+/)[0]
-  return !props.guest && n ? n : 'friend'
+  return !props.guest && n ? n : ''
 })
 
-// Mobile home: interactive orb + two swipeable suggestion rows
+/**
+ * Time-of-day greeting, refreshed every time the home screen is shown.
+ * Mirrors how modern AI apps (ChatGPT, Gemini…) vary the welcome line by
+ * the hour — late-night gets a different tone than a weekday morning.
+ * `parts` drives the template so specific words stay highlighted in --purple.
+ */
+function buildGreeting(hour, name) {
+  const who = name ? name : 'friend'
+  if (hour >= 5 && hour < 12)  return [{ t: `Morning, ${who}! ` }, { t: 'Have an idea?', hl: true }]
+  if (hour >= 12 && hour < 17) return [{ t: `Good afternoon, ${who}. ` }, { t: "What's on your mind?", hl: true }]
+  if (hour >= 17 && hour < 21) return [{ t: `Good evening, ${who}. ` }, { t: 'How can I help?', hl: true }]
+  if (hour >= 21 || hour < 1)  return [{ t: `Still up, ${who}? ` }, { t: "I'm here.", hl: true }]
+  return [{ t: `${who}, back again? ` }, { t: "Let's make it count.", hl: true }]
+}
+const greeting = computed(() => ({ parts: buildGreeting(new Date().getHours(), firstName.value) }))
+
+// Mobile home: interactive orb + two auto-scrolling suggestion rows
 const orbPop = ref(false)
 function popOrb() { orbPop.value = false; requestAnimationFrame(() => { orbPop.value = true; setTimeout(() => { orbPop.value = false }, 700) }) }
 const mobileChipRows = [
@@ -226,6 +245,9 @@ const mobileChipRows = [
     { icon:'fas fa-film', lead:'Recommend', accent:'a movie', prompt:'Recommend a good movie and tell me why I would like it' },
   ]
 ]
+// Each row's items are duplicated so the CSS marquee loop is seamless;
+// row 0 drifts right-to-left, row 1 drifts left-to-right (dir0 / dir1).
+const marqueeRows = mobileChipRows.map(row => [...row, ...row])
 const followups = ['Tell me more', 'Give an example', 'Make it shorter']
 const showFollowups = computed(() => {
   if (props.guest || chatStore.sending || chatStore.streaming) return false
@@ -492,56 +514,62 @@ onBeforeUnmount(() => {
 
 /* ═══════════ MOBILE (≤768px): home + conversation ═══════════ */
 @media(max-width:768px){
-  .chat-window { background:transparent; }
-  .chat-topbar { padding:0 16px 2px; justify-content:flex-end; }
+  .chat-window { background:var(--bg-base); }
+  .chat-topbar { padding:0 14px 2px; justify-content:flex-end; }
   .chat-topbar .model-pill, .chat-topbar .chat-title-pill { display:none; }
-  .voice-pill { margin-left:0; height:34px; background:rgba(109,40,217,.14); color:var(--purple); border-color:rgba(109,40,217,.3); }
-  .voice-pill .vp-label { display:inline; }
-  .msg-area { padding:6px 16px 10px !important; }
+  .voice-pill { margin-left:0; height:32px; padding:0 12px; background:var(--bg-card); color:var(--purple); border-color:var(--border-md); }
+  .voice-pill .vp-label { display:inline; font-size:12px; }
+  .msg-area { padding:4px 14px 8px !important; }
 
-  .m-day { align-self:center; margin:6px 0 10px; padding:4px 16px; border-radius:99px; background:var(--bg-card); border:1px solid var(--border); color:var(--text-3); font-size:11.5px; }
+  .m-day { align-self:center; margin:4px 0 8px; padding:3px 14px; border-radius:99px; background:var(--bg-card); border:1px solid var(--border); color:var(--text-3); font-size:11px; }
 
-  /* Home */
-  .m-home { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:100%; padding:0 0 8px; animation:fadeUp .5s ease both; }
-  .m-orb { position:relative; width:min(62vw,250px); aspect-ratio:1; margin-bottom:14px; background:none; -webkit-tap-highlight-color:transparent; transition:transform .3s cubic-bezier(.34,1.56,.64,1); animation:orbFloat 6s ease-in-out infinite; }
-  .m-orb:active { transform:scale(.92); }
-  .m-orb.pop { animation:orbPop .7s cubic-bezier(.34,1.56,.64,1), orbFloat 6s ease-in-out infinite; }
-  .m-orb .o { position:absolute; display:block; border-radius:46% 54% 58% 42% / 48% 44% 56% 52%; animation:orbMorph 9s ease-in-out infinite; }
-  .m-orb .o1 { inset:6%; background:radial-gradient(circle at 30% 25%, #c4b5fd 0%, var(--accent-solid) 55%, #4f46e5 100%); opacity:.92; box-shadow:0 26px 50px -14px rgba(109,40,217,.6); }
-  .m-orb .o2 { inset:18% 8% 10% 22%; background:radial-gradient(circle at 60% 30%, rgba(255,255,255,.5), rgba(168,85,247,.55) 60%, transparent 100%); animation-duration:11s; animation-direction:reverse; mix-blend-mode:screen; }
-  .m-orb .o3 { inset:0 24% 42% 0; background:radial-gradient(circle at 40% 40%, rgba(255,255,255,.65), transparent 70%); filter:blur(6px); animation-duration:13s; }
-  .m-orb .o-logo { position:absolute; left:50%; top:50%; width:26%; transform:translate(-50%,-50%); border-radius:14px; filter:drop-shadow(0 4px 10px rgba(0,0,0,.35)); }
+  /* Home — compact, flat, no stacked gradients */
+  .m-home { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:100%; padding:0 0 6px; animation:fadeUp .45s ease both; }
 
-  .m-tag { display:inline-flex; align-items:center; gap:6px; padding:7px 16px; border-radius:99px; background:var(--bg-card); border:1px solid var(--border-md); color:var(--text-1); font-size:12.5px; font-weight:600; box-shadow:0 6px 16px -8px rgba(0,0,0,.35); }
-  .m-tag i { color:var(--purple); font-size:11px; }
-  .m-greet { margin:16px 0 20px; font-size:clamp(1.6rem,7.4vw,2.05rem); line-height:1.2; font-weight:800; letter-spacing:-.01em; color:var(--text-1); }
+  .m-orb { position:relative; width:min(34vw,132px); aspect-ratio:1; margin-bottom:12px; background:none; -webkit-tap-highlight-color:transparent; animation:orbFloat 5s ease-in-out infinite; }
+  .m-orb:active .o-core { transform:translate(-50%,-50%) scale(.92); }
+  .o-core {
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:72%; height:72%; border-radius:50%;
+    background:var(--accent-solid); color:#fff; font-size:22px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 10px 22px -8px rgba(109,40,217,.5);
+    transition:transform .2s cubic-bezier(.34,1.56,.64,1);
+  }
+  .ring { position:absolute; inset:0; border-radius:50%; border:1.5px solid var(--accent-solid); opacity:0; }
+  .m-orb.pop .ring { animation:ringPulse 1s cubic-bezier(0,.6,.4,1) both; }
+  .m-orb.pop .ring.r2 { animation-delay:.15s; }
+  .m-orb.pop .o-core { animation:corePop .5s cubic-bezier(.34,1.56,.64,1) both; }
+
+  .m-tag { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:99px; background:var(--bg-card); border:1px solid var(--border-md); color:var(--text-2); font-size:11.5px; font-weight:600; }
+  .m-tag i { color:var(--purple); }
+  .m-greet { margin:14px 0 18px; font-size:clamp(1.28rem,6vw,1.6rem); line-height:1.28; font-weight:700; letter-spacing:-.01em; color:var(--text-1); max-width:29ch; }
   .m-greet em { font-style:normal; color:var(--purple); }
 
-  .m-chips { width:calc(100% + 32px); margin:0; display:flex; flex-direction:column; gap:10px; }
-  .m-chip-row { display:flex; gap:10px; overflow-x:auto; padding:2px 16px 6px; scroll-snap-type:x proximity; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
-  .m-chip-row::-webkit-scrollbar { display:none; }
-  .m-chip-row.r1 { padding-left:38px; }
-  .m-chip { flex:0 0 auto; scroll-snap-align:start; display:flex; align-items:center; gap:10px; height:50px; padding:0 18px 0 10px; border-radius:99px; background:var(--bg-card); border:1px solid var(--border-md); color:var(--text-1); font-size:13.5px; white-space:nowrap; box-shadow:0 6px 16px -10px rgba(0,0,0,.4); transition:transform .15s, border-color .2s; }
+  .m-chips { width:100%; display:flex; flex-direction:column; gap:8px; }
+  .m-chip-row { width:100%; overflow:hidden; -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent); mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent); }
+  .m-chip-track { display:flex; gap:8px; width:max-content; padding:2px 2px 4px; animation:marqueeL 26s linear infinite; }
+  .m-chip-track.dir1 { animation-name:marqueeR; animation-duration:30s; }
+  .m-chip-row:active .m-chip-track { animation-play-state:paused; }
+  .m-chip { flex:0 0 auto; display:flex; align-items:center; gap:8px; height:40px; padding:0 14px 0 8px; border-radius:99px; background:var(--bg-card); border:1px solid var(--border-md); color:var(--text-1); font-size:12.5px; white-space:nowrap; transition:transform .15s, border-color .2s; }
   .m-chip:active { transform:scale(.95); border-color:var(--accent-solid); }
   .m-chip b { color:var(--purple); font-weight:600; }
-  .m-chip .ic { width:30px; height:30px; border-radius:50%; background:rgba(109,40,217,.16); color:var(--purple); font-size:12.5px; display:flex; align-items:center; justify-content:center; }
+  .m-chip .ic { width:24px; height:24px; border-radius:50%; background:rgba(109,40,217,.14); color:var(--purple); font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 
-  /* Follow-up suggestions */
-  .m-follow { display:flex; flex-wrap:wrap; gap:8px; margin:2px 0 10px 42px; }
-  .m-follow button { display:inline-flex; align-items:center; gap:7px; height:38px; padding:0 15px; border-radius:99px; background:var(--bg-card); border:1px solid var(--border-md); color:var(--purple); font-size:13px; font-weight:600; transition:transform .15s, background .2s; }
-  .m-follow button:active { transform:scale(.94); background:rgba(109,40,217,.16); }
-  .m-follow i { font-size:11px; }
+  /* Suggested follow-ups */
+  .m-follow { display:flex; flex-wrap:wrap; gap:7px; margin:2px 0 8px 40px; }
+  .m-follow button { display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 13px; border-radius:99px; background:var(--bg-card); border:1px solid var(--border-md); color:var(--purple); font-size:12.5px; font-weight:600; transition:transform .15s, background .2s; }
+  .m-follow button:active { transform:scale(.94); background:rgba(109,40,217,.14); }
+  .m-follow i { font-size:10px; }
 
-  .stop-btn { border-radius:99px; height:38px; }
-  .scroll-fab { bottom:96px; right:16px; width:40px; height:40px; }
-  .copy-toast { bottom:100px; }
+  .stop-btn { border-radius:99px; height:36px; }
+  .scroll-fab { bottom:92px; right:14px; width:38px; height:38px; }
+  .copy-toast { bottom:96px; }
 }
-@keyframes orbMorph {
-  0%,100% { border-radius:46% 54% 58% 42% / 48% 44% 56% 52%; transform:rotate(0); }
-  33% { border-radius:58% 42% 44% 56% / 54% 58% 42% 46%; transform:rotate(60deg); }
-  66% { border-radius:42% 58% 52% 48% / 44% 50% 50% 56%; transform:rotate(-40deg); }
-}
-@keyframes orbFloat { 0%,100% { translate:0 0; } 50% { translate:0 -10px; } }
-@keyframes orbPop { 0% { scale:1; } 40% { scale:1.14; } 100% { scale:1; } }
-@media (prefers-reduced-motion: reduce) { .m-orb, .m-orb .o { animation:none !important; } }
+@keyframes marqueeL { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+@keyframes marqueeR { from { transform:translateX(-50%); } to { transform:translateX(0); } }
+@keyframes ringPulse { from { opacity:.55; transform:scale(1); } to { opacity:0; transform:scale(1.55); } }
+@keyframes corePop { 0% { transform:translate(-50%,-50%) scale(1); } 45% { transform:translate(-50%,-50%) scale(1.12); } 100% { transform:translate(-50%,-50%) scale(1); } }
+@keyframes orbFloat { 0%,100% { translate:0 0; } 50% { translate:0 -8px; } }
+@media (prefers-reduced-motion: reduce) { .m-orb, .m-chip-track, .ring, .o-core { animation:none !important; } }
 </style>

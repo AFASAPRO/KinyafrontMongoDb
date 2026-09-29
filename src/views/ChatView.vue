@@ -365,38 +365,38 @@ onBeforeUnmount(() => {
   .auth-btn { padding:6px 10px; font-size:12px; }
 }
 
-@media(max-width:768px){ .main-col { background:radial-gradient(120% 55% at 50% 0%, rgba(109,40,217,.22), transparent 62%), var(--bg-base); } }
+@media(max-width:768px){ .main-col { background:var(--bg-base); } }
 
 /* ═══ MOBILE HEADER ═══ */
 .m-hd {
-  display:flex; align-items:center; justify-content:space-between; gap:10px; flex-shrink:0;
-  padding:max(10px, env(safe-area-inset-top)) 16px 8px;
-  background:transparent; position:relative; z-index:5;
+  display:flex; align-items:center; justify-content:space-between; gap:8px; flex-shrink:0;
+  padding:max(8px, env(safe-area-inset-top)) 14px 6px;
+  background:var(--bg-base); position:relative; z-index:5;
+  animation:fadeUp .4s ease both;
 }
 .m-brand {
-  display:flex; align-items:center; gap:9px; height:46px; padding:0 14px 0 6px;
+  display:flex; align-items:center; gap:8px; height:40px; padding:0 12px 0 5px;
   background:var(--bg-card); border:1px solid var(--border-md); border-radius:99px;
-  color:var(--text-1); box-shadow:0 6px 18px -8px rgba(0,0,0,.35);
-  transition:transform .15s;
+  color:var(--text-1); transition:transform .15s, background .15s;
 }
-.m-brand:active { transform:scale(.96); }
-.m-brand-ic { width:34px; height:34px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; }
-.m-brand-ic img { width:20px; height:20px; object-fit:contain; border-radius:5px; }
-.m-brand b { font-size:14.5px; font-weight:700; letter-spacing:.01em; }
+.m-brand:active { transform:scale(.96); background:var(--bg-hover); }
+.m-brand-ic { width:28px; height:28px; border-radius:50%; background:var(--accent-solid); display:flex; align-items:center; justify-content:center; }
+.m-brand-ic img { width:16px; height:16px; object-fit:contain; border-radius:4px; }
+.m-brand b { font-size:13.5px; font-weight:700; letter-spacing:.01em; }
 .m-brand b span { color:var(--purple); }
-.m-brand > i { font-size:12px; color:var(--text-3); margin-left:2px; }
-.m-hd-right { display:flex; align-items:center; gap:8px; }
-.m-signin { height:40px; padding:0 16px; border-radius:99px; background:var(--accent); color:#fff; font-size:13px; font-weight:600; box-shadow:0 8px 18px -8px rgba(109,40,217,.6); }
+.m-brand > i { font-size:11px; color:var(--text-3); margin-left:1px; }
+.m-hd-right { display:flex; align-items:center; gap:7px; }
+.m-signin { height:36px; padding:0 14px; border-radius:99px; background:var(--accent-solid); color:#fff; font-size:12.5px; font-weight:600; }
 .m-circle {
-  width:46px; height:46px; border-radius:50%; flex-shrink:0;
+  width:40px; height:40px; border-radius:50%; flex-shrink:0;
   background:var(--bg-card); border:1px solid var(--border-md);
-  color:var(--purple); font-size:16px; box-shadow:0 6px 18px -8px rgba(0,0,0,.35);
+  color:var(--purple); font-size:14px;
   display:flex; align-items:center; justify-content:center; transition:transform .15s, background .2s;
 }
 .m-circle:active { transform:scale(.9); background:var(--bg-hover); }
 .m-title { flex:1; min-width:0; background:none; display:flex; flex-direction:column; align-items:center; gap:1px; color:var(--text-1); }
-.m-title b { max-width:100%; font-size:15.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.m-status { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-2); }
-.m-status i { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 0 3px rgba(52,168,83,.2); }
-.m-status.busy i { background:var(--purple); box-shadow:0 0 0 3px rgba(197,138,249,.25); animation:pulse 1s infinite; }
+.m-title b { max-width:100%; font-size:14.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.m-status { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-2); }
+.m-status i { width:6px; height:6px; border-radius:50%; background:var(--green); }
+.m-status.busy i { background:var(--purple); animation:pulse 1s infinite; }
 </style>

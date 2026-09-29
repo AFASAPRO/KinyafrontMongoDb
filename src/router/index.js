@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { isMobileViewport, hasSeenIntro } from '../composables/useIsMobile'
 
 /**
  * CHAT-FIRST ROUTING
@@ -21,6 +22,9 @@ const routes = [
   // Legacy deep links & the PWA "New Chat" shortcut still land here
   // (query — e.g. ?new=1 — is preserved through the redirect)
   { path: '/chat', redirect: (to) => ({ path: '/', query: to.query }) },
+  // First-run mobile intro (image-1 style "Get Started" screen). Guest-only,
+  // shown once per device — see the beforeEach guard below.
+  { path: '/welcome',         component: () => import('../views/GetStartedView.vue'),       meta: { guestOnly: true } },
   { path: '/login',           component: () => import('../views/LoginView.vue'),            meta: { guestOnly: true } },
   { path: '/register',        component: () => import('../views/RegisterView.vue'),         meta: { guestOnly: true } },
   { path: '/onboarding',      component: () => import('../views/OnboardingView.vue'),       meta: { requiresAuth: true } },
@@ -55,6 +59,13 @@ router.beforeEach(async (to) => {
   // Guest-only routes (login/register/reset): members go straight to chat
   if (to.meta.guestOnly && authed) {
     return auth.needsOnboarding ? '/onboarding' : '/'
+  }
+
+  // First-time phone visitors land on the "Get Started" intro once, before
+  // ever seeing the chat UI. Desktop is unaffected; returning/logged-in
+  // visitors skip straight past it.
+  if (to.path === '/' && !authed && isMobileViewport() && !hasSeenIntro()) {
+    return '/welcome'
   }
 
   // Fresh registrations must finish onboarding before anything else

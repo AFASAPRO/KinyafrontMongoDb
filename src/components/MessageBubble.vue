@@ -595,23 +595,23 @@ function doDelete() {
 
 /* ═══════════ MOBILE (≤768px): chat bubbles ═══════════ */
 @media(max-width:768px){
-  .msg-row { gap:8px; padding:6px 0; }
-  .bot-avatar { width:34px; height:34px; background:var(--accent); border:none; padding:6px; box-shadow:0 6px 14px -6px rgba(109,40,217,.6); }
+  .msg-row { gap:7px; padding:4px 0; animation:fadeUp .3s ease both; }
+  .bot-avatar { width:28px; height:28px; background:var(--accent-solid); border:none; padding:5px; }
   .user-avatar { display:none; }
-  .bubble-col { max-width:calc(100% - 44px) !important; }
-  .bubble-col.user { max-width:84% !important; margin-left:auto; }
-  .ai-name { display:block; font-size:12px; font-weight:600; color:var(--purple); margin:2px 0 5px 4px; }
+  .bubble-col { max-width:calc(100% - 38px) !important; }
+  .bubble-col.user { max-width:86% !important; margin-left:auto; }
+  .ai-name { display:block; font-size:11px; font-weight:600; color:var(--purple); margin:1px 0 4px 3px; }
 
-  .bubble.assistant { background:var(--bg-card) !important; border:1px solid var(--border) !important; border-radius:6px 22px 22px 22px; padding:12px 16px; box-shadow:0 8px 20px -14px rgba(0,0,0,.5); }
-  .bubble.user { background:var(--accent) !important; border:none !important; border-radius:22px 22px 6px 22px; padding:12px 17px; box-shadow:0 10px 22px -10px rgba(109,40,217,.65); }
+  .bubble.assistant { background:var(--bg-card) !important; border:1px solid var(--border) !important; border-radius:5px 18px 18px 18px; padding:11px 14px; }
+  .bubble.user { background:var(--accent-solid) !important; border:none !important; border-radius:18px 18px 5px 18px; padding:11px 15px; }
   .bubble.user .user-text, .bubble.user .content { color:#fff !important; }
 
-  .typing-bubble { border-radius:6px 22px 22px 22px; padding:14px 18px; }
-  .error-bubble { border-radius:6px 20px 20px 20px; }
+  .typing-bubble { border-radius:5px 18px 18px 18px; padding:12px 16px; }
+  .error-bubble { border-radius:5px 16px 16px 16px; }
 
-  .actions { opacity:1; gap:6px; margin-top:8px; padding-left:2px; }
+  .actions { opacity:1; gap:5px; margin-top:6px; padding-left:1px; }
   .actions.user { display:none; }
-  .act-btn { width:34px; height:34px; border-radius:50%; background:var(--bg-card); border:1px solid var(--border); color:var(--purple); font-size:13px; }
+  .act-btn { width:30px; height:30px; border-radius:50%; background:var(--bg-card); border:1px solid var(--border); color:var(--purple); font-size:12px; }
   .act-btn:active { transform:scale(.88); }
   .act-btn.danger { color:var(--text-3); }
   .msg-time { display:none; }

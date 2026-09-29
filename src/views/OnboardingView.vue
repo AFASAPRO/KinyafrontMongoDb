@@ -10,13 +10,20 @@
 
     <!-- Header -->
     <div class="ob-header">
+      <button v-if="step>1" class="ob-back-arrow" type="button" @click="step--" aria-label="Back">
+        <i class="fas fa-chevron-left"></i>
+      </button>
       <div class="ob-brand">
         <img src="/logo.png" alt="KinyaBot" class="ob-brand-logo" />
         <span>KinyaBot</span>
       </div>
-      <!-- Progress bar -->
+      <!-- Progress bar (desktop: smooth fill) -->
       <div class="ob-progress-bar">
         <div class="ob-progress-fill" :style="{ width: ((step-1)/totalSteps*100) + '%' }"></div>
+      </div>
+      <!-- Progress dashes (mobile: segmented, screenshot-style) -->
+      <div class="ob-dashes" role="progressbar" :aria-valuenow="step" :aria-valuemax="totalSteps">
+        <span v-for="n in totalSteps" :key="n" class="ob-dash" :class="{ filled: n <= step }"></span>
       </div>
       <div class="ob-step-text">{{ step }} / {{ totalSteps }}</div>
     </div>
@@ -260,6 +267,8 @@ async function finish() {
 .ob-progress-bar{flex:1;height:4px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden}
 .ob-progress-fill{height:100%;background:linear-gradient(90deg,#4f46e5,#a855f7);transition:width .4s cubic-bezier(.4,0,.2,1)}
 .ob-step-text{font-size:12px;font-weight:600;color:var(--text-3)}
+.ob-back-arrow{display:none}
+.ob-dashes{display:none}
 
 .ob-card{width:100%;max-width:700px;background:#111112;border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:2.5rem;z-index:2;box-shadow:0 20px 50px rgba(0,0,0,.3);position:relative}
 .ob-root.light .ob-card{background:#fff;border-color:#e0e0e0;box-shadow:0 10px 30px rgba(0,0,0,.05)}
