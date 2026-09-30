@@ -5,14 +5,18 @@
       <div class="m-field">
         <label class="m-label" for="rp-new">New password</label>
         <div class="m-input-wrap">
-          <input id="rp-new" v-model="password" :type="showPass?'text':'password'" class="m-input" placeholder="Min. 8 characters" autocomplete="new-password" />
+          <i class="m-ic fas fa-lock"></i>
+          <input id="rp-new" v-model="password" :type="showPass?'text':'password'" class="m-input has-ic" placeholder="Min. 8 characters" autocomplete="new-password" />
           <button type="button" class="m-eye" @click="showPass=!showPass"><i :class="showPass?'far fa-eye-slash':'far fa-eye'"></i></button>
         </div>
         <div v-if="password" class="m-strength"><div :style="{width:strength.pct+'%',background:strength.color}"></div></div>
       </div>
       <div class="m-field">
         <label class="m-label" for="rp-conf">Confirm password</label>
-        <input id="rp-conf" v-model="confirm" type="password" class="m-input" :class="{error:confirm&&confirm!==password}" placeholder="Repeat password" @keyup.enter="submit" autocomplete="new-password" />
+        <div class="m-input-wrap">
+          <i class="m-ic fas fa-lock"></i>
+          <input id="rp-conf" v-model="confirm" type="password" class="m-input has-ic" :class="{error:confirm&&confirm!==password}" placeholder="Repeat password" @keyup.enter="submit" autocomplete="new-password" />
+        </div>
         <span v-if="confirm && confirm!==password" class="m-err">Passwords don't match</span>
       </div>
       <div v-if="error" class="m-notice err"><i class="fas fa-circle-exclamation"></i><span>{{ error }}</span></div>

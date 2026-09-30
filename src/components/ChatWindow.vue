@@ -33,11 +33,6 @@
       <!-- Welcome screen -->
       <!-- ═══ MOBILE HOME ═══ -->
       <div v-if="isPhone && !hasMessages" class="m-home">
-        <button class="m-orb" :class="{ pop: orbPop }" @click="popOrb" aria-label="KinyaBot assistant">
-          <span class="ring r1"></span><span class="ring r2"></span>
-          <span class="o-core"><i class="fas fa-sparkles"></i></span>
-        </button>
-        <span class="m-tag"><i class="fas fa-circle" style="font-size:7px"></i> AI assistant</span>
         <h1 class="m-greet">
           <template v-for="(part, pi) in greeting.parts" :key="pi">
             <em v-if="part.hl">{{ part.t }}</em><template v-else>{{ part.t }}</template>
@@ -228,9 +223,7 @@ function buildGreeting(hour, name) {
 }
 const greeting = computed(() => ({ parts: buildGreeting(new Date().getHours(), firstName.value) }))
 
-// Mobile home: interactive orb + two auto-scrolling suggestion rows
-const orbPop = ref(false)
-function popOrb() { orbPop.value = false; requestAnimationFrame(() => { orbPop.value = true; setTimeout(() => { orbPop.value = false }, 700) }) }
+// Mobile home: two auto-scrolling suggestion rows
 const mobileChipRows = [
   [
     { icon:'fas fa-lightbulb', lead:'Tell me', accent:'a fun fact', prompt:'Tell me a fun fact I probably do not know' },
@@ -523,27 +516,10 @@ onBeforeUnmount(() => {
 
   .m-day { align-self:center; margin:4px 0 8px; padding:3px 14px; border-radius:99px; background:var(--bg-card); border:1px solid var(--border); color:var(--text-3); font-size:11px; }
 
-  /* Home — compact, flat, no stacked gradients */
-  .m-home { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:100%; padding:0 0 6px; animation:fadeUp .45s ease both; }
+  /* Home — the greeting is the hero: flat, no orb, no stray labels */
+  .m-home { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center; min-height:100%; padding:12vh 0 6px; animation:fadeUp .45s ease both; }
 
-  .m-orb { position:relative; width:min(34vw,132px); aspect-ratio:1; margin-bottom:12px; background:none; -webkit-tap-highlight-color:transparent; animation:orbFloat 5s ease-in-out infinite; }
-  .m-orb:active .o-core { transform:translate(-50%,-50%) scale(.92); }
-  .o-core {
-    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-    width:72%; height:72%; border-radius:50%;
-    background:var(--accent-solid); color:#fff; font-size:22px;
-    display:flex; align-items:center; justify-content:center;
-    box-shadow:0 10px 22px -8px rgba(109,40,217,.5);
-    transition:transform .2s cubic-bezier(.34,1.56,.64,1);
-  }
-  .ring { position:absolute; inset:0; border-radius:50%; border:1.5px solid var(--accent-solid); opacity:0; }
-  .m-orb.pop .ring { animation:ringPulse 1s cubic-bezier(0,.6,.4,1) both; }
-  .m-orb.pop .ring.r2 { animation-delay:.15s; }
-  .m-orb.pop .o-core { animation:corePop .5s cubic-bezier(.34,1.56,.64,1) both; }
-
-  .m-tag { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:99px; background:var(--bg-card); border:1px solid var(--border-md); color:var(--text-2); font-size:11.5px; font-weight:600; }
-  .m-tag i { color:var(--purple); }
-  .m-greet { margin:14px 0 18px; font-size:clamp(1.28rem,6vw,1.6rem); line-height:1.28; font-weight:700; letter-spacing:-.01em; color:var(--text-1); max-width:29ch; }
+  .m-greet { margin:0 0 26px; font-size:clamp(1.7rem,8.2vw,2.3rem); line-height:1.22; font-weight:800; letter-spacing:-.015em; color:var(--text-1); max-width:15ch; }
   .m-greet em { font-style:normal; color:var(--purple); }
 
   .m-chips { width:100%; display:flex; flex-direction:column; gap:8px; }
@@ -568,8 +544,5 @@ onBeforeUnmount(() => {
 }
 @keyframes marqueeL { from { transform:translateX(0); } to { transform:translateX(-50%); } }
 @keyframes marqueeR { from { transform:translateX(-50%); } to { transform:translateX(0); } }
-@keyframes ringPulse { from { opacity:.55; transform:scale(1); } to { opacity:0; transform:scale(1.55); } }
-@keyframes corePop { 0% { transform:translate(-50%,-50%) scale(1); } 45% { transform:translate(-50%,-50%) scale(1.12); } 100% { transform:translate(-50%,-50%) scale(1); } }
-@keyframes orbFloat { 0%,100% { translate:0 0; } 50% { translate:0 -8px; } }
-@media (prefers-reduced-motion: reduce) { .m-orb, .m-chip-track, .ring, .o-core { animation:none !important; } }
+@media (prefers-reduced-motion: reduce) { .m-chip-track { animation:none !important; } }
 </style>

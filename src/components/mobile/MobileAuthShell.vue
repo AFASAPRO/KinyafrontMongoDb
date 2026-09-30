@@ -5,9 +5,11 @@
         :aria-label="isLightMode ? 'Switch to dark mode' : 'Switch to light mode'">
         <i :class="isLightMode ? 'fas fa-moon' : 'fas fa-sun'"></i>
       </button>
+      <div class="mas-deco d1"></div>
+      <div class="mas-deco d2"></div>
       <div class="mas-brand">
         <img src="/logo.png" alt="KinyaBot" />
-        <span>KinyaBot</span>
+        <span>Kinya<b>Bot</b></span>
       </div>
       <p class="mas-sub">{{ subtitle }}</p>
     </header>
@@ -31,29 +33,37 @@ defineProps({ title: String, subtitle: String })
   background: var(--bg-base); color: var(--text-1);
   overflow-y: auto; -webkit-overflow-scrolling: touch;
 }
-/* Flat brand header — solid accent, no gradient wash, gently curved */
+
+/* Attractive curved brand header — one smooth wave (two matching
+   elliptical corners meeting at centre), flat solid accent, no gradient */
 .mas-hd {
-  position: relative; flex-shrink: 0;
-  padding: max(20px, calc(env(safe-area-inset-top) + 12px)) 22px 38px;
+  position: relative; flex-shrink: 0; overflow: hidden;
+  padding: max(22px, calc(env(safe-area-inset-top) + 14px)) 24px 46px;
   background: var(--accent-solid); color: #fff;
-  border-bottom-left-radius: 50% 34px;
-  border-bottom-right-radius: 6% 12px;
+  border-bottom-left-radius: 50% 40px;
+  border-bottom-right-radius: 50% 40px;
+  box-shadow: 0 18px 34px -22px rgba(0,0,0,.5);
   animation: masDrop .45s cubic-bezier(.22,1,.36,1) both;
 }
-.mas-brand { display: flex; align-items: center; gap: 9px; margin-top: 10px; position: relative; }
-.mas-brand img { width: 32px; height: 32px; border-radius: 9px; object-fit: contain; background: rgba(255,255,255,.14); padding: 3px; }
-.mas-brand span { font-size: 21px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
-.mas-sub { margin-top: 6px; font-size: 12.5px; opacity: .82; position: relative; }
+.mas-deco { position: absolute; border-radius: 50%; background: rgba(255,255,255,.1); pointer-events: none; }
+.mas-deco.d1 { width: 130px; height: 130px; top: -60px; right: -30px; }
+.mas-deco.d2 { width: 70px; height: 70px; bottom: -10px; left: -20px; background: rgba(255,255,255,.07); }
+
+.mas-brand { display: flex; align-items: center; gap: 10px; margin-top: 8px; position: relative; }
+.mas-brand img { width: 38px; height: 38px; object-fit: contain; filter: drop-shadow(0 3px 6px rgba(0,0,0,.25)); }
+.mas-brand span { font-size: 19px; font-weight: 500; letter-spacing: .02em; }
+.mas-brand span b { font-weight: 800; }
+.mas-sub { margin-top: 7px; font-size: 12.5px; opacity: .85; position: relative; max-width: 30ch; line-height: 1.4; }
 .mas-theme {
-  position: absolute; top: max(10px, env(safe-area-inset-top)); right: 14px; z-index: 2;
+  position: absolute; top: max(12px, env(safe-area-inset-top)); right: 16px; z-index: 2;
   width: 34px; height: 34px; border-radius: 50%;
   background: rgba(255,255,255,.16); color: #fff; font-size: 13px;
   display: flex; align-items: center; justify-content: center;
   transition: transform .15s, background .2s;
 }
-.mas-theme:active { transform: scale(.9); }
+.mas-theme:active { transform: scale(.9); background: rgba(255,255,255,.26); }
 
-.mas-body { flex: 1; padding: 20px 22px calc(24px + env(safe-area-inset-bottom)); }
+.mas-body { flex: 1; padding: 22px 22px calc(24px + env(safe-area-inset-bottom)); }
 .mas-title { font-size: 22px; font-weight: 700; margin-bottom: 16px; color: var(--text-1); animation: fadeUp .4s ease both; }
 
 /* Staggered fade/slide-in for every direct field — modern app entrance */

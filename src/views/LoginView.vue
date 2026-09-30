@@ -8,14 +8,18 @@
     <form @submit.prevent="handleLogin" novalidate>
       <div class="m-field">
         <label class="m-label" for="m-email">Email</label>
-        <input id="m-email" v-model="form.email" type="email" inputmode="email" class="m-input" :class="{error:errors.email}" placeholder="your@email.com" autocomplete="email" autocapitalize="none" />
+        <div class="m-input-wrap">
+          <i class="m-ic fas fa-envelope"></i>
+          <input id="m-email" v-model="form.email" type="email" inputmode="email" class="m-input has-ic" :class="{error:errors.email}" placeholder="your@email.com" autocomplete="email" autocapitalize="none" />
+        </div>
         <span v-if="errors.email" class="m-err">{{ errors.email }}</span>
       </div>
 
       <div class="m-field">
         <label class="m-label" for="m-pass">Password</label>
         <div class="m-input-wrap">
-          <input id="m-pass" v-model="form.password" :type="showPass?'text':'password'" class="m-input" :class="{error:errors.password}" placeholder="••••••••" autocomplete="current-password" />
+          <i class="m-ic fas fa-lock"></i>
+          <input id="m-pass" v-model="form.password" :type="showPass?'text':'password'" class="m-input has-ic" :class="{error:errors.password}" placeholder="••••••••" autocomplete="current-password" />
           <button type="button" class="m-eye" @click="showPass=!showPass" :aria-label="showPass?'Hide password':'Show password'">
             <i :class="showPass?'far fa-eye-slash':'far fa-eye'"></i>
           </button>

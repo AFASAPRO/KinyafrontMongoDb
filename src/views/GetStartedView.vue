@@ -13,7 +13,7 @@
 
     <div class="gs-copy">
       <h1 class="gs-title">Chat smarter <em>with AI.</em></h1>
-      <p class="gs-sub">Your all-in-one AI assistant — write, learn,<br />brainstorm and get things done.</p>
+      <p class="gs-sub">Write, learn, brainstorm and<br />get things done — all in one chat.</p>
     </div>
 
     <button class="gs-btn" type="button" @click="begin">

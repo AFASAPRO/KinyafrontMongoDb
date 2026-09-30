@@ -4,18 +4,25 @@
     <form @submit.prevent="handleRegister" novalidate>
       <div class="m-field">
         <label class="m-label" for="r-user">Username</label>
-        <input id="r-user" v-model="form.username" type="text" class="m-input" :class="{error:errors.username}" placeholder="yourname" autocomplete="username" autocapitalize="none" />
+        <div class="m-input-wrap">
+          <i class="m-ic fas fa-user"></i>
+          <input id="r-user" v-model="form.username" type="text" class="m-input has-ic" :class="{error:errors.username}" placeholder="yourname" autocomplete="username" autocapitalize="none" />
+        </div>
         <span v-if="errors.username" class="m-err">{{ errors.username }}</span>
       </div>
       <div class="m-field">
         <label class="m-label" for="r-email">Email</label>
-        <input id="r-email" v-model="form.email" type="email" inputmode="email" class="m-input" :class="{error:errors.email}" placeholder="your@email.com" autocomplete="email" autocapitalize="none" />
+        <div class="m-input-wrap">
+          <i class="m-ic fas fa-envelope"></i>
+          <input id="r-email" v-model="form.email" type="email" inputmode="email" class="m-input has-ic" :class="{error:errors.email}" placeholder="your@email.com" autocomplete="email" autocapitalize="none" />
+        </div>
         <span v-if="errors.email" class="m-err">{{ errors.email }}</span>
       </div>
       <div class="m-field">
         <label class="m-label" for="r-pass">Password</label>
         <div class="m-input-wrap">
-          <input id="r-pass" v-model="form.password" :type="showPass?'text':'password'" class="m-input" :class="{error:errors.password}" placeholder="Min. 8 characters" autocomplete="new-password" />
+          <i class="m-ic fas fa-lock"></i>
+          <input id="r-pass" v-model="form.password" :type="showPass?'text':'password'" class="m-input has-ic" :class="{error:errors.password}" placeholder="Min. 8 characters" autocomplete="new-password" />
           <button type="button" class="m-eye" @click="showPass=!showPass" :aria-label="showPass?'Hide password':'Show password'">
             <i :class="showPass?'far fa-eye-slash':'far fa-eye'"></i>
           </button>
