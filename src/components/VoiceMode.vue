@@ -1,6 +1,6 @@
 <template>
   <teleport to="body">
-    <div class="vm-screen" role="dialog" aria-modal="true" aria-label="Voice mode with Buddy">
+    <div class="vm-screen" role="dialog" aria-modal="true" aria-label="Voice mode with Kinya">
 
       <!-- Top bar -->
       <header class="vm-top">
@@ -9,7 +9,7 @@
         </button>
         <div class="vm-brand">
           <span class="vm-brand-dot" :class="phase"></span>
-          <span>Buddy</span>
+          <span>Kinya</span>
         </div>
         <div class="vm-top-actions">
           <button
@@ -17,7 +17,7 @@
             :class="{ active: live }"
             @click="toggleLive"
             :aria-pressed="live ? 'true' : 'false'"
-            title="Hands-free: keep listening after Buddy replies"
+            title="Hands-free: keep listening after Kinya replies"
           >
             <i class="fas fa-infinity"></i>
           </button>
@@ -33,18 +33,18 @@
         </div>
       </header>
 
-      <!-- 3D stage -->
+      <!-- Kinya's Rive stage -->
       <div class="vm-stage-card">
         <span class="vm-status-pill" :class="phase">
           <i class="vm-status-dot"></i>{{ statusText }}
         </span>
-        <BuddyStage
+        <RiveStage
           :controller="controller"
           :audio-level="audioLevel"
           :talking="phase === 'speaking'"
           @poke="onPoke"
         />
-        <div class="vm-stage-hint" v-if="phase === 'idle' && !feed.length">Tap Buddy to say hi</div>
+        <div class="vm-stage-hint" v-if="phase === 'idle' && !feed.length">Tap Kinya to say hi</div>
         <canvas class="vm-wave" ref="waveRef" aria-hidden="true"></canvas>
       </div>
 
@@ -52,8 +52,8 @@
       <section class="vm-feed" ref="feedRef">
         <div v-for="(t, i) in feed" :key="i" class="vm-turn" :class="t.role">
           <div class="vm-turn-head">
-            <span class="vm-turn-avatar" :class="t.role">{{ t.role === 'assistant' ? 'B' : (userInitial) }}</span>
-            <span>{{ t.role === 'assistant' ? 'Buddy' : (userName || 'You') }}</span>
+            <span class="vm-turn-avatar" :class="t.role">{{ t.role === 'assistant' ? 'K' : (userInitial) }}</span>
+            <span>{{ t.role === 'assistant' ? 'Kinya' : (userName || 'You') }}</span>
           </div>
           <p class="vm-turn-text">{{ t.text }}</p>
         </div>
@@ -87,7 +87,7 @@
           v-model="typed"
           class="vm-typed"
           type="text"
-          placeholder="Type to Buddy…"
+          placeholder="Type to Kinya…"
           :disabled="phase === 'thinking'"
           @keydown.enter="sendTyped"
         />
@@ -104,8 +104,8 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useChatStore } from '../stores/chat'
 import { useAuthStore } from '../stores/auth'
 import api from '../api'
-import BuddyStage from './BuddyStage.vue'
-import { CharacterController } from '../character/controller.js'
+import RiveStage from './RiveStage.vue'
+import { RiveCharacterController } from '../character/riveController.js'
 import { matchRequestedMove, matchReactionMove, pickAmbientMove } from '../character/moves.js'
 
 const emit = defineEmits(['close'])
@@ -114,7 +114,46 @@ const authStore = useAuthStore()
 const userName = computed(() => authStore.user?.username || '')
 const userInitial = computed(() => (userName.value ? userName.value.trim()[0].toUpperCase() : 'Y'))
 
-const controller = new CharacterController()
+const controller = new RiveCharacterController()
+
+/* ── Personalized greeting ─────────────────────────────────────────
+   Kinya already knows the user's profession/interests from onboarding
+   (authStore.user.profession / .use_cases) — greet like a friend who
+   remembers, instead of a generic "hi". Falls back gracefully for users
+   who skipped onboarding or picked "Other". */
+const PROFESSION_GREETINGS = {
+  developer: (n) => `Hey ${n}! Ready to code? Tell me what you're building, or paste a bug and I'll dig in.`,
+  designer: (n) => `Hey ${n}! Got something to design today? I can riff on ideas or give feedback.`,
+  marketer: (n) => `Hey ${n}! Need copy, a campaign angle, or some content ideas?`,
+  researcher: (n) => `Hey ${n}! What are we digging into today?`,
+  entrepreneur: (n) => `Hey ${n}! Ready to build something? Let's get to work.`,
+  teacher: (n) => `Hey ${n}! Planning a lesson, or need something explained simply?`,
+  manager: (n) => `Hey ${n}! Need a plan, a summary, or help with a tricky message?`,
+  writer: (n) => `Hey ${n}! Ready to write something great today?`,
+  student: (n) => `Hey ${n}! Studying, or stuck on homework? Let's figure it out together.`,
+}
+const USE_CASE_LABELS = {
+  code: 'generating some code',
+  learn: 'learning something new',
+  write: 'writing content',
+  analyze: 'analyzing data',
+  image: 'generating images',
+  kinyarwanda: 'chatting en français',
+}
+function buildGreeting() {
+  const name = userName.value
+  const profession = authStore.user?.profession
+  if (name && profession && PROFESSION_GREETINGS[profession]) {
+    return PROFESSION_GREETINGS[profession](name)
+  }
+  const useCase = authStore.user?.use_cases?.[0]
+  const label = useCase && USE_CASE_LABELS[useCase]
+  if (name && label) {
+    return `Hey ${name}! Last time you were into ${label} — want to pick that back up, or try something new?`
+  }
+  if (name) return `Hey ${name}! I'm Kinya. Tap the mic and talk to me, or type below.`
+  return `Hey! I'm Kinya. Tap the mic and talk to me, or type below.`
+}
 
 /* ── State machine: idle → listening → transcribing → thinking → speaking → idle ── */
 const phase = ref('idle')
@@ -141,7 +180,7 @@ const statusText = computed(() => ({
 
 const orbAria = computed(() => ({
   idle: 'Start listening', listening: 'Stop and transcribe',
-  transcribing: 'Transcribing', thinking: 'Buddy is thinking', speaking: 'Speaking',
+  transcribing: 'Transcribing', thinking: 'Kinya is thinking', speaking: 'Speaking',
 }[phase.value]))
 const orbTitle = computed(() => phase.value === 'listening' ? 'Stop & transcribe' : 'Tap to talk')
 
@@ -335,7 +374,7 @@ async function onRecStop() {
     fd.append('audio', blob, `voice-${Date.now()}.${ext}`)
     const { data } = await api.post('/stt', fd, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 60000 })
     const text = (data?.text || '').trim()
-    if (!text) { goIdle(); error.value = 'Buddy could not hear anything. Try speaking a bit louder.'; return }
+    if (!text) { goIdle(); error.value = 'Kinya could not hear anything. Try speaking a bit louder.'; return }
     await handleUserText(text)
   } catch (err) {
     goIdle()
@@ -376,13 +415,13 @@ async function handleUserText(text) {
     if (!reply) { goIdle(); return }
     feed.value.push({ role: 'assistant', text: reply })
     scrollFeed()
-    // Every move Buddy makes is chosen automatically — never from a menu.
+    // Every move Kinya makes is chosen automatically — never from a menu.
     const move = requested || matchReactionMove(reply) || pickAmbientMove()
     if (autoSpeak.value) await speak(reply, move)
     else { if (move) controller.perform(move); goIdle() }
   } catch (err) {
     goIdle()
-    error.value = err?.message || 'Buddy could not answer right now. Please try again.'
+    error.value = err?.message || 'Kinya could not answer right now. Please try again.'
   }
 }
 
@@ -416,7 +455,7 @@ async function speak(text, move) {
     const d = err?.response?.data
     if (d instanceof Blob) { try { msg = JSON.parse(await d.text()).error } catch {} }
     else msg = err?.response?.data?.error
-    error.value = msg || err?.message || 'Buddy could not generate audio for this response. Please try again.'
+    error.value = msg || err?.message || 'Kinya could not generate audio for this response. Please try again.'
   } finally {
     busyTts.value = false
   }
@@ -453,7 +492,7 @@ function toggleLive() {
   if (live.value && phase.value === 'idle') startRec()
 }
 
-/* ── Poke: tapping Buddy directly triggers an automatic reaction ── */
+/* ── Poke: tapping Kinya directly triggers an automatic reaction ── */
 const POKES = [
   ['wave', 'Hey! Over here!'],
   ['jump', 'Boing!'],
@@ -489,12 +528,7 @@ function onKey(e) {
 
 onMounted(() => {
   window.addEventListener('keydown', onKey)
-  feed.value.push({
-    role: 'assistant',
-    text: userName.value
-      ? `Hey ${userName.value}! I'm Buddy. Tap the mic and talk to me, or type below.`
-      : `Hey! I'm Buddy. Tap the mic and talk to me, or type below.`,
-  })
+  feed.value.push({ role: 'assistant', text: buildGreeting() })
   sizeWave()
   waveRo = new ResizeObserver(sizeWave)
   if (waveRef.value) waveRo.observe(waveRef.value)

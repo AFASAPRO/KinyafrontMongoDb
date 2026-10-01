@@ -40,7 +40,7 @@ import { isLightMode, toggleThemeMode } from '../../theme'
 
 /* ── Top nav ─────────────────────────────────────────────── */
 .das-nav {
-  flex-shrink: 0; height: 68px; padding: 0 2rem;
+  flex-shrink: 0; height: 72px; padding: 0 2.5rem;
   display: flex; align-items: center; justify-content: space-between; gap: 18px;
   border-bottom: 1px solid var(--border);
 }
@@ -71,14 +71,15 @@ import { isLightMode, toggleThemeMode } from '../../theme'
 .das-theme:active { transform: scale(.9); }
 
 /* ── Body split ──────────────────────────────────────────── */
-.das-body { flex: 1; display: grid; grid-template-columns: minmax(420px, 620px) 1fr; min-height: 0; }
-.das-left { overflow-y: auto; display: flex; padding: 3rem 3.5rem; }
-.das-left-inner { margin: auto; width: 100%; max-width: 400px; animation: fadeUp .45s ease both; }
+.das-body { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-height: 0; }
+.das-left { overflow-y: auto; display: flex; padding: 3rem clamp(2.5rem, 6vw, 6rem); }
+.das-left-inner { margin: auto; width: 100%; max-width: 420px; animation: fadeUp .45s ease both; }
 
-.das-right { padding: 24px 24px 24px 0; display: flex; }
+.das-right { padding: 20px 20px 20px 0; display: flex; }
 .das-panel {
-  flex: 1; border-radius: 28px; overflow: hidden; position: relative;
+  flex: 1; border-radius: 22px; overflow: hidden; position: relative;
   background: #0b1020; border: 1px solid var(--border);
+  box-shadow: 0 24px 70px rgba(0,0,0,.18);
 }
 .das-panel img { width: 100%; height: 100%; object-fit: cover; object-position: left center; display: block; }
 

@@ -40,7 +40,10 @@ function applyManifestForPath(path) {
   }
 }
 applyManifestForPath(window.location.pathname)
-router.afterEach((to) => applyManifestForPath(to.path))
+router.afterEach((to) => {
+  applyManifestForPath(to.path)
+  sessionStorage.removeItem('kb_chunk_reload')
+})
 
 /**
  * Service Worker (production only — keeps Vite HMR/dev server untouched).

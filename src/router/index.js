@@ -95,7 +95,10 @@ router.onError((error, to) => {
   const isChunkError =
     msg.includes('Failed to fetch dynamically imported module') ||
     msg.includes('Importing a module script failed') ||
-    msg.includes('error loading dynamically imported module')
+    msg.includes('error loading dynamically imported module') ||
+    msg.includes('Failed to load module script') ||
+    msg.includes('Loading chunk') && msg.includes('failed') ||
+    error?.name === 'ChunkLoadError'
 
   if (isChunkError) {
     if (!sessionStorage.getItem('kb_chunk_reload')) {

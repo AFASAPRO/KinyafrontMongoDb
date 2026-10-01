@@ -34,6 +34,7 @@
   <!-- ═══ DESKTOP LAYOUT ═══ -->
   <DesktopAuthShell v-else>
     <div class="auth-form-wrap">
+      <div class="auth-kicker"><span></span> ACCOUNT SECURITY</div>
       <h1 class="auth-heading">We sent you a code</h1>
       <p class="auth-sub">{{ sending ? 'Please wait…' : `Enter the 6-digit code we sent to ` }}<strong v-if="!sending">{{ email }}</strong></p>
 
@@ -178,4 +179,28 @@ onMounted(() => { sendCode(); nextTick(() => otpRefs.value[0]?.focus()) })
 .submit-btn { flex: 1; padding: 12px; background: var(--accent-solid); border: none; border-radius: var(--r-sm); color: #fff; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .2s; }
 .submit-btn:not(:disabled):hover { opacity: .92; }
 .submit-btn:disabled { opacity: .5; cursor: not-allowed; }
+@media (min-width: 861px) {
+  .auth-form-wrap { width: 100%; }
+  .auth-kicker { display: flex; align-items: center; gap: 8px; color: var(--text-2); font-size: 10px; font-weight: 700; letter-spacing: .12em; margin-bottom: 15px; }
+  .auth-kicker span { width: 7px; height: 7px; border-radius: 50%; background: #34a853; box-shadow: 0 0 0 4px rgba(52,168,83,.13); }
+  .auth-heading { font-size: 2rem; line-height: 1.15; font-weight: 700; color: var(--text-1); margin-bottom: 8px; }
+  .auth-sub { font-size: 14px; color: var(--text-2); margin-bottom: 1.6rem; line-height: 1.55; }
+  .otp-row { gap: 11px; justify-content: flex-start; margin: 8px 0 18px; }
+  .otp-box { width: 52px; height: 58px; border-radius: 10px; font-size: 1.35rem; background: var(--bg-card); }
+  .otp-box:focus { border-color: var(--accent-solid); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-solid) 16%, transparent); }
+  .otp-box.filled { background: color-mix(in srgb, var(--accent-solid) 9%, var(--bg-card)); }
+  .notice { padding: 11px 13px; border-radius: 9px; font-size: 12.5px; display: flex; align-items: center; gap: 9px; margin-bottom: 1rem; text-align: left; }
+  .err-notice { background: color-mix(in srgb, var(--red) 10%, transparent); border: 1px solid color-mix(in srgb, var(--red) 26%, transparent); color: var(--red); }
+  .info-notice { background: color-mix(in srgb, var(--accent-solid) 9%, transparent); border: 1px solid color-mix(in srgb, var(--accent-solid) 22%, transparent); color: var(--text-1); }
+  .resend-link { display: block; margin: 0 0 1.4rem; background: none; color: var(--accent-solid); font-size: 12.5px; font-weight: 650; }
+  .resend-link:disabled { color: var(--text-3); cursor: default; }
+  .resend-link:not(:disabled):hover { text-decoration: underline; }
+  .btn-row { display: flex; gap: 10px; }
+  .back-btn, .submit-btn { min-height: 48px; border-radius: 9px; font-size: 13.5px; font-weight: 700; transition: transform .18s, background .18s, box-shadow .18s; }
+  .back-btn { flex: 0 0 auto; padding: 12px 20px; background: var(--bg-card); border: 1px solid var(--border-md); color: var(--text-1); }
+  .back-btn:hover { background: var(--bg-hover); }
+  .submit-btn { flex: 1; padding: 12px; background: var(--accent-solid); border: 0; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 5px 14px color-mix(in srgb, var(--accent-solid) 22%, transparent); }
+  .submit-btn:not(:disabled):hover { opacity: 1; transform: translateY(-1px); box-shadow: 0 8px 18px color-mix(in srgb, var(--accent-solid) 30%, transparent); }
+  .submit-btn:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+}
 </style>

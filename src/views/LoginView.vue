@@ -57,7 +57,8 @@
   <!-- ═══ DESKTOP LAYOUT ═══ -->
   <DesktopAuthShell v-else>
       <div class="auth-form-wrap">
-        <h1 class="auth-heading">Welcome back! 👋</h1>
+        <div class="auth-kicker"><span></span> KINYABOT ACCOUNT</div>
+        <h1 class="auth-heading">Welcome back!</h1>
         <p class="auth-sub">Log in to KinyaBot to continue your AI journey.</p>
 
         <!-- Session expired while using the app → friendly notice, no black screen -->
@@ -73,8 +74,11 @@
           <h2 class="sub-heading">Reset your password</h2>
           <p class="auth-sub">Enter your email and we'll send you a reset link.</p>
           <div class="field">
-            <label class="field-label">Email address</label>
-            <input v-model="forgotEmail" type="email" class="field-input" placeholder="your@email.com" @keyup.enter="handleForgot" />
+            <label class="field-label" for="forgot-email">Email address</label>
+            <div class="field-input-wrap">
+              <i class="field-icon fas fa-envelope" aria-hidden="true"></i>
+              <input id="forgot-email" v-model="forgotEmail" type="email" class="field-input" placeholder="name@example.com" autocomplete="email" @keyup.enter="handleForgot" />
+            </div>
           </div>
           <div v-if="forgotMsg" class="notice" :class="forgotMsg.type">
             <i :class="forgotMsg.type==='ok'?'fas fa-check-circle':'fas fa-circle-exclamation'"></i>
@@ -106,19 +110,23 @@
           <div class="divider"><span>OR</span></div>
 
           <div class="field">
-            <label class="field-label">Email</label>
-            <input v-model="form.email" type="email" class="field-input" :class="{error:errors.email}" placeholder="your@email.com" autocomplete="email" />
+            <label class="field-label" for="login-email">Email address</label>
+            <div class="field-input-wrap">
+              <i class="field-icon fas fa-envelope" aria-hidden="true"></i>
+              <input id="login-email" v-model="form.email" type="email" class="field-input" :class="{error:errors.email}" placeholder="name@example.com" autocomplete="email" />
+            </div>
             <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
           </div>
 
           <div class="field">
             <div class="field-header">
-              <label class="field-label">Password</label>
+              <label class="field-label" for="login-password">Password</label>
               <span class="forgot-link" @click="$router.push('/forgot-password')">Forgot password?</span>
             </div>
             <div class="pass-wrap">
-              <input v-model="form.password" :type="showPass?'text':'password'" class="field-input" :class="{error:errors.password}" placeholder="••••••••" autocomplete="current-password" />
-              <button type="button" class="eye-btn" @click="showPass=!showPass">
+              <i class="field-icon fas fa-lock" aria-hidden="true"></i>
+              <input id="login-password" v-model="form.password" :type="showPass?'text':'password'" class="field-input" :class="{error:errors.password}" placeholder="Enter your password" autocomplete="current-password" />
+              <button type="button" class="eye-btn" @click="showPass=!showPass" :aria-label="showPass?'Hide password':'Show password'">
                 <i :class="showPass?'far fa-eye-slash':'far fa-eye'"></i>
               </button>
             </div>
@@ -148,10 +156,7 @@
           Don't have an account? <router-link to="/register">Create one</router-link>
         </p>
 
-        <!-- PWA install (Chromium: native prompt · iOS: instructions) -->
-        <div v-if="showInstall" class="auth-install">
-          <InstallHint variant="button" label="Install KinyaBot App" compact />
-        </div>
+    
       </div>
   </DesktopAuthShell>
 </template>
@@ -259,62 +264,59 @@ async function handleForgot() {
 
 <style scoped>
 .auth-form-wrap { width: 100%; }
-.auth-heading { font-size: 1.7rem; font-weight: 700; color: var(--text-1); margin-bottom: 5px; }
-.sub-heading { font-size: 1.2rem; font-weight: 600; color: var(--text-1); margin-bottom: .5rem; }
-.auth-sub { font-size: 13px; color: var(--text-2); margin-bottom: 1.5rem; line-height: 1.5; }
-
-.back-link { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--purple); cursor: pointer; margin-bottom: 1.25rem; font-weight: 500; }
+.auth-kicker { display: flex; align-items: center; gap: 8px; color: var(--text-2); font-size: 10px; font-weight: 700; letter-spacing: .12em; margin-bottom: 15px; }
+.auth-kicker span { width: 7px; height: 7px; border-radius: 50%; background: #34a853; box-shadow: 0 0 0 4px rgba(52,168,83,.13); }
+.auth-heading { font-size: 2rem; line-height: 1.15; font-weight: 700; color: var(--text-1); margin-bottom: 8px; }
+.sub-heading { font-size: 1.25rem; font-weight: 650; color: var(--text-1); margin-bottom: .5rem; }
+.auth-sub { font-size: 14px; color: var(--text-2); margin-bottom: 1.6rem; line-height: 1.55; }
+.back-link { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--accent-solid); cursor: pointer; margin-bottom: 1.25rem; font-weight: 600; }
 .back-link:hover { text-decoration: underline; }
-
-.social-btns { display: flex; flex-direction: column; gap: 9px; margin-bottom: 1.1rem; }
-.social-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 11px 16px; background: var(--bg-card); border: 1px solid var(--border-md); border-radius: var(--r-sm); color: var(--text-1); font-size: 13.5px; font-weight: 500; transition: background .2s, border-color .2s; }
-.social-btn:hover { background: var(--bg-hover); border-color: var(--accent-solid); }
-.fa-google { color: #ea4335; }
-
-.divider { display: flex; align-items: center; gap: 10px; color: var(--text-3); font-size: 12px; margin-bottom: 1.1rem; }
+.social-btns { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.2rem; }
+.social-btn { min-height: 46px; display: flex; align-items: center; justify-content: center; gap: 11px; width: 100%; padding: 10px 16px; background: var(--bg-card); border: 1px solid var(--border-md); border-radius: 9px; color: var(--text-1); font-size: 13.5px; font-weight: 600; transition: background .18s, border-color .18s, transform .18s; }
+.social-btn:hover { background: var(--bg-hover); border-color: var(--text-3); transform: translateY(-1px); }
+.social-btn:focus-visible, .submit-btn:focus-visible, .eye-btn:focus-visible, .forgot-link:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent-solid) 35%, transparent); outline-offset: 2px; }
+.fa-google { color: #ea4335; font-size: 16px; }
+.fa-apple { font-size: 17px; }
+.divider { display: flex; align-items: center; gap: 13px; color: var(--text-3); font-size: 10px; font-weight: 700; letter-spacing: .1em; margin: 0 0 1.15rem; }
 .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border-md); }
-
-.field { margin-bottom: .9rem; }
-.field-label { display: block; font-size: 13px; font-weight: 500; color: var(--text-2); margin-bottom: 5px; }
-.field-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
-.forgot-link { font-size: 12.5px; color: var(--purple); cursor: pointer; }
+.field { margin-bottom: 1rem; }
+.field-label { display: block; font-size: 12px; font-weight: 650; color: var(--text-1); margin-bottom: 7px; }
+.field-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
+.field-header .field-label { margin-bottom: 0; }
+.forgot-link { font-size: 12px; color: var(--accent-solid); cursor: pointer; font-weight: 600; }
 .forgot-link:hover { text-decoration: underline; }
-
-.field-input { width: 100%; padding: 11px 14px; background: var(--bg-card); border: 1.5px solid var(--border-md); border-radius: var(--r-sm); color: var(--text-1); font-size: 13.5px; transition: border-color .2s, box-shadow .2s; outline: none; }
+.field-input-wrap, .pass-wrap { position: relative; }
+.field-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); z-index: 1; color: var(--text-3); font-size: 14px; pointer-events: none; transition: color .18s; }
+.field-input-wrap:focus-within .field-icon, .pass-wrap:focus-within .field-icon { color: var(--accent-solid); }
+.field-input { width: 100%; height: 48px; padding: 0 14px 0 42px; background: var(--bg-card); border: 1px solid var(--border-md); border-radius: 9px; color: var(--text-1); font-size: 14px; transition: border-color .18s, box-shadow .18s, background .18s; outline: none; }
 .field-input::placeholder { color: var(--text-3); }
-.field-input:focus { border-color: var(--accent-solid); box-shadow: 0 0 0 3px rgba(109,40,217,.16); }
-.field-input.error { border-color: var(--red); }
-.field-error { font-size: 11.5px; color: var(--red); margin-top: 3px; display: block; }
-
-.pass-wrap { position: relative; }
-.pass-wrap .field-input { padding-right: 42px; }
-.eye-btn { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); background: none; color: var(--text-2); font-size: 14px; padding: 4px; transition: color .2s; }
-.eye-btn:hover { color: var(--text-1); }
-
-.remember-row { margin-bottom: 1rem; }
-.checkbox-label { display: flex; align-items: center; gap: 9px; cursor: pointer; font-size: 13px; color: var(--text-2); user-select: none; }
-.checkbox-label input[type=checkbox] { display: none; }
-.checkmark { width: 17px; height: 17px; border: 1.5px solid var(--border-md); border-radius: 5px; display: flex; align-items: center; justify-content: center; transition: all .2s; flex-shrink: 0; }
+.field-input:hover { border-color: var(--text-3); }
+.field-input:focus { background: var(--bg-base); border-color: var(--accent-solid); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-solid) 16%, transparent); }
+.field-input.error { border-color: var(--red); box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 12%, transparent); }
+.field-error { font-size: 12px; color: var(--red); margin-top: 6px; display: block; }
+.pass-wrap .field-input { padding-right: 46px; }
+.eye-btn { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border-radius: 7px; background: transparent; color: var(--text-2); font-size: 14px; display: grid; place-items: center; transition: color .18s, background .18s; }
+.eye-btn:hover { color: var(--text-1); background: var(--bg-hover); }
+.remember-row { margin: .1rem 0 1.1rem; }
+.checkbox-label { display: flex; align-items: center; gap: 9px; cursor: pointer; font-size: 12.5px; color: var(--text-2); user-select: none; }
+.checkbox-label input[type=checkbox] { position: absolute; opacity: 0; width: 17px; height: 17px; margin: 0; }
+.checkmark { width: 18px; height: 18px; border: 1px solid var(--border-md); border-radius: 5px; display: grid; place-items: center; transition: background .18s, border-color .18s; flex-shrink: 0; }
+.checkbox-label input:focus-visible + .checkmark { outline: 3px solid color-mix(in srgb, var(--accent-solid) 30%, transparent); outline-offset: 2px; }
 .checkbox-label input:checked + .checkmark { background: var(--accent-solid); border-color: var(--accent-solid); }
 .checkbox-label input:checked + .checkmark::after { content: '✓'; color: #fff; font-size: 11px; font-weight: 700; }
-
-.notice { padding: 9px 12px; border-radius: var(--r-sm); font-size: 12.5px; display: flex; align-items: center; gap: 7px; margin-bottom: .9rem; }
+.notice { padding: 11px 13px; border-radius: 9px; font-size: 12.5px; display: flex; align-items: center; gap: 9px; margin-bottom: 1rem; line-height: 1.45; }
 .notice.ok { background: rgba(52,168,83,.1); border: 1px solid rgba(52,168,83,.3); color: #34a853; }
-.notice.err, .error-notice { background: rgba(242,139,130,.1); border: 1px solid rgba(242,139,130,.25); color: var(--red); }
-.notice.warn-notice { background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3); color: #fcd34d; }
-
-.submit-btn { width: 100%; padding: 12px; background: var(--accent-solid); border: none; border-radius: var(--r-sm); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity .2s, transform .15s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 1.1rem; }
-.submit-btn:not(:disabled):hover { opacity: .92; }
-.submit-btn:not(:disabled):active { transform: scale(.98); }
-.submit-btn:disabled { opacity: .5; cursor: not-allowed; }
-
+.notice.err, .error-notice { background: color-mix(in srgb, var(--red) 10%, transparent); border: 1px solid color-mix(in srgb, var(--red) 26%, transparent); color: var(--red); }
+.notice.warn-notice { background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3); color: #d89a22; }
+.submit-btn { width: 100%; min-height: 49px; padding: 12px 16px; background: var(--accent-solid); border: 1px solid transparent; border-radius: 9px; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; transition: background .18s, transform .18s, box-shadow .18s; display: flex; align-items: center; justify-content: center; gap: 9px; margin-bottom: 1.15rem; box-shadow: 0 5px 14px color-mix(in srgb, var(--accent-solid) 22%, transparent); }
+.submit-btn:not(:disabled):hover { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 8px 18px color-mix(in srgb, var(--accent-solid) 30%, transparent); }
+.submit-btn:not(:disabled):active { transform: translateY(0); }
+.submit-btn:disabled { opacity: .62; cursor: wait; box-shadow: none; }
 .switch-text { font-size: 13px; color: var(--text-2); text-align: center; }
-.switch-text a { color: var(--purple); font-weight: 600; }
+.switch-text a { color: var(--accent-solid); font-weight: 700; text-decoration: none; }
 .switch-text a:hover { text-decoration: underline; }
-
-.oauth-toast { background: rgba(109,40,217,.1); border: 1px solid rgba(109,40,217,.25); color: var(--purple); padding: 9px 12px; border-radius: var(--r-sm); font-size: 12.5px; display: flex; align-items: center; gap: 7px; margin-bottom: .9rem; }
-
-/* PWA install entry on the login screen */
+.oauth-toast { background: color-mix(in srgb, var(--accent-solid) 9%, transparent); border: 1px solid color-mix(in srgb, var(--accent-solid) 22%, transparent); color: var(--text-1); padding: 11px 13px; border-radius: 9px; font-size: 12.5px; display: flex; align-items: center; gap: 9px; margin-bottom: .9rem; }
 .auth-install { margin-top: 1rem; display: flex; }
 .auth-install .ih-btn { width: 100%; }
+@media (max-height: 820px) and (min-width: 1181px) { .das-left { padding-top: 1.5rem; padding-bottom: 1.5rem; } .auth-heading { font-size: 1.8rem; } .auth-sub { margin-bottom: 1.2rem; } .field { margin-bottom: .75rem; } }
 </style>

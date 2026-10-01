@@ -48,7 +48,7 @@ export function matchReactionMove(text) {
 
 /**
  * A quiet, low-probability ambient gesture used only when nothing else
- * matched — keeps Buddy feeling alive without ever asking the user to
+ * matched — keeps Kinya feeling alive without ever asking the user to
  * pick a move themselves.
  */
 const AMBIENT = ['nod', 'shrug']

@@ -42,7 +42,7 @@
 
     <div class="m-or"><span>Or</span></div>
     <div class="m-social">
-      <button type="button" @click="socialSoon('Google')" aria-label="Sign up with Google"><i class="fab fa-google"></i></button>
+      <button type="button" @click="handleGoogleRegister" :disabled="loading" aria-label="Sign up with Google"><i :class="loading ? 'fas fa-spinner fa-spin' : 'fab fa-google'"></i></button>
       <button type="button" @click="socialSoon('Apple')" aria-label="Sign up with Apple"><i class="fab fa-apple"></i></button>
     </div>
     <transition name="fade">
@@ -55,29 +55,39 @@
   <!-- ═══ DESKTOP LAYOUT ═══ -->
   <DesktopAuthShell v-else>
       <div class="auth-form-wrap">
-        <h1 class="auth-heading">Create account ✨</h1>
+        <div class="auth-kicker"><span></span> KINYABOT ACCOUNT</div>
+        <h1 class="auth-heading">Create account </h1>
         <p class="auth-sub">Join KinyaBot and start your AI journey today.</p>
         <form @submit.prevent="handleRegister" novalidate>
           <div class="social-btns">
-            <button type="button" class="social-btn"><i class="fab fa-google"></i><span>Sign up with Google</span></button>
+            <button type="button" class="social-btn" @click="handleGoogleRegister" :disabled="loading">
+              <i :class="loading ? 'fas fa-spinner fa-spin' : 'fab fa-google'"></i><span>{{ loading ? 'Connecting…' : 'Sign up with Google' }}</span>
+            </button>
             <button type="button" class="social-btn"><i class="fab fa-apple"></i><span>Sign up with Apple</span></button>
           </div>
           <div class="divider"><span>OR</span></div>
           <div class="field">
-            <label class="field-label">Username</label>
-            <input v-model="form.username" type="text" class="field-input" :class="{error:errors.username}" placeholder="yourname" autocomplete="username" />
+            <label class="field-label" for="register-username">Username</label>
+            <div class="field-input-wrap">
+              <i class="field-icon fas fa-user" aria-hidden="true"></i>
+              <input id="register-username" v-model="form.username" type="text" class="field-input" :class="{error:errors.username}" placeholder="Choose a username" autocomplete="username" />
+            </div>
             <span v-if="errors.username" class="field-error">{{ errors.username }}</span>
           </div>
           <div class="field">
-            <label class="field-label">Email</label>
-            <input v-model="form.email" type="email" class="field-input" :class="{error:errors.email}" placeholder="your@email.com" autocomplete="email" />
+            <label class="field-label" for="register-email">Email address</label>
+            <div class="field-input-wrap">
+              <i class="field-icon fas fa-envelope" aria-hidden="true"></i>
+              <input id="register-email" v-model="form.email" type="email" class="field-input" :class="{error:errors.email}" placeholder="name@example.com" autocomplete="email" />
+            </div>
             <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
           </div>
           <div class="field">
-            <label class="field-label">Password</label>
+            <label class="field-label" for="register-password">Password</label>
             <div class="pass-wrap">
-              <input v-model="form.password" :type="showPass?'text':'password'" class="field-input" :class="{error:errors.password}" placeholder="Min. 8 characters" autocomplete="new-password" />
-              <button type="button" class="eye-btn" @click="showPass=!showPass"><i :class="showPass?'far fa-eye-slash':'far fa-eye'"></i></button>
+              <i class="field-icon fas fa-lock" aria-hidden="true"></i>
+              <input id="register-password" v-model="form.password" :type="showPass?'text':'password'" class="field-input" :class="{error:errors.password}" placeholder="Create a password" autocomplete="new-password" />
+              <button type="button" class="eye-btn" @click="showPass=!showPass" :aria-label="showPass?'Hide password':'Show password'"><i :class="showPass?'far fa-eye-slash':'far fa-eye'"></i></button>
             </div>
             <div class="strength-bar" v-if="form.password"><div class="strength-fill" :style="{width:strength.pct+'%',background:strength.color}"></div></div>
             <span class="strength-txt" v-if="form.password" :style="{color:strength.color}">{{ strength.label }}</span>
@@ -143,45 +153,57 @@ async function handleRegister() {
   } catch(err){ serverError.value=err.response?.data?.error||'Registration failed.' }
   finally{loading.value=false}
 }
+async function handleGoogleRegister() {
+  serverError.value = ''; loading.value = true
+  try {
+    const result = await auth.loginWithGoogle()
+    router.push(result.user.email_verified === false ? '/verify-email' : (result.user.onboarded ? '/' : '/onboarding'))
+  } catch(err) {
+    serverError.value = err.response?.data?.error || 'Google sign-up failed. Please try again.'
+  } finally {
+    loading.value = false
+  }
+}
 </script>
 
 <style scoped>
 .auth-form-wrap { width: 100%; }
-.auth-heading { font-size: 1.65rem; font-weight: 700; color: var(--text-1); margin-bottom: 5px; }
-.auth-sub { font-size: 13px; color: var(--text-2); margin-bottom: 1.4rem; line-height: 1.5; }
-
+.auth-kicker { display: flex; align-items: center; gap: 8px; color: var(--text-2); font-size: 10px; font-weight: 700; letter-spacing: .12em; margin-bottom: 12px; }
+.auth-kicker span { width: 7px; height: 7px; border-radius: 50%; background: #34a853; box-shadow: 0 0 0 4px rgba(52,168,83,.13); }
+.auth-heading { font-size: 1.9rem; line-height: 1.15; font-weight: 700; color: var(--text-1); margin-bottom: 7px; }
+.auth-sub { font-size: 13.5px; color: var(--text-2); margin-bottom: 1.1rem; line-height: 1.5; }
 .social-btns { display: flex; flex-direction: column; gap: 9px; margin-bottom: 1rem; }
-.social-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 11px 16px; background: var(--bg-card); border: 1px solid var(--border-md); border-radius: var(--r-sm); color: var(--text-1); font-size: 13px; font-weight: 500; transition: background .2s, border-color .2s; }
-.social-btn:hover { background: var(--bg-hover); border-color: var(--accent-solid); }
-.fa-google { color: #ea4335; }
-
-.divider { display: flex; align-items: center; gap: 10px; color: var(--text-3); font-size: 12px; margin-bottom: 1rem; }
+.social-btn { min-height: 43px; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 9px 16px; background: var(--bg-card); border: 1px solid var(--border-md); border-radius: 9px; color: var(--text-1); font-size: 13px; font-weight: 600; transition: background .18s, border-color .18s, transform .18s; }
+.social-btn:hover { background: var(--bg-hover); border-color: var(--text-3); transform: translateY(-1px); }
+.social-btn:focus-visible, .submit-btn:focus-visible, .eye-btn:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent-solid) 35%, transparent); outline-offset: 2px; }
+.fa-google { color: #ea4335; font-size: 15px; }
+.fa-apple { font-size: 16px; }
+.divider { display: flex; align-items: center; gap: 12px; color: var(--text-3); font-size: 10px; font-weight: 700; letter-spacing: .1em; margin-bottom: .9rem; }
 .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border-md); }
-
-.field { margin-bottom: .8rem; }
-.field-label { display: block; font-size: 13px; font-weight: 500; color: var(--text-2); margin-bottom: 5px; }
-.field-input { width: 100%; padding: 11px 14px; background: var(--bg-card); border: 1.5px solid var(--border-md); border-radius: var(--r-sm); color: var(--text-1); font-size: 13.5px; outline: none; transition: border-color .2s, box-shadow .2s; }
+.field { margin-bottom: .75rem; }
+.field-label { display: block; font-size: 11.5px; font-weight: 650; color: var(--text-1); margin-bottom: 5px; }
+.field-input-wrap, .pass-wrap { position: relative; }
+.field-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); z-index: 1; color: var(--text-3); font-size: 13px; pointer-events: none; transition: color .18s; }
+.field-input-wrap:focus-within .field-icon, .pass-wrap:focus-within .field-icon { color: var(--accent-solid); }
+.field-input { width: 100%; height: 43px; padding: 0 13px 0 40px; background: var(--bg-card); border: 1px solid var(--border-md); border-radius: 8px; color: var(--text-1); font-size: 13px; outline: none; transition: border-color .18s, box-shadow .18s, background .18s; }
 .field-input::placeholder { color: var(--text-3); }
-.field-input:focus { border-color: var(--accent-solid); box-shadow: 0 0 0 3px rgba(109,40,217,.16); }
-.field-input.error { border-color: var(--red); }
-.field-error { font-size: 11.5px; color: var(--red); margin-top: 3px; display: block; }
-
-.pass-wrap { position: relative; }
-.pass-wrap .field-input { padding-right: 42px; }
-.eye-btn { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); background: none; color: var(--text-2); font-size: 14px; padding: 4px; transition: color .2s; }
-
-.strength-bar { height: 3px; background: var(--border-md); border-radius: 99px; margin-top: 5px; overflow: hidden; }
-.strength-fill { height: 100%; border-radius: 99px; transition: width .4s, background .4s; }
-.strength-txt { font-size: 11px; font-weight: 600; display: block; margin-top: 3px; }
-
-.notice.err { background: rgba(242,139,130,.1); border: 1px solid rgba(242,139,130,.25); color: var(--red); padding: 9px 12px; border-radius: var(--r-sm); font-size: 12.5px; display: flex; align-items: center; gap: 7px; margin-bottom: .9rem; }
-
-.submit-btn { width: 100%; padding: 12px; background: var(--accent-solid); border: none; border-radius: var(--r-sm); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity .2s, transform .15s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 1rem; }
-.submit-btn:not(:disabled):hover { opacity: .92; }
-.submit-btn:not(:disabled):active { transform: scale(.98); }
-.submit-btn:disabled { opacity: .5; cursor: not-allowed; }
-
-.switch-text { font-size: 13px; color: var(--text-2); text-align: center; }
-.switch-text a { color: var(--purple); font-weight: 600; }
+.field-input:hover { border-color: var(--text-3); }
+.field-input:focus { background: var(--bg-base); border-color: var(--accent-solid); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-solid) 16%, transparent); }
+.field-input.error { border-color: var(--red); box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 12%, transparent); }
+.field-error { font-size: 11px; color: var(--red); margin-top: 4px; display: block; }
+.pass-wrap .field-input { padding-right: 43px; }
+.eye-btn { position: absolute; right: 7px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 6px; background: transparent; color: var(--text-2); font-size: 13px; display: grid; place-items: center; transition: color .18s, background .18s; }
+.eye-btn:hover { color: var(--text-1); background: var(--bg-hover); }
+.strength-bar { height: 4px; background: var(--border-md); border-radius: 99px; margin-top: 6px; overflow: hidden; }
+.strength-fill { height: 100%; border-radius: 99px; transition: width .35s, background .35s; }
+.strength-txt { font-size: 10px; font-weight: 650; display: block; margin-top: 3px; }
+.notice.err { background: color-mix(in srgb, var(--red) 10%, transparent); border: 1px solid color-mix(in srgb, var(--red) 26%, transparent); color: var(--red); padding: 9px 11px; border-radius: 8px; font-size: 12px; display: flex; align-items: center; gap: 8px; margin-bottom: .75rem; }
+.submit-btn { width: 100%; min-height: 45px; padding: 11px 14px; background: var(--accent-solid); border: 1px solid transparent; border-radius: 8px; color: #fff; font-size: 13.5px; font-weight: 700; cursor: pointer; transition: background .18s, transform .18s, box-shadow .18s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: .8rem; box-shadow: 0 5px 14px color-mix(in srgb, var(--accent-solid) 22%, transparent); }
+.submit-btn:not(:disabled):hover { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 8px 18px color-mix(in srgb, var(--accent-solid) 30%, transparent); }
+.submit-btn:not(:disabled):active { transform: translateY(0); }
+.submit-btn:disabled { opacity: .62; cursor: wait; box-shadow: none; }
+.switch-text { font-size: 12.5px; color: var(--text-2); text-align: center; }
+.switch-text a { color: var(--accent-solid); font-weight: 700; text-decoration: none; }
 .switch-text a:hover { text-decoration: underline; }
+@media (max-height: 820px) and (min-width: 1181px) { .das-left { padding-top: 1.25rem; padding-bottom: 1.25rem; } .auth-heading { font-size: 1.7rem; } }
 </style>
