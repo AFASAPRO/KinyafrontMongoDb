@@ -1,5 +1,24 @@
 <template>
-  <div class="fp-root">
+  <div class="fp-page">
+    <!-- Desktop-only top nav (hidden on mobile via CSS) -->
+    <header class="fp-nav">
+      <button class="fp-nav-brand" type="button" @click="$router.push('/landing')">
+        <img src="/logo.png" alt="KinyaBot" /><span>Kinya<b>Bot</b></span>
+      </button>
+      <nav class="fp-nav-links">
+        <router-link :to="{ path: '/landing' }">Overview</router-link>
+        <router-link :to="{ path: '/landing', hash: '#pricing' }">Pricing</router-link>
+        <router-link :to="{ path: '/landing', hash: '#footer' }">Privacy and terms</router-link>
+        <router-link :to="{ path: '/landing', hash: '#faq' }">FAQ</router-link>
+      </nav>
+      <button class="fp-nav-theme" type="button" @click="toggleThemeMode"
+        :aria-label="isLightMode ? 'Switch to dark mode' : 'Switch to light mode'">
+        <i :class="isLightMode ? 'fas fa-moon' : 'fas fa-sun'"></i>
+      </button>
+    </header>
+
+    <div class="fp-shell">
+    <div class="fp-root">
     <!-- Background -->
     <div class="fp-bg">
       <div class="fp-orb fp-orb1"></div>
@@ -195,12 +214,20 @@
       </transition>
 
     </div><!-- .fp-card -->
+    </div><!-- .fp-root -->
+
+    <!-- Desktop-only hero image panel (hidden on mobile via CSS) -->
+    <div class="fp-hero">
+      <div class="fp-hero-panel"><img src="/auth-hero.png" alt="KinyaBot AI running on desktop" /></div>
+    </div>
+    </div><!-- .fp-shell -->
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { isLightMode, toggleThemeMode } from '../theme'
 
 const auth = useAuthStore()
 
@@ -321,14 +348,36 @@ onBeforeUnmount(() => clearInterval(timerInterval))
 
 <style scoped>
 /* ── Root ─────────────────────────────────────────────────── */
-.fp-root {
-  min-height: 100vh;
-  min-height: 100dvh;
-  background: #05060f;
-  display: flex; align-items: center; justify-content: center;
-  padding: 1.5rem;
-  position: relative; overflow: hidden;
+.fp-page { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; background: var(--bg-base); }
+
+.fp-nav { display: none; }
+
+.fp-shell { flex: 1; display: flex; min-height: 0; }
+.fp-hero { display: none; }
+
+@media (min-width: 769px) {
+  .fp-nav {
+    display: flex; align-items: center; justify-content: space-between; gap: 18px;
+    height: 68px; padding: 0 2rem; flex-shrink: 0; border-bottom: 1px solid var(--border);
+  }
+  .fp-nav-brand { display: flex; align-items: center; gap: 9px; background: none; }
+  .fp-nav-brand img { width: 30px; height: 30px; object-fit: contain; }
+  .fp-nav-brand span { font-size: 16px; font-weight: 500; color: var(--text-1); }
+  .fp-nav-brand span b { font-weight: 800; }
+  .fp-nav-links { display: flex; align-items: center; gap: 2px; background: var(--bg-card); border: 1px solid var(--border-md); border-radius: 99px; padding: 5px; }
+  .fp-nav-links a { padding: 8px 16px; border-radius: 99px; font-size: 13.5px; font-weight: 500; color: var(--text-2); transition: background .2s, color .2s; }
+  .fp-nav-links a:hover { color: var(--text-1); background: var(--bg-hover); }
+  .fp-nav-theme { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; background: var(--bg-card); border: 1px solid var(--border-md); color: var(--text-1); font-size: 14px; display: flex; align-items: center; justify-content: center; transition: background .2s, transform .15s; }
+  .fp-nav-theme:hover { background: var(--bg-hover); }
+  .fp-nav-theme:active { transform: scale(.9); }
+
+  .fp-root { min-height: 0; flex: 1 1 620px; padding: 2.5rem; }
+  .fp-hero { display: flex; padding: 24px 24px 24px 0; }
+  .fp-hero-panel { flex: 1; border-radius: 28px; overflow: hidden; background: #0b1020; border: 1px solid var(--border); }
+  .fp-hero-panel img { width: 100%; height: 100%; object-fit: cover; object-position: left center; display: block; }
 }
+@media (min-width: 1440px) { .fp-shell { max-width: 1600px; margin: 0 auto; width: 100%; } }
+
 .fp-bg { position: absolute; inset: 0; pointer-events: none; }
 .fp-orb { position: absolute; border-radius: 50%; filter: blur(100px); }
 .fp-orb1 { width: 600px; height: 600px; background: radial-gradient(circle, rgba(79,70,229,.18), transparent); top: -150px; left: -100px; }

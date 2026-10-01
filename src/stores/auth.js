@@ -24,6 +24,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isLoggedIn = computed(() => status.value === 'authenticated' && !!token.value)
   const needsOnboarding = computed(() => isLoggedIn.value && user.value && !user.value.onboarded)
+  const needsEmailVerification = computed(() => isLoggedIn.value && user.value && user.value.email_verified === false)
 
   function persist() {
     if (token.value) localStorage.setItem('kb_token', token.value)
@@ -142,6 +143,26 @@ export const useAuthStore = defineStore('auth', () => {
     return data
   }
 
+  // Post-signup email verification (separate from password-reset OTP)
+  async function sendVerification() {
+    const { data } = await api.post('/auth/send-verification')
+    return data // { message, demo_otp? }
+  }
+  async function verifyEmail(otp) {
+    const { data } = await api.post('/auth/verify-email', { otp })
+    if (user.value) {
+      user.value = { ...user.value, email_verified: true }
+      localStorage.setItem('kb_user', JSON.stringify(user.value))
+    }
+    return data
+  }
+
+  // Onboarding "invite teammates" step — sends a real email via the backend
+  async function inviteTeammate(email) {
+    const { data } = await api.post('/onboarding/invite', { email })
+    return data // { success, message }
+  }
+
   /* Explicit user-initiated logout (vs. session expiry). */
   function logout() {
     sessionExpired.value = false
@@ -149,8 +170,8 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   return {
-    token, user, status, isLoggedIn, needsOnboarding, sessionExpired,
+    token, user, status, isLoggedIn, needsOnboarding, needsEmailVerification, sessionExpired,
     init, login, loginWithGoogle, register, completeOnboarding, fetchProfile, updateProfile,
-    forgotPassword, verifyOtp, resetPassword, logout
+    forgotPassword, verifyOtp, resetPassword, sendVerification, verifyEmail, inviteTeammate, logout
   }
 })

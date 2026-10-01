@@ -19,6 +19,7 @@ const routes = [
     component: () => import('../views/ChatView.vue'),
     meta: { allowGuest: true }
   },
+  { path: '/landing', component: () => import('../views/LandingView.vue'), meta: { allowGuest: true } },
   // Legacy deep links & the PWA "New Chat" shortcut still land here
   // (query — e.g. ?new=1 — is preserved through the redirect)
   { path: '/chat', redirect: (to) => ({ path: '/', query: to.query }) },
@@ -27,6 +28,7 @@ const routes = [
   { path: '/welcome',         component: () => import('../views/GetStartedView.vue'),       meta: { guestOnly: true } },
   { path: '/login',           component: () => import('../views/LoginView.vue'),            meta: { guestOnly: true } },
   { path: '/register',        component: () => import('../views/RegisterView.vue'),         meta: { guestOnly: true } },
+  { path: '/verify-email',    component: () => import('../views/VerifyEmailView.vue'),       meta: { requiresAuth: true } },
   { path: '/onboarding',      component: () => import('../views/OnboardingView.vue'),       meta: { requiresAuth: true } },
   { path: '/forgot-password', component: () => import('../views/ForgotPasswordView.vue'),   meta: { guestOnly: true } },
   { path: '/reset-password',  component: () => import('../views/ResetPasswordView.vue'),    meta: { guestOnly: true } },
@@ -58,6 +60,7 @@ router.beforeEach(async (to) => {
 
   // Guest-only routes (login/register/reset): members go straight to chat
   if (to.meta.guestOnly && authed) {
+    if (auth.needsEmailVerification) return '/verify-email'
     return auth.needsOnboarding ? '/onboarding' : '/'
   }
 
@@ -68,7 +71,11 @@ router.beforeEach(async (to) => {
     return '/welcome'
   }
 
-  // Fresh registrations must finish onboarding before anything else
+  // Fresh registrations confirm their email, then finish onboarding —
+  // in that order — before anything else in the app.
+  if (authed && auth.needsEmailVerification) {
+    return to.path !== '/verify-email' ? '/verify-email' : true
+  }
   if (authed && auth.needsOnboarding && to.path !== '/onboarding') return '/onboarding'
 
   return true
