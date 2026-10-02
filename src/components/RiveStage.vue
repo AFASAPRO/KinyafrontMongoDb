@@ -28,19 +28,17 @@ const emit = defineEmits(['ready', 'poke'])
 
 const RIVE_SRC = `${import.meta.env.BASE_URL}rive/kinya-character.riv`
 const STATE_MACHINE = 'State Machine 1'
-// Best guess at the artboard meant for an embedded avatar (a head/bust
-// "portrait" framing rather than the file's marketplace/demo artboards).
-// If it isn't present under this exact name, we silently fall back to
-// whatever artboard the file marks as default (see loadRive() below).
-const PREFERRED_ARTBOARD = 'SOBO-Portrait'
+// Confirmed directly from a working export of this exact file (not a
+// guess): the artboard is "SOBO-Marketplace", and its bound ViewModel
+// exposes two number properties — `numState` (which body loop is active)
+// and `mouthOpen` (0..1 mouth aperture, for lip-sync).
+const ARTBOARD = 'SOBO-Marketplace'
 
-// Kinya's .riv file has no distinct baked animation for every gesture in
-// our move vocabulary (wave/jump/dance/etc.) — it has Idle, Listen, Talk,
-// a blink loop, and a tap/"bump" reaction. So every upbeat move plays the
-// same celebratory reaction trigger; quieter moves just leave mode as-is.
-// This mapping is a deliberate simplification, not a bug.
+// We only know for certain that 0 is the resting/idle value (that's what
+// the reference export initializes it to). Listen/Talk are our best,
+// easily-adjustable guess at the remaining states — tune here if Kinya's
+// actual Idle/Listen/Talk order differs once you see it live.
 const MODE_TO_NUM = { idle: 0, listen: 1, think: 1, talk: 2 }
-const REACTION_MOVES = new Set(['wave', 'jump', 'dance', 'clap', 'cheer', 'spin', 'bow', 'laugh', 'wow', 'nod'])
 
 const phase = ref('loading') // 'loading' | 'ready' | 'error'
 const error = ref('')
@@ -52,57 +50,62 @@ let rive = null
 let ro = null
 let mouthRaf = 0
 let mouthLevel = 0
-let unsubMode, unsubAction, unsubSpeak
-let numStateInput = null
-let mouthInput = null
-let reactionInput = null
+let unsubMode, unsubAction
+let vmi = null
+let numStateProp = null
+let mouthProp = null
+let genericTrigger = null
 
 const safe = (fn) => { try { return fn() } catch { return null } }
 
-/** Look through BOTH the data-bound ViewModel and the classic state-machine
- *  inputs for something that looks like what we need, by name. We can't
- *  run the real Rive editor here to confirm exact names, so this matches
- *  loosely (case-insensitive "contains") and logs what it finds so it's
- *  easy to verify/adjust against the console if a name guess is off. */
-function resolveInputs() {
-  const vmi = safe(() => rive.viewModelInstance) || null
-  let smInputs = []
-  try { smInputs = rive.stateMachineInputs(STATE_MACHINE) || [] } catch { /* no classic inputs */ }
+function bindViewModel() {
+  vmi = safe(() => rive.viewModelInstance) || null
+  numStateProp = safe(() => vmi?.number('numState')) || null
+  mouthProp = safe(() => vmi?.number('mouthOpen')) || null
 
-  const vmNumber = (needle) => safe(() => vmi?.number(needle)) || null
-  const vmTrigger = (needle) => safe(() => vmi?.trigger(needle)) || null
-  const smFind = (type, re) => smInputs.find((i) => i.type === type && re.test(i.name)) || null
-
-  numStateInput = vmNumber('numState') || smFind(StateMachineInputType.Number, /state|mode/i)
-  mouthInput = vmNumber('mouthOpen') || smFind(StateMachineInputType.Number, /mouth/i)
-  reactionInput =
-    vmTrigger('trigState') ||
-    smFind(StateMachineInputType.Trigger, /trig|react|tap|bump/i) ||
-    smInputs.find((i) => i.type === StateMachineInputType.Trigger) ||
-    null
+  // Best-effort bonus: if the file also exposes a trigger (for the
+  // bump/shine/sparkle tap reaction), use it for one-shot moves. Not
+  // required — Rive's own built-in pointer Listeners on this artboard
+  // already play that reaction on tap/click with zero JS needed.
+  genericTrigger = safe(() => vmi?.trigger('trigState')) || null
+  if (!genericTrigger) {
+    try {
+      const smInputs = rive.stateMachineInputs(STATE_MACHINE) || []
+      genericTrigger = smInputs.find((i) => i.type === StateMachineInputType.Trigger) || null
+    } catch { /* no classic inputs on this artboard */ }
+  }
 
   // eslint-disable-next-line no-console
-  console.info(
-    '[Kinya/Rive] inputs — state machine:', smInputs.map((i) => `${i.name} (${i.type})`),
-    '| view model bound:', !!vmi,
-    '| resolved → numState:', !!numStateInput, 'mouthOpen:', !!mouthInput, 'trigger:', !!reactionInput,
-  )
+  console.info('[Kinya/Rive] bound →', {
+    viewModel: !!vmi, numState: !!numStateProp, mouthOpen: !!mouthProp, trigger: !!genericTrigger,
+  })
+
+  if (numStateProp) numStateProp.value = MODE_TO_NUM[props.controller.mode] ?? 0
+  if (mouthProp) mouthProp.value = 0
 }
 
-function setNumState(mode) {
-  if (!numStateInput) return
-  const v = MODE_TO_NUM[mode] ?? 0
-  try { numStateInput.value = v } catch { /* ignore */ }
+function setMode(mode) {
+  if (!numStateProp) return
+  try { numStateProp.value = MODE_TO_NUM[mode] ?? 0 } catch { /* ignore */ }
 }
 
-function fireReaction() {
-  if (!reactionInput) return
-  try { reactionInput.trigger ? reactionInput.trigger() : reactionInput.fire?.() } catch { /* ignore */ }
+/** One-shot reaction for a chat "move" (wave/jump/cheer/…). The file has
+ *  no dedicated animation per move, so we give it a confident, visible
+ *  nudge: briefly pulse into the liveliest state plus fire the trigger if
+ *  one exists, then settle back to whatever mode we were in. */
+let reactionTimer = null
+function playReaction() {
+  if (genericTrigger) { try { genericTrigger.trigger ? genericTrigger.trigger() : genericTrigger.fire?.() } catch { /* ignore */ } }
+  if (!numStateProp) return
+  const restore = MODE_TO_NUM[props.controller.mode] ?? 0
+  try { numStateProp.value = MODE_TO_NUM.talk } catch { /* ignore */ }
+  clearTimeout(reactionTimer)
+  reactionTimer = setTimeout(() => { try { numStateProp.value = restore } catch { /* ignore */ } }, 900)
 }
 
 function setMouth(v) {
-  if (!mouthInput) return
-  try { mouthInput.value = v } catch { /* ignore */ }
+  if (!mouthProp) return
+  try { mouthProp.value = v } catch { /* ignore */ }
 }
 
 function startMouthLoop() {
@@ -120,36 +123,29 @@ function onPointerDown() {
 }
 
 function wireController() {
-  unsubMode = props.controller.onMode((mode) => setNumState(mode))
-  unsubAction = props.controller.onAction((move) => { if (move && REACTION_MOVES.has(move)) fireReaction() })
-  unsubSpeak = props.controller.onSpeaking(() => {})
+  unsubMode = props.controller.onMode((mode) => setMode(mode))
+  unsubAction = props.controller.onAction((move) => { if (move) playReaction() })
 }
 
-function loadRive(withArtboard) {
+function loadRive() {
   const canvas = canvasRef.value
   rive = new Rive({
     src: RIVE_SRC,
     canvas,
-    artboard: withArtboard ? PREFERRED_ARTBOARD : undefined,
+    artboard: ARTBOARD,
     stateMachines: STATE_MACHINE,
     autoplay: true,
     autoBind: true,
     layout: new Layout({ fit: Fit.Contain, alignment: Alignment.Center }),
     onLoad: () => {
       try { rive.resizeDrawingSurfaceToCanvas() } catch { /* ignore */ }
-      resolveInputs()
-      setNumState(props.controller.mode)
+      bindViewModel()
       phase.value = 'ready'
       emit('ready')
     },
-    onLoadError: () => {
-      if (withArtboard) {
-        // the guessed artboard name may not match exactly — retry with the
-        // file's own default artboard before giving up.
-        try { rive?.cleanup() } catch { /* ignore */ }
-        loadRive(false)
-        return
-      }
+    onLoadError: (e) => {
+      // eslint-disable-next-line no-console
+      console.error('[Kinya/Rive] failed to load artboard', ARTBOARD, e)
       phase.value = 'error'
       error.value = 'Could not load Kinya. Please check your connection and try again.'
     },
@@ -157,7 +153,7 @@ function loadRive(withArtboard) {
 }
 
 onMounted(() => {
-  loadRive(true)
+  loadRive()
   wireController()
   startMouthLoop()
   ro = new ResizeObserver(() => { try { rive?.resizeDrawingSurfaceToCanvas() } catch { /* ignore */ } })
@@ -166,8 +162,9 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   cancelAnimationFrame(mouthRaf)
+  clearTimeout(reactionTimer)
   ro?.disconnect()
-  unsubMode?.(); unsubAction?.(); unsubSpeak?.()
+  unsubMode?.(); unsubAction?.()
   try { rive?.cleanup() } catch { /* ignore */ }
 })
 </script>

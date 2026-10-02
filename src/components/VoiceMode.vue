@@ -2,99 +2,121 @@
   <teleport to="body">
     <div class="vm-screen" role="dialog" aria-modal="true" aria-label="Voice mode with Kinya">
 
-      <!-- Top bar -->
-      <header class="vm-top">
-        <button class="vm-icon-btn" @click="exit" aria-label="Exit voice mode" title="Exit (Esc)">
+      <!-- LEFT (desktop) / TOP (mobile): Kinya's full-bleed living environment -->
+      <section class="vm-character-pane">
+        <div class="vm-character-bg" aria-hidden="true">
+          <span class="vm-blob vm-blob-a"></span>
+          <span class="vm-blob vm-blob-b"></span>
+          <span class="vm-particle" v-for="n in 9" :key="n"></span>
+        </div>
+
+        <button class="vm-icon-btn vm-exit" @click="exit" aria-label="Exit voice mode" title="Exit (Esc)">
           <i class="fas fa-arrow-left"></i>
         </button>
+
         <div class="vm-brand">
           <span class="vm-brand-dot" :class="phase"></span>
           <span>Kinya</span>
         </div>
-        <div class="vm-top-actions">
-          <button
-            class="vm-icon-btn"
-            :class="{ active: live }"
-            @click="toggleLive"
-            :aria-pressed="live ? 'true' : 'false'"
-            title="Hands-free: keep listening after Kinya replies"
-          >
-            <i class="fas fa-infinity"></i>
-          </button>
-          <button
-            class="vm-icon-btn"
-            :class="{ active: autoSpeak }"
-            @click="autoSpeak = !autoSpeak"
-            :aria-pressed="autoSpeak ? 'true' : 'false'"
-            :title="autoSpeak ? 'Spoken answers: on' : 'Spoken answers: off'"
-          >
-            <i :class="autoSpeak ? 'fas fa-volume-high' : 'fas fa-volume-xmark'"></i>
-          </button>
-        </div>
-      </header>
 
-      <!-- Kinya's Rive stage -->
-      <div class="vm-stage-card">
         <span class="vm-status-pill" :class="phase">
           <i class="vm-status-dot"></i>{{ statusText }}
         </span>
+
         <RiveStage
+          class="vm-rive"
           :controller="controller"
           :audio-level="audioLevel"
           :talking="phase === 'speaking'"
           @poke="onPoke"
         />
-        <div class="vm-stage-hint" v-if="phase === 'idle' && !feed.length">Tap Kinya to say hi</div>
-        <canvas class="vm-wave" ref="waveRef" aria-hidden="true"></canvas>
-      </div>
 
-      <!-- Conversation feed -->
-      <section class="vm-feed" ref="feedRef">
-        <div v-for="(t, i) in feed" :key="i" class="vm-turn" :class="t.role">
-          <div class="vm-turn-head">
-            <span class="vm-turn-avatar" :class="t.role">{{ t.role === 'assistant' ? 'K' : (userInitial) }}</span>
-            <span>{{ t.role === 'assistant' ? 'Kinya' : (userName || 'You') }}</span>
-          </div>
-          <p class="vm-turn-text">{{ t.text }}</p>
-        </div>
-        <div v-if="interim" class="vm-turn user interim">
-          <div class="vm-turn-head"><span class="vm-turn-avatar user">{{ userInitial }}</span><span>{{ userName || 'You' }}</span></div>
-          <p class="vm-turn-text">{{ interim }}…</p>
-        </div>
+        <p v-if="currentCaption" class="vm-caption">{{ currentCaption }}</p>
+        <div v-else-if="phase === 'idle' && feed.length <= 1" class="vm-stage-hint">Tap Kinya to say hi</div>
+
+        <canvas class="vm-wave" ref="waveRef" aria-hidden="true"></canvas>
       </section>
 
-      <!-- Errors -->
-      <div v-if="error" class="vm-error" role="alert">
-        <i class="fas fa-triangle-exclamation"></i><span>{{ error }}</span>
-        <button class="ve-x" @click="error=''" aria-label="Dismiss error"><i class="fas fa-xmark"></i></button>
-      </div>
+      <!-- RIGHT (desktop) / BOTTOM (mobile): conversation + voice command -->
+      <section class="vm-chat-pane">
+        <header class="vm-top">
+          <h2 class="vm-top-title">Conversation</h2>
+          <div class="vm-top-actions">
+            <button
+              class="vm-icon-btn"
+              :class="{ active: live }"
+              @click="toggleLive"
+              :aria-pressed="live ? 'true' : 'false'"
+              title="Hands-free: keep listening after Kinya replies"
+            >
+              <i class="fas fa-infinity"></i>
+            </button>
+            <button
+              class="vm-icon-btn"
+              :class="{ active: autoSpeak }"
+              @click="autoSpeak = !autoSpeak"
+              :aria-pressed="autoSpeak ? 'true' : 'false'"
+              :title="autoSpeak ? 'Spoken answers: on' : 'Spoken answers: off'"
+            >
+              <i :class="autoSpeak ? 'fas fa-volume-high' : 'fas fa-volume-xmark'"></i>
+            </button>
+          </div>
+        </header>
 
-      <!-- Composer -->
-      <footer class="vm-composer">
-        <button
-          class="vm-orb"
-          :class="phase"
-          @click="toggleTalk"
-          :disabled="!canTalk"
-          :aria-label="orbAria"
-          :title="orbTitle"
-        >
-          <span v-if="phase === 'speaking'" class="vm-eq" aria-hidden="true"><i v-for="n in 4" :key="n" :style="`--i:${n}`"></i></span>
-          <i v-else-if="phase === 'thinking' || phase === 'transcribing'" class="fas fa-circle-notch fa-spin"></i>
-          <i v-else :class="phase === 'listening' ? 'fas fa-stop' : 'fas fa-microphone'"></i>
-        </button>
-        <input
-          v-model="typed"
-          class="vm-typed"
-          type="text"
-          placeholder="Type to Kinya…"
-          :disabled="phase === 'thinking'"
-          @keydown.enter="sendTyped"
-        />
-        <button class="vm-send" @click="sendTyped" :disabled="!typed.trim() || phase === 'thinking'" aria-label="Send">
-          <i class="fas fa-paper-plane"></i>
-        </button>
-      </footer>
+        <!-- Conversation feed -->
+        <section class="vm-feed" ref="feedRef">
+          <div v-for="(t, i) in feed" :key="i" class="vm-turn" :class="t.role">
+            <div class="vm-turn-head">
+              <span class="vm-turn-avatar" :class="t.role">{{ t.role === 'assistant' ? 'K' : (userInitial) }}</span>
+              <span>{{ t.role === 'assistant' ? 'Kinya' : (userName || 'You') }}</span>
+            </div>
+            <p class="vm-turn-text">{{ t.text }}</p>
+          </div>
+          <div v-if="interim" class="vm-turn user interim">
+            <div class="vm-turn-head"><span class="vm-turn-avatar user">{{ userInitial }}</span><span>{{ userName || 'You' }}</span></div>
+            <p class="vm-turn-text">{{ interim }}…</p>
+          </div>
+
+          <div v-if="showSuggestions" class="vm-suggest">
+            <button v-for="s in suggestions" :key="s.label" class="vm-suggest-chip" @click="useSuggestion(s)">
+              <i :class="s.icon"></i>{{ s.label }}
+            </button>
+          </div>
+        </section>
+
+        <!-- Errors -->
+        <div v-if="error" class="vm-error" role="alert">
+          <i class="fas fa-triangle-exclamation"></i><span>{{ error }}</span>
+          <button class="ve-x" @click="error=''" aria-label="Dismiss error"><i class="fas fa-xmark"></i></button>
+        </div>
+
+        <!-- Composer / voice command -->
+        <footer class="vm-composer">
+          <button
+            class="vm-orb"
+            :class="phase"
+            @click="toggleTalk"
+            :disabled="!canTalk"
+            :aria-label="orbAria"
+            :title="orbTitle"
+          >
+            <span v-if="phase === 'speaking'" class="vm-eq" aria-hidden="true"><i v-for="n in 4" :key="n" :style="`--i:${n}`"></i></span>
+            <i v-else-if="phase === 'thinking' || phase === 'transcribing'" class="fas fa-circle-notch fa-spin"></i>
+            <i v-else :class="phase === 'listening' ? 'fas fa-stop' : 'fas fa-microphone'"></i>
+          </button>
+          <input
+            v-model="typed"
+            class="vm-typed"
+            type="text"
+            placeholder="Type to Kinya…"
+            :disabled="phase === 'thinking'"
+            @keydown.enter="sendTyped"
+          />
+          <button class="vm-send" @click="sendTyped" :disabled="!typed.trim() || phase === 'thinking'" aria-label="Send">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </footer>
+      </section>
     </div>
   </teleport>
 </template>
@@ -153,6 +175,53 @@ function buildGreeting() {
   }
   if (name) return `Hey ${name}! I'm Kinya. Tap the mic and talk to me, or type below.`
   return `Hey! I'm Kinya. Tap the mic and talk to me, or type below.`
+}
+
+/* ── Live caption over Kinya while she speaks (karaoke-style) ────── */
+const currentCaption = computed(() => {
+  if (phase.value !== 'speaking') return ''
+  const last = [...feed.value].reverse().find((f) => f.role === 'assistant')
+  return last?.text || ''
+})
+
+/* ── Quick-start suggestions — reuses what onboarding already learned
+   about the user so the empty state is a helpful nudge, not a blank
+   screen. Shown only until the conversation actually starts. ────── */
+const SUGGESTIONS_BY_PROFESSION = {
+  developer: [
+    { label: 'Debug an error', icon: 'fas fa-bug', prompt: 'I have a bug I need help debugging. Can I paste the error?' },
+    { label: 'Review my code', icon: 'fas fa-code', prompt: 'Can you review a piece of code and suggest improvements?' },
+    { label: 'Explain a concept', icon: 'fas fa-lightbulb', prompt: 'Can you explain a programming concept to me, step by step?' },
+  ],
+  designer: [
+    { label: 'Critique a design', icon: 'fas fa-pen-ruler', prompt: 'Can you give me feedback on a design idea I have?' },
+    { label: 'Brainstorm concepts', icon: 'fas fa-wand-magic-sparkles', prompt: "Let's brainstorm some design concepts together." },
+  ],
+  marketer: [
+    { label: 'Write ad copy', icon: 'fas fa-bullhorn', prompt: 'Help me write some ad copy for a campaign.' },
+    { label: 'Campaign ideas', icon: 'fas fa-lightbulb', prompt: 'Give me a few creative campaign ideas.' },
+  ],
+  writer: [
+    { label: 'Beat writer\'s block', icon: 'fas fa-pen-nib', prompt: "I'm stuck on something I'm writing — can you help me get unstuck?" },
+    { label: 'Polish my draft', icon: 'fas fa-feather', prompt: 'Can you help me polish a draft I\'ve written?' },
+  ],
+  student: [
+    { label: 'Explain a topic', icon: 'fas fa-graduation-cap', prompt: 'Can you explain a topic I\'m studying in simple terms?' },
+    { label: 'Help with homework', icon: 'fas fa-book-open', prompt: "I'm stuck on homework — can you walk me through it?" },
+  ],
+}
+const DEFAULT_SUGGESTIONS = [
+  { label: 'Give me an idea', icon: 'fas fa-lightbulb', prompt: 'Surprise me with something useful you can help with today.' },
+  { label: 'Explain something', icon: 'fas fa-graduation-cap', prompt: 'Can you explain a topic of your choice, simply?' },
+  { label: 'Write for me', icon: 'fas fa-pen-nib', prompt: 'Help me write something — ask me what first.' },
+]
+const suggestions = computed(() => {
+  const profession = authStore.user?.profession
+  return (profession && SUGGESTIONS_BY_PROFESSION[profession]) || DEFAULT_SUGGESTIONS
+})
+const showSuggestions = computed(() => phase.value === 'idle' && feed.value.length <= 1)
+function useSuggestion(s) {
+  handleUserText(s.prompt)
 }
 
 /* ── State machine: idle → listening → transcribing → thinking → speaking → idle ── */
@@ -565,17 +634,18 @@ onBeforeUnmount(() => {
   background: var(--vm-bg);
   color: var(--vm-text);
   overflow: hidden;
-  padding: 0 12px calc(max(10px, env(safe-area-inset-bottom)));
   animation: vmIn .2s ease;
 }
 @keyframes vmIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* ── Top bar ───────────────────────────────────────────────────── */
-.vm-top {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: max(12px, env(safe-area-inset-top)) 2px 10px;
-  flex-shrink: 0; gap: 8px;
+/* Desktop: true split screen — Kinya fills the left pane, chat + voice
+   command live in the right pane. Below the breakpoint we fall back to a
+   full-bleed stacked layout (no boxed "widget" card — Kinya's pane spans
+   the full width at the top, exactly like the chat pane below it). */
+@media (min-width: 900px) {
+  .vm-screen { flex-direction: row; }
 }
+
 .vm-icon-btn {
   width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
   border-radius: 12px; background: var(--vm-panel); border: 1px solid var(--vm-border);
@@ -583,42 +653,125 @@ onBeforeUnmount(() => {
 }
 .vm-icon-btn:hover { background: var(--vm-panel-2); color: var(--vm-text); }
 .vm-icon-btn.active { background: var(--vm-accent); border-color: var(--vm-accent); color: var(--vm-accent-ink); }
-.vm-top-actions { display: flex; gap: 8px; }
-.vm-brand { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; letter-spacing: .02em; color: var(--vm-text); }
-.vm-brand-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--vm-text-faint); flex-shrink: 0; }
+
+/* ══════════════════════════════════════════════════════════════════
+   LEFT / TOP — Kinya's living environment
+   ══════════════════════════════════════════════════════════════════ */
+.vm-character-pane {
+  position: relative;
+  flex: 0 0 auto;
+  height: min(42vh, 360px);
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background: #16261f;
+}
+@media (min-width: 900px) {
+  .vm-character-pane { flex: 0 0 clamp(360px, 42%, 600px); height: 100%; }
+}
+
+/* Soft, living gradient backdrop echoing the character's own palette
+   (sage greens → warm coral), with two slow-drifting blobs and a handful
+   of ambient particles — a believable environment, not a flat box. */
+.vm-character-bg {
+  position: absolute; inset: 0; overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 12%, #d9c86a 0%, #8fae6e 38%, #4d7a66 70%, #1c3530 100%);
+}
+.vm-blob {
+  position: absolute; border-radius: 50%; filter: blur(40px); opacity: .45;
+  animation: vmDrift 16s ease-in-out infinite;
+}
+.vm-blob-a { width: 60%; aspect-ratio: 1; background: #ffd27d; top: -10%; left: -10%; }
+.vm-blob-b { width: 50%; aspect-ratio: 1; background: #ef9a8d; bottom: -12%; right: -8%; animation-duration: 20s; animation-delay: -6s; }
+@keyframes vmDrift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(6%, 5%) scale(1.08); }
+}
+.vm-particle {
+  position: absolute; width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(255,255,255,.55);
+  animation: vmFloat 9s ease-in-out infinite;
+}
+.vm-particle:nth-child(3) { left: 12%; top: 70%; animation-delay: -1s; }
+.vm-particle:nth-child(4) { left: 24%; top: 30%; animation-delay: -3s; width: 3px; height: 3px; }
+.vm-particle:nth-child(5) { left: 40%; top: 85%; animation-delay: -5s; }
+.vm-particle:nth-child(6) { left: 58%; top: 20%; animation-delay: -2s; width: 4px; height: 4px; }
+.vm-particle:nth-child(7) { left: 72%; top: 65%; animation-delay: -7s; }
+.vm-particle:nth-child(8) { left: 85%; top: 35%; animation-delay: -4s; width: 3px; height: 3px; }
+.vm-particle:nth-child(9) { left: 94%; top: 78%; animation-delay: -6.5s; }
+.vm-particle:nth-child(10) { left: 8%; top: 15%; animation-delay: -8s; width: 3px; height: 3px; }
+.vm-particle:nth-child(11) { left: 50%; top: 50%; animation-delay: -2.5s; }
+@keyframes vmFloat {
+  0%, 100% { transform: translateY(0); opacity: .25; }
+  50% { transform: translateY(-18px); opacity: .7; }
+}
+
+.vm-rive { position: relative; z-index: 1; width: 100%; height: 100%; }
+
+.vm-exit {
+  position: absolute; top: max(12px, env(safe-area-inset-top)); left: 12px; z-index: 4;
+  background: rgba(10,12,10,.38); border-color: rgba(255,255,255,.18); backdrop-filter: blur(6px);
+  color: #fff;
+}
+.vm-exit:hover { background: rgba(10,12,10,.55); }
+
+.vm-brand {
+  position: absolute; top: max(14px, env(safe-area-inset-top)); left: 62px; z-index: 4;
+  display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; letter-spacing: .02em;
+  color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.35);
+}
+.vm-brand-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.5); flex-shrink: 0; }
 .vm-brand-dot.listening, .vm-brand-dot.speaking { background: var(--vm-accent); }
 .vm-brand-dot.thinking, .vm-brand-dot.transcribing { background: #5b8cff; }
 
-/* ── 3D stage ──────────────────────────────────────────────────── */
-.vm-stage-card {
-  position: relative; flex-shrink: 0;
-  height: min(40vh, 320px); min-height: 220px;
-  border-radius: 20px; overflow: hidden;
-  background: var(--vm-panel);
-  border: 1px solid var(--vm-border);
-}
 .vm-status-pill {
-  position: absolute; top: 10px; left: 10px; z-index: 3;
+  position: absolute; top: max(12px, env(safe-area-inset-top)); right: 12px; z-index: 4;
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 11px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase;
-  padding: 5px 10px 5px 8px; border-radius: 8px; color: var(--vm-text-dim);
-  background: var(--vm-panel-2); border: 1px solid var(--vm-border);
+  padding: 5px 10px 5px 8px; border-radius: 8px; color: #fff;
+  background: rgba(10,12,10,.38); border: 1px solid rgba(255,255,255,.18); backdrop-filter: blur(6px);
 }
-.vm-status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--vm-text-faint); }
+.vm-status-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.5); }
 .vm-status-pill.listening .vm-status-dot, .vm-status-pill.speaking .vm-status-dot { background: var(--vm-accent); }
-.vm-status-pill.thinking .vm-status-dot, .vm-status-pill.transcribing .vm-status-dot { background: #5b8cff; }
-.vm-status-pill.listening, .vm-status-pill.speaking { color: var(--vm-accent); }
-.vm-status-pill.thinking, .vm-status-pill.transcribing { color: #8fadff; }
-.vm-stage-hint {
-  position: absolute; top: 10px; right: 10px; z-index: 3;
-  font-size: 11px; font-weight: 600; color: var(--vm-text-faint);
-  background: var(--vm-panel-2); border: 1px solid var(--vm-border);
-  padding: 5px 10px; border-radius: 8px;
+.vm-status-pill.thinking .vm-status-dot, .vm-status-pill.transcribing .vm-status-dot { background: #8fadff; }
+
+.vm-stage-hint, .vm-caption {
+  position: absolute; left: 50%; bottom: 46px; transform: translateX(-50%); z-index: 4;
+  max-width: calc(100% - 48px);
+  font-size: 12.5px; font-weight: 600; color: #fff; text-align: center;
+  background: rgba(10,12,10,.45); border: 1px solid rgba(255,255,255,.16); backdrop-filter: blur(6px);
+  padding: 7px 14px; border-radius: 99px;
+}
+.vm-caption {
+  border-radius: 14px; font-weight: 500; line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
 }
 .vm-wave {
-  position: absolute; left: 12px; right: 12px; bottom: 10px; height: 34px; z-index: 3;
-  width: calc(100% - 24px);
+  position: absolute; left: 16px; right: 16px; bottom: 10px; height: 30px; z-index: 4;
+  width: calc(100% - 32px);
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   RIGHT / BOTTOM — conversation + voice command
+   ══════════════════════════════════════════════════════════════════ */
+.vm-chat-pane {
+  flex: 1 1 auto; min-height: 0; min-width: 0;
+  display: flex; flex-direction: column;
+  padding: 0 14px calc(max(10px, env(safe-area-inset-bottom)));
+}
+@media (min-width: 900px) {
+  /* Keep reading lines a sane length on ultra-wide monitors without
+     wasting the extra vertical space the split layout gives us. */
+  .vm-chat-pane { max-width: 860px; width: 100%; margin: 0 auto; padding: 0 28px 20px; }
+}
+
+/* ── Top bar ───────────────────────────────────────────────────── */
+.vm-top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: max(12px, env(safe-area-inset-top)) 2px 10px;
+  flex-shrink: 0; gap: 8px;
+}
+.vm-top-title { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--vm-text-faint); }
+.vm-top-actions { display: flex; gap: 8px; }
 
 /* ── Feed ──────────────────────────────────────────────────────── */
 .vm-feed {
@@ -626,6 +779,15 @@ onBeforeUnmount(() => {
   overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
   padding: 12px 2px 10px;
 }
+.vm-suggest { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; }
+.vm-suggest-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12.5px; font-weight: 600; color: var(--vm-text-dim);
+  background: var(--vm-panel); border: 1px solid var(--vm-border); border-radius: 99px;
+  padding: 8px 14px; cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+}
+.vm-suggest-chip i { color: var(--vm-accent); }
+.vm-suggest-chip:hover { background: var(--vm-panel-2); color: var(--vm-text); border-color: var(--vm-accent); }
 .vm-turn { max-width: min(560px, 92%); animation: rise .2s ease both; }
 .vm-turn.user { align-self: flex-end; }
 .vm-turn.assistant { align-self: flex-start; }
@@ -694,6 +856,6 @@ onBeforeUnmount(() => {
 .vm-send:not(:disabled):hover { background: var(--vm-accent); border-color: var(--vm-accent); color: var(--vm-accent-ink); }
 
 @media (prefers-reduced-motion: reduce) {
-  .vm-eq i { animation: none !important; }
+  .vm-eq i, .vm-blob, .vm-particle { animation: none !important; }
 }
 </style>
