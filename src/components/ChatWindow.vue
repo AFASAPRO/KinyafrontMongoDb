@@ -1,6 +1,6 @@
 <template>
   <div class="chat-window">
-    <div v-if="!isPhone || hasMessages" class="chat-topbar">
+    <div v-if="isPhone && hasMessages" class="chat-topbar">
       <button class="model-pill">
         <i class="fas fa-star" style="color:var(--accent-violet);font-size:11px"></i>
         <span>KinyaBot AI</span>
@@ -232,7 +232,7 @@ const props = defineProps({
   restoredDraft: { type: String, default: null },
   restoredFile: { type: [Object, File], default: null }
 })
-const emit = defineEmits(['toggle-sidebar', 'auth-required', 'draft-consumed'])
+const emit = defineEmits(['toggle-sidebar', 'auth-required', 'draft-consumed', 'scroll-state'])
 
 const chatStore = useChatStore()
 const auth = useAuthStore()
@@ -338,8 +338,15 @@ const chips = [
 function handleScroll() {
   const el = msgArea.value
   if (!el) return
+  emit('scroll-state', el.scrollTop > 0)
   showScrollBtn.value = el.scrollHeight - el.scrollTop - el.clientHeight > 180
 }
+
+function openVoiceMode() {
+  showVoiceMode.value = true
+}
+
+defineExpose({ openVoiceMode, preloadVoiceMode })
 
 function scrollBottom() {
   nextTick(() => {

@@ -54,46 +54,82 @@
       </header>
 
       <!-- Top bar -->
-      <div v-else class="top-bar">
+      <div v-else class="top-bar" :class="{ scrolled: chatScrolled }">
         <!-- ── Authenticated header ── -->
         <template v-if="!isGuest">
           <div class="topbar-left">
-            <button class="mob-menu-btn" @click="mobileSidebarOpen=true" title="Menu">
-              <i class="fas fa-bars"></i>
+            <button class="mob-menu-btn" type="button" title="Open chat history" aria-label="Open chat history" @click="mobileSidebarOpen=true">
+              <i class="fas fa-bars" aria-hidden="true"></i>
             </button>
-            <button class="topbar-pill active" @click="handleNewChat" title="New Chat (Ctrl+K)">
-              <i class="far fa-comment"></i>
-              <span>New Chat</span>
-            </button>
-            <button class="topbar-icon-btn" @click="handleNewChat" title="New Chat">
-              <i class="fas fa-plus"></i>
-            </button>
-            <button class="topbar-icon-btn" title="More options">
-              <i class="fas fa-ellipsis"></i>
-            </button>
+            <div class="chat-title-group">
+              <input
+                v-if="renamingChat"
+                ref="chatTitleInput"
+                v-model="chatTitleDraft"
+                class="chat-title-input"
+                maxlength="80"
+                aria-label="Chat title"
+                @keydown.enter.prevent="commitChatRename"
+                @keydown.esc.stop.prevent="cancelChatRename"
+                @blur="commitChatRename"
+              />
+              <button
+                v-else
+                class="chat-title"
+                type="button"
+                :disabled="!chatStore.activeChat"
+                :title="chatStore.activeChat ? `Rename: ${chatStore.activeChat.title}` : 'No chat open'"
+                aria-label="Rename chat"
+                @click="startChatRename"
+              >
+                <span>{{ chatStore.activeChat?.title || 'New Chat' }}</span>
+                <i class="fas fa-pen" aria-hidden="true"></i>
+              </button>
+              <span class="chat-model-label">KinyaBot AI</span>
+            </div>
           </div>
           <div class="topbar-right">
-            <button class="topbar-pill" @click="rightOpen=!rightOpen" title="Toggle panel">
+            <button
+              class="topbar-action voice-action"
+              type="button"
+              title="Voice mode"
+              aria-label="Open voice mode"
+              @mouseenter="preloadVoiceMode"
+              @focus="preloadVoiceMode"
+              @click="openVoiceMode"
+            >
+              <i class="fas fa-microphone-lines" aria-hidden="true"></i>
+              <span>Voice</span>
+            </button>
+            <button
+              class="topbar-action"
+              type="button"
+              title="Share current chat"
+              aria-label="Share current chat"
+              :disabled="!chatStore.activeChat"
+              @click="handleShare"
+            >
+              <i class="fas fa-share-nodes" aria-hidden="true"></i>
+            </button>
+            <button
+              class="topbar-action"
+              :class="{ active: rightOpen }"
+              type="button"
+              :title="`Details (${navigatorShortcut}.)`"
+              aria-label="Toggle chat details"
+              :aria-pressed="rightOpen"
+              @click="rightOpen=!rightOpen"
+            >
               <i class="fas fa-sliders"></i>
-              <span>Configuration</span>
-              <i class="fas fa-magnifying-glass" style="font-size:11px;opacity:.7"></i>
             </button>
-            <button class="topbar-pill" @click="handleShare" title="Share current chat">
-              <i class="fas fa-share-nodes"></i>
-              <span>Share</span>
-            </button>
-            <div class="user-avatar-btn" @click="showProfile=true" title="Profile">
-              <img v-if="auth.user?.avatar_url" :src="auth.user.avatar_url" alt="avatar" />
-              <span v-else>{{ auth.user?.username?.[0]?.toUpperCase() }}</span>
-            </div>
           </div>
 
         <!-- ── Guest header: chat-first, auth always reachable ── -->
         </template>
         <template v-else>
           <div class="guest-brand">
-            <button class="mob-menu-btn" @click="mobileSidebarOpen=true" title="Menu" aria-label="Open menu">
-              <i class="fas fa-bars"></i>
+            <button class="mob-menu-btn" type="button" title="Open chat history" aria-label="Open chat history" @click="mobileSidebarOpen=true">
+              <i class="fas fa-bars" aria-hidden="true"></i>
             </button>
             <img src="/logo.png" alt="KinyaBot" class="guest-logo" />
             <span class="guest-name">KinyaBot</span>
@@ -106,9 +142,11 @@
       </div>
 
       <ChatWindow
+        ref="chatWindow"
         :guest="isGuest"
         :restored-draft="restoredDraft"
         :restored-file="restoredFile"
+        @scroll-state="chatScrolled=$event"
         @toggle-sidebar="mobileSidebarOpen=!mobileSidebarOpen"
         @auth-required="handleAuthRequired"
         @draft-consumed="onDraftConsumed"
@@ -119,7 +157,6 @@
       <transition name="slide-r">
         <RightPanel v-if="rightOpen" @load-chat="handleLoadChat" @close="rightOpen=false" />
       </transition>
-      <ProfileModal v-if="showProfile" @close="showProfile=false" />
     </template>
     <SettingsModal v-if="showSettings" @close="showSettings=false" />
 
@@ -141,7 +178,6 @@ import { connectSocket } from '../socket'
 import Sidebar from '../components/Sidebar.vue'
 import ChatWindow from '../components/ChatWindow.vue'
 import RightPanel from '../components/RightPanel.vue'
-import ProfileModal from '../components/ProfileModal.vue'
 import AuthGateModal from '../components/AuthGateModal.vue'
 import SettingsModal from '../components/SettingsModal.vue'
 import { useIsMobile } from '../composables/useIsMobile'
@@ -152,8 +188,17 @@ const route = useRoute()
 const router = useRouter()
 
 const mobileSidebarOpen = ref(false)
-const showProfile = ref(false)
 const showSettings = ref(false)
+const chatWindow = ref(null)
+const chatScrolled = ref(false)
+const renamingChat = ref(false)
+const chatTitleDraft = ref('')
+const chatTitleInput = ref(null)
+const navigatorShortcut = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl+'
+watch(() => chatStore.activeChat?.id, () => {
+  chatScrolled.value = false
+  renamingChat.value = false
+})
 
 // Phone layout (≤768px): redesigned header, home screen and composer
 const isPhone = useIsMobile()
@@ -164,6 +209,36 @@ function goHome() {
   if (chatStore.sending || chatStore.streaming) chatStore.stopGeneration()
   chatStore.activeChat = null
   chatStore.messages = []
+}
+
+function startChatRename() {
+  if (!chatStore.activeChat) return
+  chatTitleDraft.value = chatStore.activeChat.title
+  renamingChat.value = true
+  nextTick(() => {
+    chatTitleInput.value?.focus()
+    chatTitleInput.value?.select()
+  })
+}
+
+async function commitChatRename() {
+  if (!renamingChat.value) return
+  renamingChat.value = false
+  const title = chatTitleDraft.value.trim()
+  const chat = chatStore.activeChat
+  if (chat && title && title !== chat.title) await chatStore.renameChat(chat.id, title)
+}
+
+function cancelChatRename() {
+  renamingChat.value = false
+}
+
+function openVoiceMode() {
+  chatWindow.value?.openVoiceMode()
+}
+
+function preloadVoiceMode() {
+  chatWindow.value?.preloadVoiceMode()
 }
 
 // ── Guest mode ────────────────────────────────────────────────
@@ -267,6 +342,7 @@ function handleGlobalKeys(e) {
   const ctrl = e.ctrlKey || e.metaKey
   if (ctrl && e.key === 'k') { e.preventDefault(); handleNewChat() }
   if (ctrl && e.key === 'b') { e.preventDefault(); mobileSidebarOpen.value = !mobileSidebarOpen.value }
+  if (!isPhone.value && ctrl && e.key === '.') { e.preventDefault(); rightOpen.value = !rightOpen.value }
 }
 
 async function handleNewChat() {
@@ -315,49 +391,76 @@ onBeforeUnmount(() => {
 .top-bar {
   display:flex; align-items:center; justify-content:space-between;
   padding:0 12px; height:52px; flex-shrink:0;
-  background:var(--bg-base); border-bottom:1px solid var(--border);
+  background:transparent;
 }
-.topbar-left,.topbar-right { display:flex; align-items:center; gap:6px; }
-
-.mob-menu-btn { width:36px; height:36px; background:none; border:none; border-radius:var(--r-sm); color:var(--text-2); font-size:15px; align-items:center; justify-content:center; transition:all .2s; cursor:pointer; display:none; }
+.top-bar.scrolled { border-bottom:1px solid var(--border); }
+.topbar-left,.topbar-right { display:flex; align-items:center; min-width:0; }
+.topbar-left { flex:1; }
+.topbar-right { gap:4px; }
+.mob-menu-btn {
+  display:none; width:36px; height:36px; flex-shrink:0; margin-right:8px;
+  align-items:center; justify-content:center; border:0; border-radius:8px;
+  background:transparent; color:var(--text-2); font-size:15px; cursor:pointer;
+}
 .mob-menu-btn:hover { background:var(--bg-hover); color:var(--text-1); }
 
-.topbar-pill { display:flex; align-items:center; gap:6px; padding:7px 14px; background:var(--bg-card); border:1px solid var(--border-md); border-radius:99px; color:var(--text-2); font-size:13px; font-weight:500; cursor:pointer; transition:all .2s; }
-.topbar-pill:hover { background:var(--bg-hover); color:var(--text-1); }
-.topbar-pill.active { color:var(--text-1); }
-.topbar-pill i { font-size:13px; }
-
-.topbar-icon-btn { width:32px; height:32px; background:none; border:none; border-radius:50%; color:var(--text-2); font-size:14px; display:flex; align-items:center; justify-content:center; transition:all .2s; cursor:pointer; }
-.topbar-icon-btn:hover { background:var(--bg-hover); color:var(--text-1); }
-
-.user-avatar-btn { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,var(--brand-strong),var(--accent-violet)); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:white; cursor:pointer; overflow:hidden; flex-shrink:0; border:2px solid var(--border-md); transition:opacity .2s; }
-.user-avatar-btn:hover { opacity:.85; }
-.user-avatar-btn img { width:100%; height:100%; object-fit:cover; }
+.chat-title-group { display:flex; align-items:center; gap:10px; min-width:0; }
+.chat-title {
+  display:flex; align-items:center; gap:8px; min-width:0; max-width:min(42vw, 480px);
+  padding:0; background:transparent; color:var(--text-1); font-size:15px; font-weight:600;
+  text-align:left; white-space:nowrap;
+}
+.chat-title span { overflow:hidden; text-overflow:ellipsis; }
+.chat-title i { flex-shrink:0; color:var(--text-3); font-size:11px; opacity:0; transition:opacity .15s; }
+.chat-title:hover i,.chat-title:focus-visible i { opacity:1; }
+.chat-title:disabled { cursor:default; }
+.chat-title:disabled i { display:none; }
+.chat-title-input {
+  width:min(42vw, 480px); min-width:120px; height:34px; padding:0 8px;
+  background:var(--bg-input); border:1px solid var(--brand); border-radius:var(--r-sm);
+  color:var(--text-1); font-size:15px; font-weight:600; box-shadow:var(--focus-glow);
+}
+.chat-model-label { flex-shrink:0; color:var(--text-3); font-size:12px; font-weight:500; }
+.topbar-action {
+  width:36px; height:36px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  gap:7px; padding:0; border:0; border-radius:8px; background:transparent;
+  color:var(--text-2); font-size:14px; transition:background .15s, color .15s; cursor:pointer;
+}
+.topbar-action:hover:not(:disabled) { background:var(--bg-hover); color:var(--text-1); }
+.topbar-action:focus-visible,.chat-title:focus-visible,.chat-title-input:focus-visible {
+  outline:2px solid var(--brand-text); outline-offset:2px;
+}
+.mob-menu-btn:focus-visible { outline:2px solid var(--brand-text); outline-offset:2px; }
+.topbar-action:disabled { opacity:.45; cursor:default; }
+.topbar-action.active { background:var(--brand-soft); color:var(--brand-text); }
+.topbar-action.voice-action {
+  width:auto; padding:0 12px; background:var(--brand-soft); color:var(--brand-text);
+  font-size:13px; font-weight:600;
+}
+.topbar-action.voice-action:hover { background:var(--brand-soft); filter:brightness(1.12); color:var(--brand-text); }
+.topbar-action.voice-action i { font-size:13px; }
 
 /* ── Guest header ── */
 .guest-brand { display:flex; align-items:center; gap:9px; min-width:0; }
-.guest-brand .mob-menu-btn { display:none; }
 .guest-logo { width:30px; height:30px; border-radius:8px; object-fit:contain; flex-shrink:0; }
 .guest-name { font-size:15px; font-weight:700; color:var(--text-1); white-space:nowrap; }
 
 .guest-actions { display:flex; align-items:center; gap:8px; }
-.auth-btn { padding:7px 16px; border-radius:99px; font-size:13px; font-weight:600; cursor:pointer; transition:all .2s; white-space:nowrap; }
-.auth-btn.ghost { background:transparent; border:1px solid var(--border-md); color:var(--text-2); }
+.auth-btn { padding:7px 16px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; transition:all .2s; white-space:nowrap; }
+.auth-btn.ghost { background:transparent; border:0; color:var(--text-2); }
 .auth-btn.ghost:hover { background:var(--bg-hover); color:var(--text-1); }
 .auth-btn.solid { background:var(--accent); border:1px solid transparent; color:#fff; box-shadow:0 2px 10px rgba(99,102,241,.3); }
 .auth-btn.solid:hover { filter:brightness(1.12); transform:translateY(-1px); }
 
 /* ── MOBILE ── */
-@media(max-width:860px) {
+@media(max-width:900px) {
   .mob-menu-btn { display:flex; }
-  .guest-brand .mob-menu-btn { display:flex; }
-  .topbar-pill span { display:none; }
-  .topbar-pill { padding:7px 10px; }
+  .chat-title { max-width:34vw; }
+  .chat-title-input { width:34vw; }
 }
 @media(max-width:480px) {
   .top-bar { padding:0 6px; height:48px; }
   .topbar-right { gap:2px; }
-  .topbar-pill { padding:7px 8px; }
   .guest-actions { gap:6px; }
   .auth-btn { padding:6px 12px; font-size:12.5px; }
 }
@@ -365,7 +468,10 @@ onBeforeUnmount(() => {
   .auth-btn { padding:6px 10px; font-size:12px; }
 }
 
-@media(max-width:768px){ .main-col { background:var(--bg-base); } }
+@media(max-width:768px){
+  .main-col { background:var(--bg-base); }
+  .top-bar { border:0; }
+}
 
 /* ═══ MOBILE HEADER ═══ */
 .m-hd {
