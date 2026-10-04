@@ -420,7 +420,7 @@ function doDelete() {
   padding:10px 14px;
   background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.2);
   border-radius:0 var(--r-lg) var(--r-lg) var(--r-lg);
-  color:#f87171; font-size:13.5px; max-width:480px;
+  color:var(--error); font-size:13.5px; max-width:480px;
 }
 .error-bubble i { font-size:15px; flex-shrink:0; }
 .error-wrap { display:flex; flex-direction:column; gap:6px; }
@@ -460,7 +460,7 @@ function doDelete() {
 .sources-line span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 /* TTS */
-.tts-error { font-size:11.5px; color:#f87171; margin-top:3px; }
+.tts-error { font-size:11.5px; color:var(--error); margin-top:3px; }
 .act-btn.active { color:var(--brand-text) !important; background:rgba(99,102,241,.14); }
 .act-btn.spin i { animation:spin 1s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
@@ -472,7 +472,7 @@ function doDelete() {
   display:flex; align-items:center; gap:8px;
   padding:8px 14px;
   background:rgba(99,102,241,.08); border:1px solid rgba(99,102,241,.2);
-  border-radius:99px; color:#a5b4fc; font-size:12.5px;
+  border-radius:99px; color:var(--brand-text); font-size:12.5px;
 }
 
 .bubble-col { display:flex; flex-direction:column; max-width:72%; }
@@ -510,8 +510,8 @@ function doDelete() {
 .act-btn:hover { background:var(--bg-hover); color:var(--text-1); }
 .act-btn.success { color:var(--success) !important; }
 .act-btn.liked { color:#4285f4 !important; }
-.act-btn.disliked { color:#f28b82 !important; }
-.act-btn.danger:hover { background:rgba(242,139,130,.12); color:#f28b82; }
+.act-btn.disliked { color:var(--error) !important; }
+.act-btn.danger:hover { background:rgba(242,139,130,.12); color:var(--error); }
 .msg-time { font-size:11px; color:var(--text-3); margin-left:4px; }
 
 .feedback-msg { font-size:11.5px; color:var(--text-2); padding:3px 4px; animation:fadeUp .2s ease; font-style:italic; }
@@ -519,7 +519,7 @@ function doDelete() {
 /* Delete confirm */
 .del-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; z-index:999; backdrop-filter:blur(4px); }
 .del-modal { width:300px; background:var(--bg-card); border:1px solid var(--border-md); border-radius:var(--r-lg); padding:1.25rem; animation:fadeUp .2s ease; }
-.del-modal h4 { font-size:14px; font-weight:600; margin-bottom:.6rem; display:flex; align-items:center; gap:8px; color:#f28b82; }
+.del-modal h4 { font-size:14px; font-weight:600; margin-bottom:.6rem; display:flex; align-items:center; gap:8px; color:var(--error); }
 .del-modal p { font-size:12.5px; color:var(--text-2); margin-bottom:1rem; }
 .del-actions { display:flex; gap:8px; justify-content:flex-end; }
 .del-actions button { padding:7px 16px; border:none; border-radius:var(--r-sm); font-size:13px; cursor:pointer; transition:all .2s; }
@@ -566,11 +566,11 @@ function doDelete() {
 
 <style>
 /* Global styles for code blocks rendered inside v-html */
-.code-block { border-radius:8px; overflow:hidden; border:1px solid var(--border-md,rgba(255,255,255,.11)); margin:.75rem 0; }
-.code-header { display:flex; align-items:center; justify-content:space-between; padding:6px 12px; background:rgba(0,0,0,.4); }
-.code-lang { color:var(--brand-text); font-size:11.5px; font-weight:600; font-family:monospace; }
+.code-block { border-radius:8px; overflow:hidden; border:1px solid var(--border); background:var(--code-bg); margin:.8rem 0; }
+.code-header { display:flex; align-items:center; justify-content:space-between; padding:6px 12px; background:var(--code-header); border-bottom:1px solid var(--border-subtle); }
+.code-lang { color:var(--brand-text); font-size:11.5px; font-weight:600; font-family:var(--font-mono); }
 .code-actions { display:flex; gap:6px; }
-.copy-code-btn,.download-code-btn { background:none; border:none; color:var(--text-2,#9aa0a6); font-size:11px; cursor:pointer; padding:3px 8px; border-radius:4px; transition:all .2s; display:flex; align-items:center; gap:4px; font-family:inherit; }
-.copy-code-btn:hover,.download-code-btn:hover { background:rgba(255,255,255,.08); color:var(--text-1,#e3e3e3); }
-.hljs { background:#0d0d0f!important; padding:12px 14px!important; font-size:13px!important; display:block; overflow-x:auto; }
+.copy-code-btn,.download-code-btn { background:none; border:none; color:var(--text-2,var(--text-3)); font-size:11px; cursor:pointer; padding:3px 8px; border-radius:4px; transition:all .2s; display:flex; align-items:center; gap:4px; font-family:inherit; }
+.copy-code-btn:hover,.download-code-btn:hover { background:var(--bg-hover); color:var(--text-1); }
+.hljs { background:var(--code-bg)!important; padding:14px 16px!important; font-size:13.5px!important; display:block; overflow-x:auto; }
 </style>

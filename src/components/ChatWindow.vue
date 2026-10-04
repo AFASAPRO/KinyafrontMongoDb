@@ -505,7 +505,7 @@ onBeforeUnmount(() => {
   cursor:pointer; transition:all .2s;
 }
 .stop-btn:hover { background:var(--bg-hover); color:var(--text-1); border-color:rgba(242,139,130,.4); }
-.stop-btn i { font-size:10px; color:#f28b82; }
+.stop-btn i { font-size:10px; color:var(--error); }
 
 .scroll-fab { position:absolute; bottom:110px; right:20px; width:36px; height:36px; border-radius:50%; background:var(--bg-card); border:1px solid var(--border-md); color:var(--text-2); font-size:13px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,.3); cursor:pointer; z-index:5; transition:all .2s; }
 .scroll-fab:hover { background:var(--bg-hover); color:var(--text-1); }
@@ -541,10 +541,10 @@ onBeforeUnmount(() => {
 .notif-banner.warning { background:rgba(245,158,11,.12); border-bottom-color:rgba(245,158,11,.2); }
 .notif-banner.error   { background:rgba(239,68,68,.12);  border-bottom-color:rgba(239,68,68,.2);  }
 .notif-banner i:first-child { font-size:15px; flex-shrink:0; }
-.notif-banner.info    i:first-child { color:#67e8f9; }
-.notif-banner.success i:first-child { color:#34d399; }
-.notif-banner.warning i:first-child { color:#fcd34d; }
-.notif-banner.error   i:first-child { color:#f87171; }
+.notif-banner.info    i:first-child { color:var(--accent-cyan); }
+.notif-banner.success i:first-child { color:var(--success); }
+.notif-banner.warning i:first-child { color:var(--warning); }
+.notif-banner.error   i:first-child { color:var(--error); }
 .nb-text { flex:1; min-width:0; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
 .nb-text strong { font-size:13px; font-weight:600; color:var(--text-1); }
 .nb-text span    { font-size:12.5px; color:var(--text-2); }

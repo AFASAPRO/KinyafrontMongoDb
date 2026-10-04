@@ -162,7 +162,7 @@ onBeforeUnmount(() => {
   z-index: 99999; backdrop-filter: blur(10px);
 }
 .op-card {
-  background: #0f0f1a; border: 1px solid rgba(239,68,68,.3);
+  background: var(--surface); border: 1px solid rgba(239,68,68,.3);
   border-radius: 20px; padding: 2rem 2.5rem;
   max-width: 400px; width: 90%;
   display: flex; flex-direction: column; align-items: center; gap: 1rem;
@@ -178,16 +178,16 @@ onBeforeUnmount(() => {
   border-radius: 50%; background: rgba(239,68,68,.12);
   border: 2px solid rgba(239,68,68,.3);
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.8rem; color: #f87171; position: relative;
+  font-size: 1.8rem; color: var(--error); position: relative;
 }
 .wifi-slash {
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%,-50%) rotate(-45deg);
-  width: 2px; height: 140%; background: #f87171; border-radius: 99px;
+  width: 2px; height: 140%; background: var(--error); border-radius: 99px;
 }
 .op-content { text-align: center; }
 .op-title { font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: .5rem; }
-.op-sub { font-size: 13.5px; color: #9ca3af; line-height: 1.6; }
+.op-sub { font-size: 13.5px; color: var(--text-muted); line-height: 1.6; }
 .op-dots { display: flex; gap: 6px; }
 .op-dots span {
   width: 8px; height: 8px; border-radius: 50%; background: rgba(239,68,68,.4);
@@ -203,14 +203,14 @@ onBeforeUnmount(() => {
   background: #0f1a12; border: 1px solid rgba(52,168,83,.35);
   border-radius: 10px; padding: 12px 18px;
   display: flex; align-items: center; gap: 9px;
-  color: #34d399; font-size: 13.5px; font-weight: 500;
+  color: var(--success); font-size: 13.5px; font-weight: 500;
   box-shadow: 0 8px 24px rgba(0,0,0,.4);
   z-index: 9999;
 }
 .toast-slide-enter-active, .toast-slide-leave-active { transition: all .3s ease; }
 .toast-slide-enter-from, .toast-slide-leave-to { opacity: 0; transform: translateX(20px); }
 
-.expired-toast { background: #1a1410; border-color: rgba(245,158,11,.35); color: #fcd34d; }
+.expired-toast { background: var(--surface-elevated); border-color: rgba(245,158,11,.35); color: var(--warning); }
 
 .offline-pop-enter-active { animation: fadeUp .4s cubic-bezier(.34,1.56,.64,1); }
 .offline-pop-leave-active { transition: all .3s ease; }

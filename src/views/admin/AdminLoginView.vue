@@ -192,7 +192,7 @@ async function handleLogin() {
   min-height: 100vh;
   min-height: 100dvh;
   width: 100%;
-  background: #0a0a12;
+  background: var(--background);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -214,7 +214,7 @@ async function handleLogin() {
 .al-card {
   position: relative; z-index: 1;
   width: min(420px, 100%);
-  background: #101018;
+  background: var(--surface);
   border: 1px solid rgba(255, 255, 255, .08);
   border-radius: 20px;
   padding: 2.25rem 1.9rem 1.75rem;
@@ -226,27 +226,27 @@ async function handleLogin() {
 .al-mark { position: relative; display: inline-block; margin-bottom: .85rem; }
 .al-mark-img {
   width: 60px; height: 60px; border-radius: 16px; object-fit: contain;
-  background: #16161f;
+  background: var(--surface-secondary);
   border: 1px solid rgba(255, 255, 255, .08);
 }
 .al-mark-badge {
   position: absolute; bottom: -4px; right: -4px;
   width: 22px; height: 22px; border-radius: 50%;
   background: var(--brand-strong);
-  border: 2.5px solid #101018;
+  border: 2.5px solid var(--surface);
   display: flex; align-items: center; justify-content: center;
   font-size: 9.5px; color: #fff;
 }
 .al-title { font-size: 1.3rem; font-weight: 700; color: #fff; letter-spacing: -.3px; margin-bottom: 3px; }
-.al-subtitle { font-size: 12.5px; color: #6b7280; }
+.al-subtitle { font-size: 12.5px; color: var(--text-muted); }
 
 /* ── Form ──────────────────────────────────────────────────────── */
 .al-form { display: flex; flex-direction: column; gap: .95rem; }
 .al-field { display: flex; flex-direction: column; gap: 6px; }
-.al-field-label { font-size: 11.5px; font-weight: 600; color: #8b8fa3; text-transform: uppercase; letter-spacing: .04em; }
+.al-field-label { font-size: 11.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
 .al-field-box {
   display: flex; align-items: center; gap: 10px;
-  background: #16161f;
+  background: var(--surface-secondary);
   border: 1px solid rgba(255, 255, 255, .09);
   border-radius: 11px;
   padding: 0 13px;
@@ -254,32 +254,32 @@ async function handleLogin() {
 }
 .al-field-box:focus-within {
   border-color: rgba(99, 102, 241, .55);
-  background: #17171f;
+  background: var(--surface-secondary);
 }
 .al-field.has-error .al-field-box { border-color: rgba(242, 139, 130, .5); }
-.al-field-icon { font-size: 13px; color: #565a6e; flex-shrink: 0; }
-.al-field-box:focus-within .al-field-icon { color: #818cf8; }
+.al-field-icon { font-size: 13px; color: var(--text-disabled); flex-shrink: 0; }
+.al-field-box:focus-within .al-field-icon { color: var(--brand-text); }
 .al-input {
   flex: 1; min-width: 0; padding: 12px 0;
   background: none; border: none; outline: none;
-  color: #e5e7eb; font-size: 13.5px; font-family: inherit;
+  color: var(--text-secondary); font-size: 13.5px; font-family: inherit;
 }
-.al-input::placeholder { color: #4b5065; }
+.al-input::placeholder { color: var(--text-disabled); }
 .al-field-toggle {
-  background: none; border: none; color: #565a6e; cursor: pointer;
+  background: none; border: none; color: var(--text-disabled); cursor: pointer;
   font-size: 14px; padding: 6px; flex-shrink: 0; transition: color .15s;
 }
-.al-field-toggle:hover { color: #c7c9d9; }
+.al-field-toggle:hover { color: var(--text-secondary); }
 .al-field-error {
   display: flex; align-items: center; gap: 5px;
-  font-size: 11.5px; color: #f28b82;
+  font-size: 11.5px; color: var(--error);
 }
 
 .al-alert {
   display: flex; align-items: center; gap: 8px;
   background: rgba(242, 139, 130, .08);
   border: 1px solid rgba(242, 139, 130, .25);
-  color: #f28b82; font-size: 12.5px;
+  color: var(--error); font-size: 12.5px;
   padding: 9px 12px; border-radius: 9px;
 }
 
@@ -298,22 +298,22 @@ async function handleLogin() {
 .al-btn-ghost {
   background: rgba(99, 102, 241, .08);
   border: 1px solid rgba(99, 102, 241, .3);
-  color: #a5b4fc;
+  color: var(--brand-text);
 }
 .al-btn-ghost:hover { background: rgba(99, 102, 241, .16); }
 
 .al-hint {
   display: flex; align-items: center; justify-content: center; gap: 7px;
-  margin-top: 12px; font-size: 11.5px; color: #565a6e; text-align: center; line-height: 1.5;
+  margin-top: 12px; font-size: 11.5px; color: var(--text-disabled); text-align: center; line-height: 1.5;
 }
-.al-hint i { color: #6366f1; flex-shrink: 0; }
+.al-hint i { color: var(--brand); flex-shrink: 0; }
 
 .al-back {
   display: flex; align-items: center; justify-content: center; gap: 7px;
-  margin-top: 1.4rem; font-size: 13px; color: #565a6e; text-decoration: none;
+  margin-top: 1.4rem; font-size: 13px; color: var(--text-disabled); text-decoration: none;
   transition: color .15s;
 }
-.al-back:hover { color: #a5b4fc; }
+.al-back:hover { color: var(--brand-text); }
 
 /* ── Install modal ─────────────────────────────────────────────── */
 .al-modal-overlay {
@@ -324,7 +324,7 @@ async function handleLogin() {
 }
 .al-modal {
   position: relative; width: min(400px, 100%);
-  background: #101018;
+  background: var(--surface);
   border: 1px solid rgba(255, 255, 255, .1);
   border-radius: 18px;
   padding: 26px 22px 20px;
@@ -336,12 +336,12 @@ async function handleLogin() {
   position: absolute; top: 12px; right: 12px;
   width: 30px; height: 30px; border-radius: 8px;
   background: rgba(255, 255, 255, .06); border: none;
-  color: #9ca3af; font-size: 13px; cursor: pointer;
+  color: var(--text-muted); font-size: 13px; cursor: pointer;
 }
 .al-modal-close:hover { background: rgba(255, 255, 255, .12); color: #fff; }
 .al-modal-icon { width: 60px; height: 60px; border-radius: 14px; margin-bottom: 10px; }
 .al-modal h3 { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 8px; }
-.al-modal-lead { font-size: 12.5px; color: #9ca3af; line-height: 1.6; margin-bottom: 14px; }
+.al-modal-lead { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; margin-bottom: 14px; }
 .al-modal-steps {
   list-style: none; text-align: left; display: flex; flex-direction: column; gap: 9px;
   margin-bottom: 16px;
@@ -351,9 +351,9 @@ async function handleLogin() {
   background: rgba(255, 255, 255, .03);
   border: 1px solid rgba(255, 255, 255, .07);
   border-radius: 10px; padding: 10px 12px;
-  font-size: 12.5px; color: #d1d5db; line-height: 1.4;
+  font-size: 12.5px; color: var(--text-secondary); line-height: 1.4;
 }
-.al-modal-steps li i { color: #818cf8; font-size: 13px; width: 16px; text-align: center; flex-shrink: 0; }
+.al-modal-steps li i { color: var(--brand-text); font-size: 13px; width: 16px; text-align: center; flex-shrink: 0; }
 
 .al-fade-enter-active, .al-fade-leave-active { transition: opacity .2s ease; }
 .al-fade-enter-from, .al-fade-leave-to { opacity: 0; }

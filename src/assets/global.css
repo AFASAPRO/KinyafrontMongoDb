@@ -7,7 +7,10 @@
    Legacy names (--bg-*, --text-1.., --purple, --blue…) are kept as
    aliases so every existing component inherits the new system.
 ═══════════════════════════════════════════════════════════════ */
-:root {
+:root,
+.kb-admin:not(.light-theme),
+.landing,
+.al-screen {
   /* Surfaces (dark = primary experience) */
   --background:        #070A12;   /* app background            */
   --surface:           #0B1020;   /* main chat surface         */
@@ -76,28 +79,6 @@
   /* Typography */
   --font:      'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-
-  /* ── Legacy aliases (consumed by existing components) ── */
-  --bg-base:    var(--background);
-  --bg-panel:   var(--surface);
-  --bg-card:    var(--surface-secondary);
-  --bg-hover:   var(--surface-elevated);
-  --bg-active:  #1B2338;
-  --bg-input:   var(--surface-secondary);
-  --border-md:  var(--border-strong);
-  --text-1: var(--text-primary);
-  --text-2: var(--text-secondary);
-  --text-3: var(--text-muted);
-  --blue:   var(--brand-hover);    /* links */
-  --purple: var(--brand-text);     /* brand text/icons (name kept for compat) */
-  --cyan:   var(--accent-cyan);
-  --orange: var(--warning);
-  --green:  var(--success);
-  --red:    var(--error);
-  --yellow: var(--warning);
-  --accent: var(--gradient-brand);
-  --accent-solid: var(--brand);
-  --on-accent: var(--on-brand);
 
   --sidebar-w: 258px;
   --right-w:   284px;
@@ -198,7 +179,8 @@ html.light-mode .hljs{--hl-kw:#4F46E5;--hl-str:#047857;--hl-num:#B45309;--hl-fn:
 .serif-display{font-family:var(--font);font-weight:600;letter-spacing:-.02em}
 
 /* ─── Light Mode ────────────────── */
-html.light-mode {
+html.light-mode,
+.kb-admin.light-theme {
   --background:        #F8FAFC;
   --surface:           #FFFFFF;
   --surface-sidebar:   #FFFFFF;
@@ -242,6 +224,35 @@ html.light-mode {
 
   color-scheme: light;
 }
+/* Aliases are re-declared per scope so a nested theme scope (the admin
+   console has its own dark/light toggle) resolves them against its own tokens. */
+:root,
+.kb-admin,
+.landing,
+.al-screen {
+  /* ── Legacy aliases (consumed by existing components) ── */
+  --bg-base:    var(--background);
+  --bg-panel:   var(--surface);
+  --bg-card:    var(--surface-secondary);
+  --bg-hover:   var(--surface-elevated);
+  --bg-active:  #1B2338;
+  --bg-input:   var(--surface-secondary);
+  --border-md:  var(--border-strong);
+  --text-1: var(--text-primary);
+  --text-2: var(--text-secondary);
+  --text-3: var(--text-muted);
+  --blue:   var(--brand-hover);    /* links */
+  --purple: var(--brand-text);     /* brand text/icons (name kept for compat) */
+  --cyan:   var(--accent-cyan);
+  --orange: var(--warning);
+  --green:  var(--success);
+  --red:    var(--error);
+  --yellow: var(--warning);
+  --accent: var(--gradient-brand);
+  --accent-solid: var(--brand);
+  --on-accent: var(--on-brand);
+}
+
 html.light-mode body {
   background: var(--bg-base);
   color: var(--text-1);

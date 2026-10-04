@@ -472,7 +472,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
 .footer-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:var(--r-sm); background:none; border:none; color:var(--text-2); font-size:13px; cursor:pointer; transition:all .2s; text-align:left; width:100%; }
 .footer-item:hover { background:var(--bg-hover); color:var(--text-1); }
 .footer-item i { font-size:14px; width:18px; text-align:center; }
-.logout-item:hover { color:#f28b82 !important; background:rgba(242,139,130,.08) !important; }
+.logout-item:hover { color:var(--error) !important; background:rgba(242,139,130,.08) !important; }
 
 .credits-bar { display:flex; align-items:center; justify-content:space-between; padding:6px 4px 2px; }
 .credits-info { display:flex; flex-direction:column; gap:2px; }

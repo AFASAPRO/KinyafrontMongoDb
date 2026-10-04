@@ -414,7 +414,7 @@ onBeforeUnmount(() => {
   display:flex; align-items:center; gap:8px;
   padding:8px 12px; margin-bottom:5px;
   background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.25);
-  border-radius:10px; font-size:12.5px; color:#fcd34d;
+  border-radius:10px; font-size:12.5px; color:var(--warning);
   animation:fadeUp .25s ease;
 }
 .inline-notice i { flex-shrink:0; }

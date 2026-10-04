@@ -136,7 +136,7 @@ onMounted(() => {
   rim.position.set(-3, 2.6, -2.6)
   scene.add(rim)
 
-  const groundColor = new THREE.Color(getComputedStyle(host).getPropertyValue('--vm-accent') || '#f5a524')
+  const groundColor = new THREE.Color(getComputedStyle(host).getPropertyValue('--vm-accent').trim() || '#6366f1')
   const spot = new THREE.Mesh(
     new THREE.CircleGeometry(0.62, 40),
     new THREE.MeshBasicMaterial({ color: groundColor, transparent: true, opacity: 0.1, depthWrite: false, toneMapped: false }),
@@ -312,5 +312,5 @@ onBeforeUnmount(() => {
 }
 .buddy-loading.is-error i { font-size: 26px; color: #fca5a5; margin-bottom: 4px; }
 .buddy-bar { width: 180px; height: 6px; border-radius: 99px; background: rgba(255,255,255,.14); overflow: hidden; }
-.buddy-bar span { display: block; height: 100%; background: var(--vm-accent, #f5a524); transition: width .15s ease; }
+.buddy-bar span { display: block; height: 100%; background: var(--vm-accent); transition: width .15s ease; }
 </style>

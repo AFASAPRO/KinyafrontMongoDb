@@ -116,7 +116,7 @@ const cards = [
 }
 .hero-title-accent {
   display: inline-block; padding-bottom: .08em; white-space: nowrap;
-  background-image: linear-gradient(90deg, #6366F1 0%, #8B5CF6 100%);
+  background-image: linear-gradient(90deg, var(--brand) 0%, #8B5CF6 100%);
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent; color: transparent;
 }

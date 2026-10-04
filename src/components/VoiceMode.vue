@@ -1039,18 +1039,19 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* ── Flat, gradient-free palette ──────────────────────────────── */
+/* ── KinyaBot tokens (shared with the rest of the app) ──────────────────────────────── */
 .vm-screen {
-  --vm-bg: #0b0c10;
-  --vm-panel: #16181f;
-  --vm-panel-2: #1c1f28;
-  --vm-border: #292d38;
-  --vm-text: #f4f5f7;
-  --vm-text-dim: #9aa1b0;
-  --vm-text-faint: #616a7c;
-  --vm-accent: #f5a524;
-  --vm-accent-ink: #22150a;
-  --vm-danger: #ef4444;
+  --vm-bg: var(--background);
+  --vm-panel: var(--surface-secondary);
+  --vm-panel-2: var(--surface-elevated);
+  --vm-border: var(--border);
+  --vm-text: var(--text-primary);
+  --vm-text-dim: var(--text-muted);
+  --vm-text-faint: var(--text-disabled);
+  --vm-accent: var(--brand);
+  --vm-accent-ink: var(--on-brand);
+  --vm-ai: var(--accent-cyan);
+  --vm-danger: var(--error);
 
   position: fixed; inset: 0; z-index: 1300;
   display: flex; flex-direction: column;
@@ -1103,8 +1104,8 @@ onBeforeUnmount(() => {
   position: absolute; border-radius: 50%; filter: blur(40px); opacity: .45;
   animation: vmDrift 16s ease-in-out infinite;
 }
-.vm-blob-a { width: 60%; aspect-ratio: 1; background: #ffd27d; top: -10%; left: -10%; }
-.vm-blob-b { width: 50%; aspect-ratio: 1; background: #ef9a8d; bottom: -12%; right: -8%; animation-duration: 20s; animation-delay: -6s; }
+.vm-blob-a { width: 60%; aspect-ratio: 1; background: var(--brand-strong); top: -10%; left: -10%; }
+.vm-blob-b { width: 50%; aspect-ratio: 1; background: var(--accent-violet); bottom: -12%; right: -8%; animation-duration: 20s; animation-delay: -6s; }
 @keyframes vmDrift {
   0%, 100% { transform: translate(0, 0) scale(1); }
   50% { transform: translate(6%, 5%) scale(1.08); }
@@ -1144,7 +1145,7 @@ onBeforeUnmount(() => {
 }
 .vm-brand-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.5); flex-shrink: 0; }
 .vm-brand-dot.listening, .vm-brand-dot.speaking { background: var(--vm-accent); }
-.vm-brand-dot.thinking, .vm-brand-dot.transcribing { background: #5b8cff; }
+.vm-brand-dot.thinking, .vm-brand-dot.transcribing { background: var(--vm-ai); }
 
 .vm-status-pill {
   position: absolute; top: max(12px, env(safe-area-inset-top)); right: 12px; z-index: 4;
@@ -1155,7 +1156,7 @@ onBeforeUnmount(() => {
 }
 .vm-status-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.5); }
 .vm-status-pill.listening .vm-status-dot, .vm-status-pill.speaking .vm-status-dot { background: var(--vm-accent); }
-.vm-status-pill.thinking .vm-status-dot, .vm-status-pill.transcribing .vm-status-dot { background: #8fadff; }
+.vm-status-pill.thinking .vm-status-dot, .vm-status-pill.transcribing .vm-status-dot { background: var(--vm-ai); }
 
 .vm-stage-hint, .vm-caption {
   position: absolute; left: 50%; bottom: 46px; transform: translateX(-50%); z-index: 4;
@@ -1285,10 +1286,10 @@ onBeforeUnmount(() => {
   display: flex; align-items: center; gap: 10px;
   background: #241315; border: 1px solid #4a2226;
   border-radius: 12px; padding: 10px 13px; margin-bottom: 8px;
-  color: #fca5a5; font-size: 13px; flex-shrink: 0;
+  color: var(--error); font-size: 13px; flex-shrink: 0;
 }
 .vm-error span { flex: 1; }
-.ve-x { background: none; border: none; color: #fca5a5; opacity: .75; cursor: pointer; font-size: 14px; padding: 2px 5px; border-radius: 6px; }
+.ve-x { background: none; border: none; color: var(--error); opacity: .75; cursor: pointer; font-size: 14px; padding: 2px 5px; border-radius: 6px; }
 .ve-x:hover { opacity: 1; background: rgba(239,68,68,.18); }
 
 /* ── Composer ──────────────────────────────────────────────────── */
@@ -1335,23 +1336,23 @@ onBeforeUnmount(() => {
   background: rgba(0,0,0,.6); padding: 20px;
 }
 .vm-mic-modal {
-  background: var(--vm-panel, #16181f); border: 1px solid var(--vm-border, #292d38);
+  background: var(--vm-panel); border: 1px solid var(--vm-border);
   border-radius: 18px; padding: 26px; max-width: 360px; text-align: center;
-  color: var(--vm-text, #f4f5f7);
+  color: var(--vm-text);
 }
 .vm-mic-icon {
   width: 52px; height: 52px; border-radius: 50%; margin: 0 auto 14px;
   display: flex; align-items: center; justify-content: center; font-size: 20px;
-  background: var(--vm-accent, #f5a524); color: var(--vm-accent-ink, #22150a);
+  background: var(--vm-accent); color: var(--vm-accent-ink);
 }
 .vm-mic-modal h3 { margin: 0 0 8px; font-size: 16px; }
-.vm-mic-modal p { margin: 0 0 18px; font-size: 13px; line-height: 1.5; color: var(--vm-text-dim, #9aa1b0); }
+.vm-mic-modal p { margin: 0 0 18px; font-size: 13px; line-height: 1.5; color: var(--vm-text-dim); }
 .vm-mic-actions { display: flex; gap: 10px; }
 .vm-mic-skip, .vm-mic-allow {
   flex: 1; padding: 11px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer;
 }
-.vm-mic-skip { background: none; border: 1px solid var(--vm-border, #292d38); color: var(--vm-text-dim, #9aa1b0); }
-.vm-mic-allow { background: var(--vm-accent, #f5a524); border: 1px solid var(--vm-accent, #f5a524); color: var(--vm-accent-ink, #22150a); display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.vm-mic-skip { background: none; border: 1px solid var(--vm-border); color: var(--vm-text-dim); }
+.vm-mic-allow { background: var(--vm-accent); border: 1px solid var(--vm-accent); color: var(--vm-accent-ink); display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 
 @media (prefers-reduced-motion: reduce) {
   .vm-eq i, .vm-blob, .vm-particle { animation: none !important; }

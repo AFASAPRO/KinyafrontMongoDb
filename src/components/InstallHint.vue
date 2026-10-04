@@ -142,7 +142,7 @@ function dismiss() {
   display: flex; align-items: center; gap: 10px;
   width: 100%; padding: 8px 10px;
   background: none; border: none; border-radius: var(--r-sm, 8px);
-  color: var(--text-2, #9aa0a6); font-size: 13px;
+  color: var(--text-2, var(--text-3)); font-size: 13px;
   cursor: pointer; transition: all .2s; text-align: left;
   font-family: inherit;
 }
@@ -164,7 +164,7 @@ function dismiss() {
 .ih-logo { width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0; }
 .ih-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .ih-text strong { font-size: 13.5px; color: #fff; }
-.ih-text span { font-size: 11.5px; color: #9ca3af; line-height: 1.4; }
+.ih-text span { font-size: 11.5px; color: var(--text-muted); line-height: 1.4; }
 .ih-install {
   flex-shrink: 0; padding: 8px 15px; border-radius: 9px; border: none;
   background: linear-gradient(135deg, var(--brand-strong), var(--accent-violet)); color: #fff;
@@ -172,7 +172,7 @@ function dismiss() {
 }
 .ih-dismiss {
   flex-shrink: 0; width: 28px; height: 28px; border-radius: 8px;
-  background: none; border: none; color: #6b7280; font-size: 13px; cursor: pointer;
+  background: none; border: none; color: var(--text-muted); font-size: 13px; cursor: pointer;
 }
 .ih-dismiss:hover { background: rgba(255, 255, 255, .08); color: #fff; }
 
@@ -193,20 +193,20 @@ function dismiss() {
 .ih-close {
   position: absolute; top: 12px; right: 12px; width: 32px; height: 32px;
   border-radius: 9px; background: rgba(255, 255, 255, .06); border: none;
-  color: #9ca3af; font-size: 14px; cursor: pointer;
+  color: var(--text-muted); font-size: 14px; cursor: pointer;
 }
 .ih-close:hover { background: rgba(255, 255, 255, .12); color: #fff; }
 .ih-modal-icon { width: 62px; height: 62px; border-radius: 15px; margin-bottom: 10px; }
 .ih-modal h3 { font-size: 16.5px; font-weight: 700; color: #fff; margin-bottom: 8px; }
-.ih-lead { font-size: 13px; color: #9ca3af; line-height: 1.6; margin-bottom: 14px; }
+.ih-lead { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 14px; }
 .ih-steps { list-style: none; text-align: left; display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; counter-reset: step; }
 .ih-steps li {
   display: flex; align-items: center; gap: 11px;
   background: rgba(255, 255, 255, .04); border: 1px solid rgba(255, 255, 255, .07);
   border-radius: 11px; padding: 11px 13px;
-  font-size: 13px; color: #d1d5db; line-height: 1.45;
+  font-size: 13px; color: var(--text-secondary); line-height: 1.45;
 }
-.ih-steps li i { color: #818cf8; font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
+.ih-steps li i { color: var(--brand-text); font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
 .ih-done {
   width: 100%; padding: 11px; border-radius: 11px; border: none;
   background: linear-gradient(135deg, var(--brand-strong), var(--accent-violet));
