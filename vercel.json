@@ -2,11 +2,18 @@
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
     { "source": "/robots.txt", "destination": "/robots.txt" },
+    { "source": "/sw.js", "destination": "/chat/sw-kill.js" },
     { "source": "/chat", "destination": "/chat/index.html" },
     { "source": "/chat/(.*)", "destination": "/chat/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    },
     {
       "source": "/chat/sw.js",
       "headers": [

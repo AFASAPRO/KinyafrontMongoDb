@@ -9,6 +9,16 @@ import { initViewportShim } from './utils/viewport'
 // Keyboard / visual-viewport shim (keeps the mobile composer above the keyboard)
 initViewportShim()
 
+// Safety net: this SPA must only ever run under its base path (/chat/ in
+// production — the domain root serves the marketing landing page). If the
+// app somehow boots outside its base (e.g. a stale service worker or an
+// old cached index.html resurrected at '/'), jump to the canonical app URL
+// instead of hanging on the boot splash forever.
+if (import.meta.env.PROD && !window.location.pathname.startsWith(import.meta.env.BASE_URL)) {
+  window.location.replace(import.meta.env.BASE_URL)
+  throw new Error('[KinyaBot] SPA booted outside its base — redirecting to ' + import.meta.env.BASE_URL)
+}
+
 const app = createApp(App)
 app.use(createPinia())
 app.use(router)
