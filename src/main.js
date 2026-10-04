@@ -14,7 +14,18 @@ initViewportShim()
 // app somehow boots outside its base (e.g. a stale service worker or an
 // old cached index.html resurrected at '/'), jump to the canonical app URL
 // instead of hanging on the boot splash forever.
-if (import.meta.env.PROD && !window.location.pathname.startsWith(import.meta.env.BASE_URL)) {
+//
+// EXCEPTION — /admin: the admin console has a friendly URL alias at the
+// domain root (vercel.json rewrites /admin → /chat/index.html). Vue Router
+// resolves a pathname outside the base as-is, so /admin boots straight
+// into the admin login flow. Never bounce those boots to /chat/.
+const bootPath = window.location.pathname
+const isAdminAliasPath = /^\/admin(\/|$)/.test(bootPath)
+if (
+  import.meta.env.PROD &&
+  !bootPath.startsWith(import.meta.env.BASE_URL) &&
+  !isAdminAliasPath
+) {
   window.location.replace(import.meta.env.BASE_URL)
   throw new Error('[KinyaBot] SPA booted outside its base — redirecting to ' + import.meta.env.BASE_URL)
 }

@@ -15,12 +15,19 @@ import { useAuthStore } from '../stores/auth'
  *                       /chat/ router base).
  *   • /chat/login, /chat/register … are guest-only and bounce
  *     authenticated users straight back to the chat.
- *   • The admin app (/chat/admin) stays fully separate.
+ *   • The admin app (/chat/admin) stays fully separate and is ALSO
+ *     reachable via the friendly domain-root alias /admin (see the
+ *     /admin rewrites in vercel.json).
  *
  * Signed-in visitors who open the domain root `/` are sent straight
  * to /chat/ by a tiny redirect script embedded in the landing page
  * (localStorage kb_token check), so members land in the app, while
  * everyone else sees the marketing site.
+ *
+ * INSTALLED APP (PWA) EXCEPTION: inside the standalone app window we
+ * never bounce the user out to the marketing site. An unauthenticated
+ * member opening the installed KinyaBot app is taken to the USER LOGIN
+ * page (/login → URL /chat/login) so the app always opens on sign-in.
  */
 const routes = [
   {
@@ -57,6 +64,22 @@ function gotoLanding() {
   window.location.replace('/')
 }
 
+/**
+ * True when the SPA is running inside an INSTALLED app window (PWA
+ * standalone display mode) or was explicitly opened with the PWA start
+ * URL (site.webmanifest start_url is /chat/?source=pwa). Users in this
+ * context must stay inside the app shell — never shipped out to the
+ * marketing landing page.
+ */
+function isPwaContext() {
+  try {
+    if (new URLSearchParams(window.location.search).get('source') === 'pwa') return true
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true
+    if (window.navigator && window.navigator.standalone === true) return true // iOS Safari
+  } catch (e) { /* older browsers: fall through */ }
+  return false
+}
+
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
 
@@ -74,8 +97,11 @@ router.beforeEach(async (to) => {
   const authed = auth.status === 'authenticated'
 
   // Protected routes (the chat UI itself, verify-email, onboarding):
-  // unauthenticated visitors are bounced to the public landing page.
+  // unauthenticated visitors are bounced to the public landing page —
+  // EXCEPT inside the installed app (PWA), where they stay in the app
+  // and land on the user login screen instead.
   if (to.meta.requiresAuth && !authed) {
+    if (isPwaContext()) return '/login'
     gotoLanding()
     return false
   }

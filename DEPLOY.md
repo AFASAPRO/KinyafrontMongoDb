@@ -34,6 +34,27 @@ Every deploy re-runs the build, so nothing needs to be committed from
 | `/chat/login`, `/chat/register` | Auth pages (a logged-in user visiting them is sent to the chat). |
 | `/sw.js` | A one-time cleanup worker that unregisters the **legacy** root-scope service worker from the previous deployment and reloads the tab. Returning visitors self-heal on their first visit. |
 
+## Routing map (what URL shows what)
+
+| URL | Who sees what |
+|-----|---------------|
+| `/` | Marketing landing page. Signed-in users (`kb_token`) are auto-sent to `/chat/`. |
+| `/admin`, `/admin/dashboard` | **Friendly alias for the admin console** — same SPA as `/chat/admin…`. Guests see the Admin Portal login; the admin dashboard needs an admin token (`kb_admin_token`). |
+| `/chat/login`, `/chat/register` … | User auth pages (guest-only). |
+| `/chat/` | The chat UI — authenticated users only. |
+| Installed PWA (user app) | Opens at `/chat/?source=pwa`: signed-in users go straight to the chat; **everyone else lands on the user login page** (never the marketing site). |
+| Installed PWA (admin app) | Opens at `/chat/admin?source=pwa` — the Admin Portal sign-in. |
+
+The `/admin` alias works through the `"/admin" → "/chat/index.html"`
+rewrites in `vercel.json`. If those rewrites are removed, `/admin` falls
+through to the landing page again.
+
+Root-level asset aliases (`/logo.png`, `/favicon.ico`, `/media/kinya-mascot-auth.mp4`,
+`/rive/*`, `/models/*` …) map the chat app's public files to their canonical
+`/chat/…` locations, because the domain root now belongs to the landing
+site. Landing files keep priority — the aliases only fire when no static
+file exists at the root.
+
 ## Local build check
 
 ```bash
