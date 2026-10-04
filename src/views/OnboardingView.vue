@@ -9,20 +9,17 @@
 
     <!-- Header -->
     <div class="ob-header" v-if="step !== 6">
-      <button v-if="stepPos>1" class="ob-back-arrow" type="button" @click="goBack" aria-label="Back">
-        <i class="fas fa-chevron-left"></i>
-      </button>
       <div class="ob-brand">
-        <img src="/logo.png" alt="KinyaBot" class="ob-brand-logo" />
+        <img src="/logo.png" alt="" class="ob-brand-logo" />
         <span>KinyaBot</span>
       </div>
-      <div class="ob-progress-bar">
-        <div class="ob-progress-fill" :style="{ width: ((stepPos-1)/(totalSteps-1)*100) + '%' }"></div>
+      <div class="ob-header-progress">
+        <span class="ob-step-text">Step {{ stepPos }} of {{ totalSteps }}</span>
+        <div class="ob-progress-bar" role="progressbar" :aria-valuenow="stepPos" :aria-valuemax="totalSteps" aria-label="Onboarding progress">
+          <div class="ob-progress-fill" :style="{ width: (stepPos/totalSteps*100) + '%' }"></div>
+        </div>
       </div>
-      <div class="ob-dashes" role="progressbar" :aria-valuenow="stepPos" :aria-valuemax="totalSteps">
-        <span v-for="n in totalSteps" :key="n" class="ob-dash" :class="{ filled: n <= stepPos }"></span>
-      </div>
-      <div class="ob-step-text">{{ stepPos }} / {{ totalSteps }}</div>
+      <button class="ob-exit" type="button" @click="exitOnboarding">Sign out</button>
     </div>
 
     <div class="ob-card" :class="{ wide: step === 1 }">
@@ -39,14 +36,20 @@
 
           <div class="ob-section-label">Personal details</div>
           <div class="name-row">
-            <input v-model="form.firstName" type="text" class="ob-input" placeholder="First name" />
-            <input v-model="form.lastName" type="text" class="ob-input" placeholder="Last name" />
+            <label class="ob-field">
+              <span class="ob-field-label">First name</span>
+              <input v-model="form.firstName" type="text" class="ob-input" placeholder="First name" autocomplete="given-name" />
+            </label>
+            <label class="ob-field">
+              <span class="ob-field-label">Last name <small>Optional</small></span>
+              <input v-model="form.lastName" type="text" class="ob-input" placeholder="Last name" autocomplete="family-name" />
+            </label>
           </div>
 
           <div class="ob-section-label">How do you plan to use KinyaBot?</div>
           <div class="usage-grid">
             <button v-for="u in usageTypes" :key="u.id" class="usage-card" type="button"
-              :class="{ selected: form.usageType === u.id }" @click="form.usageType = u.id">
+              :class="{ selected: form.usageType === u.id }" :aria-pressed="form.usageType === u.id" @click="form.usageType = u.id">
               <span class="usage-check"><i v-if="form.usageType===u.id" class="fas fa-check"></i></span>
               <i :class="u.icon"></i><span>{{ u.label }}</span>
             </button>
@@ -55,13 +58,16 @@
           <transition name="ob-fade">
             <div v-if="form.usageType === 'team' || form.usageType === 'organization'">
               <div class="ob-section-label">Choose your workspace name</div>
-              <input v-model="form.workspaceName" type="text" class="ob-input" placeholder="Most people choose their name or team name" />
+              <label class="ob-field">
+                <span class="ob-field-label">Workspace name</span>
+                <input v-model="form.workspaceName" type="text" class="ob-input" placeholder="For example, Acme Studio" autocomplete="organization" />
+              </label>
             </div>
           </transition>
 
           <div class="ob-section-label">What do you want to use KinyaBot for</div>
           <div class="ms" :class="{ open: msOpen }" v-click-away="() => msOpen=false">
-            <button type="button" class="ms-trigger" @click="msOpen = !msOpen">
+            <button type="button" class="ms-trigger" :aria-expanded="msOpen" aria-haspopup="listbox" @click="msOpen = !msOpen">
               <span v-if="!form.useCases.length" class="ms-placeholder">Select any use case(s)</span>
               <span v-else class="ms-tags">
                 <span v-for="uc in form.useCases" :key="uc" class="ms-tag" :style="tagStyle(uc)">
@@ -69,12 +75,13 @@
                   <i class="fas fa-xmark" @click.stop="toggleUseCase(uc)"></i>
                 </span>
               </span>
+              <span v-if="form.useCases.length" class="ms-selected-count">{{ form.useCases.length }} selected</span>
               <i class="fas fa-chevron-down ms-chev"></i>
             </button>
-            <div v-if="msOpen" class="ms-panel">
+            <div v-if="msOpen" class="ms-panel" role="listbox" aria-label="Use cases" aria-multiselectable="true">
               <div class="ms-hint">select any use cases you want</div>
               <button v-for="uc in useCaseOptions" :key="uc" type="button" class="ms-option"
-                :class="{ picked: form.useCases.includes(uc) }" @click="toggleUseCase(uc)">
+                :class="{ picked: form.useCases.includes(uc) }" role="option" :aria-selected="form.useCases.includes(uc)" @click="toggleUseCase(uc)">
                 <span class="ms-dot" :style="tagStyle(uc)"></span>{{ uc }}
                 <i v-if="form.useCases.includes(uc)" class="fas fa-check ms-opt-check"></i>
               </button>
@@ -101,7 +108,7 @@
           </div>
           <div class="option-grid cols4">
             <button v-for="s in referralSources" :key="s.id" class="option-card"
-              :class="{ selected: form.referral === s.id }" @click="form.referral = s.id">
+              :class="{ selected: form.referral === s.id }" :aria-pressed="form.referral === s.id" @click="form.referral = s.id">
               <div class="oc-icon" :style="{ background: s.bg, borderColor: s.border }">
                 <i :class="s.icon" :style="{ color: s.color }"></i>
               </div>
@@ -130,7 +137,7 @@
           </div>
           <div class="option-grid cols3">
             <button v-for="p in professions" :key="p.id" class="option-card"
-              :class="{ selected: form.profession === p.id }" @click="form.profession = p.id">
+              :class="{ selected: form.profession === p.id }" :aria-pressed="form.profession === p.id" @click="form.profession = p.id">
               <div class="oc-icon" :style="{ background: 'rgba(99,102,241,.12)', borderColor: 'rgba(99,102,241,.25)' }">
                 <i :class="p.icon" style="color:var(--brand-text)"></i>
               </div>
@@ -201,7 +208,7 @@
 
           <div class="starter-list">
             <button v-for="s in starters" :key="s.id" class="starter-row"
-              :class="{ selected: form.firstPrompt === s.prompt }"
+              :class="{ selected: form.firstPrompt === s.prompt }" :aria-pressed="form.firstPrompt === s.prompt"
               @click="form.firstPrompt = s.prompt; customPrompt = ''">
               <div class="sr-icon" :style="{ background: s.bg, borderColor: s.border }">
                 <i :class="s.icon" :style="{ color: s.color }"></i>
@@ -253,7 +260,12 @@
       </transition>
     </div>
 
-    <p class="ob-footer-text" v-if="step !== 6">Step {{ stepPos }} of {{ totalSteps }} — Almost there!</p>
+    <div class="ob-footer-text" v-if="step !== 6" aria-live="polite">
+      <div class="ob-step-dots" role="progressbar" :aria-valuenow="stepPos" :aria-valuemax="totalSteps" aria-label="Onboarding steps">
+        <span v-for="n in totalSteps" :key="n" class="ob-step-dot" :class="{ complete: n < stepPos, current: n === stepPos }"></span>
+      </div>
+      <span>{{ stepPos === totalSteps - 1 ? 'One last step' : 'Your preferences help personalize KinyaBot' }}</span>
+    </div>
   </div>
 </template>
 
@@ -284,7 +296,11 @@ const form = reactive({
   firstPrompt: '',
 })
 const fullName = computed(() => [form.firstName, form.lastName].filter(Boolean).join(' '))
-const canContinueStep1 = computed(() => form.firstName.trim() && form.usageType)
+const canContinueStep1 = computed(() =>
+  form.firstName.trim() &&
+  form.usageType &&
+  (!['team', 'organization'].includes(form.usageType) || form.workspaceName.trim())
+)
 
 /* Step flow — the "invite teammates" step only makes sense for team /
    organization workspaces, so solo users skip straight past it.        */
@@ -298,6 +314,10 @@ const stepPos = computed(() => steps.value.indexOf(step.value) + 1)
 const totalSteps = computed(() => steps.value.length)
 function goNext() { const i = steps.value.indexOf(step.value); if (i < steps.value.length - 1) step.value = steps.value[i + 1] }
 function goBack() { const i = steps.value.indexOf(step.value); if (i > 0) step.value = steps.value[i - 1] }
+function exitOnboarding() {
+  auth.logout()
+  router.replace('/login')
+}
 
 function particleStyle(i) {
   const size = 4 + (i % 4) * 3
@@ -450,7 +470,7 @@ watch(step, (v) => { if (v === 6) runFinish() })
 </script>
 
 <style scoped>
-.ob-root{min-height:100vh;min-height:100dvh;width:100%;background:var(--background);display:flex;flex-direction:column;align-items:center;padding:0 1rem 2rem;position:relative;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.ob-root{min-height:100vh;min-height:100dvh;width:100%;background:var(--background);display:flex;flex-direction:column;align-items:center;padding:0 1rem 1rem;position:relative;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
 .ob-root.light{background:var(--background)}
 
 .ob-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
@@ -605,27 +625,128 @@ watch(step, (v) => { if (v === 6) runFinish() })
 .ob-slide-enter-from{opacity:0;transform:translateX(30px)}
 .ob-slide-leave-to{opacity:0;transform:translateX(-30px)}
 
+.ob-root { padding:0 clamp(16px,4vw,56px) 20px; background:var(--bg-base); }
+.ob-bg { position:fixed; }
+.ob-orb { opacity:.14; filter:blur(120px); }
+.ob-orb1 { width:680px; height:680px; top:-310px; left:calc(50% - 340px); background:var(--brand-strong); }
+.ob-orb2 { width:480px; height:480px; bottom:-250px; right:-100px; background:var(--accent-violet); opacity:.07; }
+.ob-grid { opacity:.55; background-image:linear-gradient(rgba(99,102,241,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,.035) 1px,transparent 1px); }
+.particle { background:var(--brand-text); opacity:.18; }
+
+.ob-header { width:100%; max-width:1180px; min-height:76px; padding:14px 0; gap:24px; border-bottom:1px solid var(--border-subtle); }
+.ob-brand { gap:10px; font-size:15px; letter-spacing:-.01em; }
+.ob-brand-logo { width:32px; height:32px; border-radius:9px; }
+.ob-header-progress { width:min(280px,34vw); display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+.ob-progress-bar { flex:none; width:100%; height:5px; background:var(--surface-elevated); }
+.ob-progress-fill { background:var(--gradient-brand); }
+.ob-step-text { color:var(--text-2); font-size:11px; font-weight:600; }
+.ob-exit { padding:8px 12px; border:1px solid var(--border); border-radius:var(--r-sm); background:transparent; color:var(--text-2); font-size:12px; font-weight:600; transition:background .16s,color .16s,border-color .16s; }
+.ob-exit:hover { background:var(--bg-hover); color:var(--text-1); border-color:var(--border-strong); }
+.ob-exit:focus-visible,.ob-back-btn:focus-visible,.ob-next-btn:focus-visible,.ob-finish-btn:focus-visible,.usage-card:focus-visible,.option-card:focus-visible,.starter-row:focus-visible,.ms-trigger:focus-visible,.ms-option:focus-visible,.invite-btn:focus-visible { outline:2px solid var(--brand-text); outline-offset:3px; }
+
+.ob-card { width:min(100%,760px); max-width:760px; margin:auto; padding:clamp(24px,4vw,42px); background:color-mix(in srgb,var(--surface) 94%,transparent); border:1px solid var(--border); border-radius:var(--r-xl); box-shadow:0 24px 70px rgba(0,0,0,.24); backdrop-filter:blur(16px); }
+.ob-card.wide { max-width:760px; }
+.ob-step-header { align-items:center; gap:16px; max-width:580px; margin:0 auto 28px; text-align:left; }
+.ob-step-header.center { text-align:center; }
+.ob-step-badge { width:46px; height:46px; border-radius:14px; flex-shrink:0; background:var(--brand-soft); border:1px solid var(--brand-ring); color:var(--brand-text); font-size:18px; }
+.ob-step-badge.star { background:var(--brand-soft); border-color:var(--brand-ring); color:var(--brand-text); }
+.ob-title { color:var(--text-1); font-size:clamp(22px,3vw,28px); line-height:1.2; letter-spacing:-.025em; }
+.highlight { background:none; color:var(--brand-text); -webkit-text-fill-color:currentColor; }
+.ob-desc { color:var(--text-2); font-size:14px; line-height:1.55; }
+.ob-section-label { color:var(--text-1); font-size:12.5px; font-weight:600; margin:20px 0 8px; }
+.ob-section-label:first-of-type { margin-top:0; }
+.name-row { gap:12px; }
+.ob-field { display:flex; flex:1; flex-direction:column; gap:6px; min-width:0; }
+.ob-field-label { color:var(--text-2); font-size:11px; font-weight:600; }
+.ob-field-label small { margin-left:4px; color:var(--text-3); font-weight:400; }
+.ob-input { min-height:44px; padding:10px 12px; background:var(--bg-input); border:1px solid var(--border-md); border-radius:var(--r-sm); color:var(--text-1); font-size:13.5px; }
+.ob-input::placeholder { color:var(--text-3); }
+.ob-input:focus,.custom-box:focus-within { border-color:var(--brand); box-shadow:var(--focus-glow); }
+.usage-grid { gap:10px; }
+.usage-card { min-height:94px; padding:16px 10px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r); color:var(--text-2); }
+.usage-card i { color:var(--brand-text); }
+.usage-card:hover,.option-card:hover,.starter-row:hover { transform:translateY(-2px); background:var(--bg-hover); border-color:var(--border-strong); }
+.usage-card.selected,.option-card.selected,.starter-row.selected { background:var(--brand-soft); border-color:var(--brand); color:var(--text-1); box-shadow:0 0 0 1px var(--brand); }
+.usage-check { border-color:var(--border-strong); color:var(--on-brand); }
+.usage-card.selected .usage-check,.oc-check { background:var(--brand); border-color:var(--brand); }
+.ms-trigger { background:var(--bg-input); border-color:var(--border-md); border-radius:var(--r-sm); color:var(--text-1); }
+.ms-selected-count { margin-left:auto; color:var(--text-3); font-size:11px; white-space:nowrap; }
+.ms-panel { background:var(--surface-elevated); border-color:var(--border); }
+.ms-option:hover { background:var(--bg-hover); }
+.ms-tag { background:var(--brand-soft)!important; color:var(--brand-text)!important; border-color:var(--brand-ring)!important; }
+.ms-dot { background:var(--brand)!important; border-color:var(--brand)!important; }
+.option-grid { gap:10px; margin-bottom:0; }
+.option-card { min-height:122px; background:var(--bg-card); border-color:var(--border); border-radius:var(--r); }
+.option-card.selected { border-color:var(--brand); }
+.oc-label { color:var(--text-1); }
+.invite-row { gap:8px; }
+.invite-row .ob-input { flex:1; }
+.invite-btn { min-height:44px; padding:0 16px; background:var(--brand-soft); border:1px solid var(--brand-ring); border-radius:var(--r-sm); color:var(--brand-text); font-weight:600; }
+.invite-btn:hover:not(:disabled) { background:var(--brand); color:var(--on-brand); }
+.invite-member { background:var(--bg-card); border-color:var(--border); }
+.starter-list { gap:8px; margin-bottom:18px; }
+.starter-row { min-height:68px; padding:10px 14px; gap:12px; background:var(--bg-card); border-color:var(--border); border-radius:var(--r); }
+.sr-title { color:var(--text-1); }
+.divider-or { margin:18px 0 12px; }
+.divider-or::before,.divider-or::after { background:var(--border); }
+.custom-box { min-height:48px; padding:10px 12px; background:var(--bg-input); border-color:var(--border-md); border-radius:var(--r-sm); }
+.custom-box input { color:var(--text-1); }
+.custom-box input::placeholder { color:var(--text-3); }
+.ob-actions { margin-top:28px; }
+.ob-next-btn,.ob-finish-btn { min-height:46px; padding:12px 20px; background:var(--brand); border-radius:var(--r-sm); box-shadow:0 8px 22px rgba(99,102,241,.2); }
+.ob-next-btn:hover:not(:disabled),.ob-finish-btn:hover:not(:disabled) { background:var(--brand-strong); box-shadow:0 10px 24px rgba(99,102,241,.28); }
+.ob-back-btn { min-height:46px; padding:12px 18px; background:transparent; border:1px solid var(--border); border-radius:var(--r-sm); color:var(--text-2); }
+.ob-back-btn:hover { background:var(--bg-hover); color:var(--text-1); }
+.ob-footer-text { display:flex; flex-direction:column; align-items:center; gap:8px; margin:18px 0 0; text-align:center; color:var(--text-3); font-size:11.5px; }
+.ob-step-dots { display:flex; align-items:center; gap:6px; }
+.ob-step-dot { width:6px; height:6px; border-radius:50%; background:var(--border-strong); transition:width .2s,background .2s; }
+.ob-step-dot.complete { background:var(--brand-text); }
+.ob-step-dot.current { width:18px; border-radius:99px; background:var(--brand); }
+.load-card { max-width:430px; margin:28px auto 0; padding:14px 18px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r); }
+.load-row { border-bottom:1px solid var(--border-subtle); }
+.load-row:last-child { border-bottom:0; }
+
 @media(max-width:640px){
-  .ob-card{padding:1.5rem 1.1rem;border-radius:16px}
-  .ob-step-header{gap:12px;margin-bottom:1.25rem}
-  .ob-step-badge{width:44px;height:44px;font-size:18px;flex-shrink:0}
-  .ob-title{font-size:18px}
-  .ob-desc{font-size:13.5px}
-  .ob-actions{flex-direction:column;gap:8px}
-  .ob-back-btn{width:100%;text-align:center}
-  .ob-next-btn,.ob-finish-btn{width:100%}
-  .ob-header{padding:.85rem 0}
-  .name-row{grid-template-columns:1fr}
-  .starter-list{gap:8px}
-  .starter-row{padding:10px 12px;gap:10px}
-  .sr-title{font-size:13px}
-  .sr-sub{font-size:11px}
-  .custom-box{padding:10px 12px}
-  .divider-or{margin-bottom:1rem}
-  .option-card{padding:12px 8px;gap:8px}
-  .oc-icon{width:36px;height:36px;font-size:15px}
-  .oc-label{font-size:11.5px}
-  .ob-footer-text{margin-top:1.25rem;font-size:12px}
-  .invite-row{flex-direction:column}
+  .ob-root { padding:0 14px 16px; }
+  .ob-header { min-height:64px; padding:10px 0; gap:12px; }
+  .ob-header-progress { width:min(180px,42vw); }
+  .ob-brand { font-size:13px; gap:7px; }
+  .ob-brand-logo { width:28px; height:28px; }
+  .ob-exit { padding:7px 9px; font-size:11px; }
+  .ob-card,.ob-card.wide { padding:22px 16px; border-radius:var(--r); }
+  .ob-step-header,.ob-step-header.center { gap:12px; margin-bottom:22px; text-align:left; }
+  .ob-step-badge { width:40px; height:40px; font-size:16px; }
+  .ob-title { font-size:20px; }
+  .ob-desc { font-size:12.5px; }
+  .ob-section-label { margin-top:17px; }
+  .name-row { grid-template-columns:1fr 1fr; gap:8px; }
+  .ob-field-label { font-size:10px; }
+  .ob-input { min-height:42px; padding:9px 10px; font-size:13px; }
+  .ms-selected-count { display:none; }
+  .usage-grid { grid-template-columns:repeat(2,1fr); }
+  .usage-card { min-height:82px; }
+  .ob-actions { flex-direction:row; gap:8px; margin-top:22px; }
+  .ob-back-btn { width:auto; text-align:center; padding-inline:14px; }
+  .ob-next-btn,.ob-finish-btn { width:auto; }
+  .option-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .option-card { min-height:100px; padding:12px 8px; gap:8px; }
+  .oc-icon { width:36px; height:36px; font-size:15px; }
+  .oc-label { font-size:11.5px; }
+  .invite-row { flex-direction:column; }
+  .starter-row { padding:9px 10px; gap:9px; }
+  .sr-icon { width:34px; height:34px; }
+  .sr-title { font-size:12.5px; }
+  .sr-sub { font-size:10.5px; }
+}
+@media(max-width:360px){
+  .ob-root { padding-inline:10px; }
+  .ob-card,.ob-card.wide { padding:18px 12px; }
+  .name-row { grid-template-columns:1fr; }
+  .ob-title { font-size:18px; }
+  .ob-step-header { align-items:flex-start; }
+  .ob-back-btn,.ob-next-btn,.ob-finish-btn { min-height:42px; font-size:13px; }
+}
+@media(prefers-reduced-motion:reduce){
+  .ob-bg .particle { display:none; }
 }
 </style>

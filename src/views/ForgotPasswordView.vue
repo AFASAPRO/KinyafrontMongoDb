@@ -556,4 +556,74 @@ onBeforeUnmount(() => clearInterval(timerInterval))
   .otp-box { width: 40px; height: 48px; font-size: 1.2rem; }
   .fp-step-label { display: none; }
 }
+
+.fp-page { min-height:100vh; min-height:100dvh; background:var(--bg-base); }
+.fp-shell { flex:1; min-height:0; }
+.fp-root {
+  position:relative; isolation:isolate; flex:1 1 56%; min-width:0; min-height:620px;
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+  padding:clamp(24px,4vw,64px); background:var(--bg-base);
+}
+.fp-bg { z-index:0; overflow:hidden; }
+.fp-orb1 { background:radial-gradient(circle,rgba(99,102,241,.2),transparent 68%); }
+.fp-orb2 { background:radial-gradient(circle,rgba(139,92,246,.12),transparent 68%); }
+.fp-grid { opacity:.5; }
+.fp-card {
+  z-index:2;
+  width:min(480px,100%); padding:clamp(26px,4vw,42px);
+  background:color-mix(in srgb,var(--surface) 94%,transparent);
+  border:1px solid var(--border); border-radius:var(--r-xl);
+  box-shadow:0 24px 70px rgba(0,0,0,.28); backdrop-filter:blur(18px);
+}
+.fp-logo { margin-bottom:1.4rem; }
+.fp-logo span { color:var(--text-1); }
+.fp-step-dot { background:var(--surface-elevated); border-color:var(--border-strong); color:var(--text-3); }
+.fp-step.active .fp-step-dot { background:var(--brand-soft); border-color:var(--brand); color:var(--brand-text); }
+.fp-step.current .fp-step-dot { background:var(--brand); border-color:var(--brand); color:var(--on-brand); }
+.fp-step-line { background:var(--border); }
+.fp-step-line.filled { background:var(--brand); }
+.fp-icon-wrap.blue,.fp-icon-wrap.purple,.fp-icon-wrap.green {
+  width:52px; height:52px; margin-bottom:.15rem; border-radius:14px;
+  background:var(--brand-soft); border:1px solid var(--brand-ring); color:var(--brand-text);
+}
+.fp-title { color:var(--text-1); font-size:clamp(22px,2.4vw,28px); letter-spacing:-.025em; }
+.fp-sub { color:var(--text-2); }
+.fp-field label { color:var(--text-2); text-transform:none; letter-spacing:0; font-size:12px; }
+.fp-input-wrap { background:var(--bg-input); border-color:var(--border-md); border-radius:var(--r-sm); }
+.fp-input-wrap input { color:var(--text-1); }
+.fp-input-wrap input::placeholder { color:var(--text-3); }
+.fp-input-wrap.focused { border-color:var(--brand); box-shadow:var(--focus-glow); }
+.otp-box { background:var(--bg-input); border-color:var(--border-md); color:var(--text-1); }
+.otp-box:focus { border-color:var(--brand); background:var(--brand-soft); box-shadow:var(--focus-glow); }
+.otp-box.filled { border-color:var(--brand); background:var(--brand-soft); }
+.fp-notice.success { background:color-mix(in srgb,var(--success) 10%,transparent); border-color:color-mix(in srgb,var(--success) 26%,transparent); }
+.fp-notice.error { background:color-mix(in srgb,var(--error) 10%,transparent); border-color:color-mix(in srgb,var(--error) 26%,transparent); }
+.fp-btn { background:var(--brand); border-radius:var(--r-sm); box-shadow:0 8px 22px rgba(99,102,241,.2); }
+.fp-btn:hover:not(:disabled) { background:var(--brand-strong); box-shadow:0 10px 26px rgba(99,102,241,.3); }
+.fp-back { min-height:40px; }
+.fp-hero { flex:1 1 44%; min-width:0; display:flex; padding:24px 24px 24px 0; }
+.fp-hero-panel {
+  flex:1; position:relative; overflow:hidden; border:1px solid var(--border);
+  border-radius:var(--r-xl); background:var(--surface-secondary);
+  box-shadow:0 24px 70px rgba(0,0,0,.24);
+}
+.fp-hero-video { position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:cover; object-position:center; }
+
+@media(max-width:900px) and (min-width:769px) {
+  .fp-nav { padding-inline:1.25rem; }
+  .fp-nav-links { display:none; }
+  .fp-root { flex-basis:60%; padding:28px; }
+  .fp-hero { flex-basis:40%; padding:18px 18px 18px 0; }
+  .fp-card { padding:26px 22px; }
+}
+@media(max-width:768px) {
+  .fp-page { overflow-y:auto; }
+  .fp-shell { min-height:0; }
+  .fp-root { flex:1 1 auto; min-height:100%; padding:24px 14px; }
+  .fp-hero { display:none; }
+  .fp-card { width:min(460px,100%); padding:26px 20px; border-radius:var(--r); }
+}
+@media(prefers-reduced-motion:reduce) {
+  .fp-card { animation:none; }
+}
 </style>
