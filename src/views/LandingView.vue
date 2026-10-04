@@ -397,7 +397,7 @@ const features = [
   { title:'Streaming Responses',  desc:'Watch answers appear word-by-word in real time, just like ChatGPT — no waiting for the full response.',  icon:'fas fa-bolt',         color:'#6366f1', bg:'rgba(99,102,241,.15)'  },
   { title:'File & PDF Analysis',  desc:'Upload documents, code files, or images and let KinyaBot read and analyze them instantly.',               icon:'fas fa-file-lines',   color:'#06b6d4', bg:'rgba(6,182,212,.15)'   },
   { title:'Persistent Memory',    desc:'KinyaBot remembers your name, role, and preferences across all conversations automatically.',             icon:'fas fa-brain',        color:'#a855f7', bg:'rgba(168,85,247,.15)'  },
-  { title:'Code Highlighting',    desc:'Beautiful syntax-highlighted code blocks with copy and download buttons for every language.',              icon:'fas fa-code',         color:'#34a853', bg:'rgba(52,168,83,.15)'   },
+  { title:'Code Highlighting',    desc:'Beautiful syntax-highlighted code blocks with copy and download buttons for every language.',              icon:'fas fa-code',         color:'var(--success)', bg:'rgba(52,168,83,.15)'   },
   { title:'Knowledge Base (RAG)', desc:'Upload your documents to build a custom AI knowledge base — get answers from your own data.',             icon:'fas fa-database',     color:'#f59e0b', bg:'rgba(245,158,11,.15)'  },
   { title:'Language Support',  desc:'Chat in  more than one languages. KinyaBot understands your language natively.',              icon:'fas fa-globe-africa', color:'#ec4899', bg:'rgba(236,72,153,.15)'  },
 ]
@@ -421,7 +421,7 @@ const testimonials = [
   { name:'Elie .Z',    role:'Photographer',     color:'#14b8a6', text:'KinyaBot has become my go-to photography companion. It understands context across the whole conversation and  it produces actually works. A huge time-saver.' },
   { name:'Azah K.',role:'Student, University of Rwanda', color:'#06b6d4', text:'I can ask questions in Spanish and get perfect answers. This is amazing for All students like me!' },
   { name:'Sonia K.',  role:'Startup Founder',       color:'#a855f7', text:'The knowledge base feature is incredible. I uploaded our company docs and now the AI answers questions about our product perfectly.' },
-  { name:'Fania A.',   role:'Data Scientist',        color:'#34a853', text:'File analysis saved me hours of work. I uploaded a CSV and KinyaBot gave me insights I would have spent all day figuring out.' },
+  { name:'Fania A.',   role:'Data Scientist',        color:'var(--success)', text:'File analysis saved me hours of work. I uploaded a CSV and KinyaBot gave me insights I would have spent all day figuring out.' },
   { name:'Afifah A.', role:'Product Manager', color:'#10b981', text:'The platform is incredibly intuitive. I can easily track performance, manage features, and make adjustments without any technical hassle.' },
   { name:'Aisha K.',   role:'Product Manager',       color:'#ec4899', text:'Dead simple to use, powerful when you need it. The memory feature means it actually remembers my preferences every time.' },
 
@@ -506,7 +506,7 @@ onBeforeUnmount(() => {
 .landing {
   background: #07080f;
   color: #e2e8f0;
-  font-family: 'Google Sans','Segoe UI',system-ui,sans-serif;
+  font-family: var(--font);
   overflow-x: hidden;
   min-height: 100vh;
 }

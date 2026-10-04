@@ -58,7 +58,7 @@ function applyManifestForPath(path) {
   const target = isAdmin ? MANIFESTS.admin : MANIFESTS.user
   if (manifestLink.getAttribute('href') !== target) {
     manifestLink.setAttribute('href', target)
-    if (themeMeta) themeMeta.setAttribute('content', isAdmin ? '#4f46e5' : '#131314')
+    if (themeMeta) themeMeta.setAttribute('content', isAdmin ? '#4f46e5' : '#070A12')
     if (appleTouch) appleTouch.setAttribute('href', isAdmin ? `${BASE}admin-icon-192.png` : `${BASE}apple-touch-icon.png`)
   }
 }

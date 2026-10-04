@@ -53,19 +53,19 @@ onBeforeUnmount(() => document.removeEventListener('click', close))
 <style scoped>
 .model-card { display:flex;align-items:center;gap:9px;margin:2px 0;padding:8px 10px;border-radius:var(--r);background:var(--bg-card);border:1px solid var(--border);cursor:pointer;transition:all .2s;position:relative }
 .model-card:hover { background:var(--bg-hover);border-color:var(--border-md) }
-.model-card.active { background:linear-gradient(135deg,rgba(41,119,245,.22),rgba(231,90,197,.14));border-color:rgba(198,244,50,.42) }
-.model-icon { width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#2977f5,#e75ac5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0 }
+.model-card.active { background:linear-gradient(135deg,rgba(99,102,241,.22),rgba(139,92,246,.14));border-color:rgba(99,102,241,.42) }
+.model-icon { width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--brand-strong),var(--accent-violet));display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0 }
 .model-name { font-size:13px;font-weight:600;color:var(--text-1);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis }
 
 .chat-row { display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:var(--r-sm);cursor:pointer;transition:background .15s;position:relative }
 .chat-row:hover { background:var(--bg-hover) }
-.chat-row.active { background:rgba(41,119,245,.1) }
+.chat-row.active { background:rgba(99,102,241,.1) }
 .chat-row-info { flex:1;min-width:0 }
 .chat-row-title { font-size:13px;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis }
 .chat-row-time { font-size:11px;color:var(--text-3);margin-top:1px }
 .chat-row-right { display:flex;align-items:center;gap:4px;flex-shrink:0 }
 .row-radio { width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border-md);transition:all .2s }
-.row-radio.checked { border-color:#9db829;background:#9db829 }
+.row-radio.checked { border-color:var(--brand-text);background:var(--brand-text) }
 
 .more-btn { background:none;border:none;color:var(--text-3);font-size:13px;padding:3px 5px;border-radius:5px;cursor:pointer;opacity:0;transition:opacity .15s }
 .model-card:hover .more-btn,.chat-row:hover .more-btn { opacity:1 }

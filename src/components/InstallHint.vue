@@ -129,7 +129,7 @@ function dismiss() {
 .ih-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   padding: 10px 18px; border-radius: 10px;
-  background: linear-gradient(135deg, #2977f5, #8860e0);
+  background: linear-gradient(135deg, var(--brand-strong), var(--accent-violet));
   border: 1px solid rgba(99, 102, 241, .4); color: #fff;
   font-size: 13.5px; font-weight: 600; cursor: pointer; transition: all .2s;
   font-family: inherit;
@@ -167,7 +167,7 @@ function dismiss() {
 .ih-text span { font-size: 11.5px; color: #9ca3af; line-height: 1.4; }
 .ih-install {
   flex-shrink: 0; padding: 8px 15px; border-radius: 9px; border: none;
-  background: linear-gradient(135deg, #2977f5, #8860e0); color: #fff;
+  background: linear-gradient(135deg, var(--brand-strong), var(--accent-violet)); color: #fff;
   font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit;
 }
 .ih-dismiss {
@@ -209,7 +209,7 @@ function dismiss() {
 .ih-steps li i { color: #818cf8; font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
 .ih-done {
   width: 100%; padding: 11px; border-radius: 11px; border: none;
-  background: linear-gradient(135deg, #2977f5, #8860e0);
+  background: linear-gradient(135deg, var(--brand-strong), var(--accent-violet));
   color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
 }
 

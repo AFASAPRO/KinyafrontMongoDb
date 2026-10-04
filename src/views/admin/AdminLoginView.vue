@@ -232,7 +232,7 @@ async function handleLogin() {
 .al-mark-badge {
   position: absolute; bottom: -4px; right: -4px;
   width: 22px; height: 22px; border-radius: 50%;
-  background: #2977f5;
+  background: var(--brand-strong);
   border: 2.5px solid #101018;
   display: flex; align-items: center; justify-content: center;
   font-size: 9.5px; color: #fff;
@@ -291,7 +291,7 @@ async function handleLogin() {
   cursor: pointer; transition: filter .15s ease, transform .1s ease, background .15s ease;
   border: none;
 }
-.al-btn-primary { background: #2977f5; color: #fff; }
+.al-btn-primary { background: var(--brand-strong); color: #fff; }
 .al-btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
 .al-btn-primary:active:not(:disabled) { transform: translateY(1px); }
 .al-btn-primary:disabled { opacity: .5; cursor: not-allowed; }

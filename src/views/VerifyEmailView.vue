@@ -160,14 +160,14 @@ onMounted(() => { sendCode(); nextTick(() => otpRefs.value[0]?.focus()) })
   background: var(--bg-card); border: 1.5px solid var(--border-md); border-radius: 12px;
   color: var(--text-1); outline: none; transition: border-color .2s, box-shadow .2s, background .2s;
 }
-.otp-box:focus { border-color: var(--accent-solid); box-shadow: 0 0 0 3px rgba(198,244,50,.16); }
-.otp-box.filled { border-color: var(--accent-solid); background: rgba(198,244,50,.08); }
+.otp-box:focus { border-color: var(--accent-solid); box-shadow: 0 0 0 3px rgba(99,102,241,.16); }
+.otp-box.filled { border-color: var(--accent-solid); background: rgba(99,102,241,.08); }
 .otp-box.error { border-color: var(--red); animation: shake .3s ease; }
 @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
 
 .notice { padding: 9px 12px; border-radius: 10px; font-size: 12.5px; display: flex; align-items: center; gap: 7px; margin-bottom: .9rem; text-align: left; }
 .err-notice { background: rgba(242,139,130,.1); border: 1px solid rgba(242,139,130,.25); color: var(--red); }
-.info-notice { background: rgba(198,244,50,.1); border: 1px solid rgba(198,244,50,.25); color: var(--purple); }
+.info-notice { background: rgba(99,102,241,.1); border: 1px solid rgba(99,102,241,.25); color: var(--purple); }
 
 .resend-link { display: block; margin: 0 auto 1.4rem; background: none; color: var(--purple); font-size: 13px; font-weight: 600; }
 .resend-link:disabled { color: var(--text-3); cursor: default; }
@@ -182,7 +182,7 @@ onMounted(() => { sendCode(); nextTick(() => otpRefs.value[0]?.focus()) })
 @media (min-width: 861px) {
   .auth-form-wrap { width: 100%; }
   .auth-kicker { display: flex; align-items: center; gap: 8px; color: var(--text-2); font-size: 10px; font-weight: 700; letter-spacing: .12em; margin-bottom: 15px; }
-  .auth-kicker span { width: 7px; height: 7px; border-radius: 50%; background: #34a853; box-shadow: 0 0 0 4px rgba(52,168,83,.13); }
+  .auth-kicker span { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 4px rgba(52,168,83,.13); }
   .auth-heading { font-size: 2rem; line-height: 1.15; font-weight: 700; color: var(--text-1); margin-bottom: 8px; }
   .auth-sub { font-size: 14px; color: var(--text-2); margin-bottom: 1.6rem; line-height: 1.55; }
   .otp-row { gap: 11px; justify-content: flex-start; margin: 8px 0 18px; }

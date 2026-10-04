@@ -27,7 +27,7 @@
       <transition name="fade">
         <div v-if="isRec || transcribing" class="wave-bar">
           <div class="wave-info">
-            <i :class="transcribing ? 'fas fa-spinner fa-spin' : 'fas fa-microphone'" style="color:#f28b82"></i>
+            <i :class="transcribing ? 'fas fa-spinner fa-spin' : 'fas fa-microphone'" style="color:var(--accent-cyan)"></i>
             <span v-if="transcribing">Transcribing your recording…</span>
             <template v-else>
               <span>Listening{{ recTime ? ` · ${recTime}` : '' }}</span>
@@ -439,7 +439,7 @@ onBeforeUnmount(() => {
   background: var(--bg-input); overflow: visible;
   transition: border-color .2s, box-shadow .2s;
 }
-.input-box.focused { border-color:rgba(198,244,50,.45); box-shadow:0 0 0 3px rgba(198,244,50,.08); }
+.input-box.focused { border-color:rgba(99,102,241,.45); box-shadow:0 0 0 3px rgba(99,102,241,.08); }
 .input-box.sending { opacity:.75; }
 
 /* Attach menu */
@@ -459,17 +459,17 @@ onBeforeUnmount(() => {
   color:var(--text-2); cursor:pointer; text-align:left; transition:all .15s;
 }
 .am-item:hover { background:var(--bg-hover); color:var(--text-1); }
-.am-item i { width:30px; height:30px; border-radius:8px; background:rgba(198,244,50,.16); border:1px solid rgba(198,244,50,.3); color:#d9f76e; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+.am-item i { width:30px; height:30px; border-radius:8px; background:rgba(99,102,241,.16); border:1px solid rgba(99,102,241,.3); color:var(--brand-text); display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
 .am-item b { display:block; font-size:12.5px; font-weight:600; color:var(--text-1); }
 .am-item small { display:block; font-size:10.5px; color:var(--text-3); margin-top:1px; }
 
 /* Voice waveform */
 .wave-bar { padding:8px 13px 4px; border-bottom:1px solid var(--border); display:flex; flex-direction:column; gap:5px; }
 .wave-info { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--text-2); flex-wrap:wrap; }
-.wave-info span:first-of-type { color:#f28b82; font-weight:500; }
+.wave-info span:first-of-type { color:var(--accent-cyan); font-weight:500; }
 .wave-hint { color:var(--text-3); font-style:italic; }
 .wave-bars { display:flex; align-items:center; gap:2px; height:28px; }
-.wb { width:3px; border-radius:99px; background:linear-gradient(180deg,#f28b82,#e75ac5); transition:height .08s ease; min-height:3px; }
+.wb { width:3px; border-radius:99px; background:linear-gradient(180deg,var(--accent-cyan),var(--accent-violet)); transition:height .08s ease; min-height:3px; }
 
 /* Textarea */
 .chat-ta {
@@ -495,7 +495,7 @@ onBeforeUnmount(() => {
   cursor:pointer; transition:all .2s; white-space:nowrap;
 }
 .tb-btn:hover { background:var(--bg-hover); color:var(--text-1); }
-.tb-btn.on { background:rgba(198,244,50,.2); border-color:rgba(198,244,50,.4); color:#d9f76e; }
+.tb-btn.on { background:rgba(99,102,241,.2); border-color:rgba(99,102,241,.4); color:var(--brand-text); }
 .tb-btn i { font-size:12px; }
 
 .tb-ico {
@@ -506,7 +506,7 @@ onBeforeUnmount(() => {
 }
 .tb-ico:hover:not(:disabled) { background:var(--bg-hover); color:var(--text-1); }
 .tb-ico:disabled { opacity:.5; cursor:not-allowed; }
-.tb-ico.rec { color:#f28b82; background:rgba(242,139,130,.15); animation:pulse 1.1s infinite; }
+.tb-ico.rec { color:var(--accent-cyan); background:rgba(242,139,130,.15); animation:pulse 1.1s infinite; }
 
 .send-btn {
   width:34px; height:34px; border-radius:50%;
@@ -514,9 +514,9 @@ onBeforeUnmount(() => {
   border:none; color:var(--on-accent); font-size:13px;
   display:flex; align-items:center; justify-content:center;
   cursor:pointer; transition:all .2s; flex-shrink:0;
-  box-shadow:0 2px 10px rgba(198,244,50,.28);
+  box-shadow:0 2px 10px rgba(99,102,241,.28);
 }
-.send-btn:hover:not(:disabled) { transform:scale(1.1); box-shadow:0 4px 16px rgba(198,244,50,.45); }
+.send-btn:hover:not(:disabled) { transform:scale(1.1); box-shadow:0 4px 16px rgba(99,102,241,.45); }
 .send-btn:disabled { opacity:.32; cursor:not-allowed; transform:none; }
 
 .disclaimer { font-size:11px; color:var(--text-3); text-align:center; margin-top:5px; padding:0 4px; }
@@ -545,7 +545,7 @@ onBeforeUnmount(() => {
   .input-area { background:var(--bg-base); padding:4px 14px calc(max(10px, env(safe-area-inset-bottom)) + var(--kb, 0px)); }
   .disclaimer { display:none; }
   .input-box { display:flex; flex-wrap:wrap; align-items:center; gap:0; padding:4px 4px 4px 6px; border-radius:27px; background:var(--bg-card); border:1px solid var(--border-md); }
-  .input-box.focused { border-color:var(--accent-solid); box-shadow:0 0 0 3px rgba(198,244,50,.12); }
+  .input-box.focused { border-color:var(--accent-solid); box-shadow:0 0 0 3px rgba(99,102,241,.12); }
   .wave-bar { order:-1; width:100%; }
   .toolbar { display:contents; }
   .tl-left { order:0; }

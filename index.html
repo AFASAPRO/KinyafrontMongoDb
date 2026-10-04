@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
 
     <!-- ══ PWA ══════════════════════════════════════════════ -->
-    <meta name="theme-color" content="#131314" />
+    <meta name="theme-color" content="#070A12" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="application-name" content="KinyaBot" />
     <link rel="manifest" href="/site.webmanifest" />
@@ -203,28 +203,30 @@
       #boot-splash {
         position: fixed; inset: 0; z-index: 1;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
-        gap: 14px; background: #131314;
+        gap: 14px; background: #070A12;
       }
-      html.light-mode #boot-splash { background: #f8f9fa; }
+      html.light-mode #boot-splash { background: #F8FAFC; }
       #boot-splash img {
         width: 56px; height: 56px; border-radius: 14px; object-fit: contain;
-        box-shadow: 0 0 30px rgba(198,244,50,.35);
+        box-shadow: 0 0 30px rgba(99,102,241,.35);
         animation: bsPulse 1.6s ease-in-out infinite;
       }
       #boot-splash .bs-name {
-        color: #e3e3e3; font-size: 15px; font-weight: 700;
-        font-family: 'Segoe UI', system-ui, sans-serif; letter-spacing: .02em;
+        color: #F8FAFC; font-size: 15px; font-weight: 600;
+        font-family: 'Inter', system-ui, sans-serif; letter-spacing: .02em;
       }
-      html.light-mode #boot-splash .bs-name { color: #202124; }
+      html.light-mode #boot-splash .bs-name { color: #0F172A; }
       #boot-splash .bs-spinner {
         width: 22px; height: 22px; border-radius: 50%;
-        border: 2.5px solid rgba(255,255,255,.12); border-top-color: #c6f432;
+        border: 2.5px solid rgba(255,255,255,.12); border-top-color: #6366F1;
         animation: bsSpin .8s linear infinite;
       }
-      html.light-mode #boot-splash .bs-spinner { border-color: rgba(0,0,0,.1); border-top-color: #9db829; }
+      html.light-mode #boot-splash .bs-spinner { border-color: rgba(0,0,0,.1); border-top-color: #4F46E5; }
       @keyframes bsSpin { to { transform: rotate(360deg) } }
       @keyframes bsPulse { 0%,100% { opacity:.85 } 50% { opacity:1; transform:scale(1.05) } }
     </style>
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   </head>
   <body>
     <div id="app">

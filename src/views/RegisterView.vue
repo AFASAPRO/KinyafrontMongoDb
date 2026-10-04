@@ -134,7 +134,7 @@ const strength = computed(() => {
   const p=form.password; let s=0
   if(p.length>=8)s+=25;if(p.length>=12)s+=15;if(/[A-Z]/.test(p))s+=20;if(/[0-9]/.test(p))s+=20;if(/[^A-Za-z0-9]/.test(p))s+=20
   s=Math.min(s,100)
-  const color=s<40?'#f28b82':s<70?'#fbbc04':'#34a853'
+  const color=s<40?'#f28b82':s<70?'#fbbc04':'var(--success)'
   const label=s<40?'Weak':s<70?'Fair':s<90?'Strong':'Very strong'
   return{pct:s,color,label}
 })
@@ -169,8 +169,8 @@ async function handleGoogleRegister() {
 <style scoped>
 .auth-form-wrap { width: 100%; }
 .auth-kicker { display: flex; align-items: center; gap: 8px; color: var(--text-2); font-size: 10px; font-weight: 700; letter-spacing: .12em; margin-bottom: 12px; }
-.auth-kicker span { width: 7px; height: 7px; border-radius: 50%; background: #34a853; box-shadow: 0 0 0 4px rgba(52,168,83,.13); }
-.auth-heading { font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif; font-size: 2.4rem; line-height: 1.1; font-weight: 400; letter-spacing: -.01em; color: var(--text-1); margin-bottom: 7px; }
+.auth-kicker span { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 4px rgba(52,168,83,.13); }
+.auth-heading { font-family: var(--font); font-size: 1.9rem; line-height: 1.1; font-weight: 600; letter-spacing: -.02em; color: var(--text-1); margin-bottom: 7px; }
 .auth-sub { font-size: 13.5px; color: var(--text-2); margin-bottom: 1.1rem; line-height: 1.5; }
 .social-btns { display: flex; flex-direction: column; gap: 9px; margin-bottom: 1rem; }
 .social-btn { min-height: 43px; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 9px 16px; background: var(--bg-card); border: 1px solid var(--border-md); border-radius: 9px; color: var(--text-1); font-size: 13px; font-weight: 600; transition: background .18s, border-color .18s, transform .18s; }

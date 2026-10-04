@@ -100,14 +100,14 @@ onMounted(async () => {
 
   const accentMap = {
     lime:  { c: '#c6f432', on: '#14180a' },
-    pink:  { c: '#e75ac5', on: '#ffffff' },
-    blue:  { c: '#2977f5', on: '#ffffff' },
+    pink:  { c: 'var(--accent-violet)', on: '#ffffff' },
+    blue:  { c: 'var(--brand-strong)', on: '#ffffff' },
     cyan:  { c: '#45c4d4', on: '#0a1214' },
     green: { c: '#22c55e', on: '#05230f' },
   }
-  // Landing lime is the brand default; unknown/legacy stored ids (indigo,
-  // purple…) fall through and the CSS tokens apply untouched.
-  const a = accentMap[localStorage.getItem('kb_accent') || 'lime']
+  // Indigo is the brand default; unknown/legacy stored ids (indigo, lime,
+  // pink…) fall through and the CSS tokens apply untouched.
+  const a = accentMap[localStorage.getItem('kb_accent') || 'indigo']
   if (a) {
     document.documentElement.style.setProperty('--accent-solid', a.c)
     document.documentElement.style.setProperty('--on-accent', a.on)

@@ -220,12 +220,12 @@ function relTime(date) {
   gap: 8px;
 }
 .rp-chat-row:hover { background: var(--bg-hover); }
-.rp-chat-row.active { background: rgba(41,119,245,.1); }
+.rp-chat-row.active { background: rgba(99,102,241,.1); }
 .rp-row-info { flex: 1; min-width: 0; }
 .rp-row-title { font-size: 12.5px; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rp-row-time { font-size: 11px; color: var(--text-3); margin-top: 1px; }
 .rp-radio { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--border-md); flex-shrink: 0; transition: all .2s; }
-.rp-radio.checked { border-color: #9db829; background: #9db829; }
+.rp-radio.checked { border-color: var(--brand-text); background: var(--brand-text); }
 
 .rp-empty {
   display: flex; align-items: center; gap: 8px;

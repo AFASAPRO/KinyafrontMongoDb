@@ -149,8 +149,8 @@
                 :stroke-dasharray="`${usageRing} ${100 - usageRing}`" stroke-dashoffset="25" stroke-linecap="round"/>
               <defs>
                 <linearGradient id="cg" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stop-color="#2977f5"/>
-                  <stop offset="100%" stop-color="#e75ac5"/>
+                  <stop offset="0%" stop-color="#4F46E5"/>
+                  <stop offset="100%" stop-color="#8B5CF6"/>
                 </linearGradient>
               </defs>
             </svg>
@@ -171,8 +171,8 @@
                 stroke-dasharray="0 100" stroke-dashoffset="25" stroke-linecap="round"/>
               <defs>
                 <linearGradient id="cg" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stop-color="#2977f5"/>
-                  <stop offset="100%" stop-color="#e75ac5"/>
+                  <stop offset="0%" stop-color="#4F46E5"/>
+                  <stop offset="100%" stop-color="#8B5CF6"/>
                 </linearGradient>
               </defs>
             </svg>
@@ -445,7 +445,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
 .section-label-row { font-size:11.5px; font-weight:600; color:var(--text-2); padding:8px 8px 4px; }
 .icon-btn-sm { width:22px; height:22px; border-radius:6px; background:none; border:none; color:var(--text-3); font-size:11px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .2s; position:relative; }
 .icon-btn-sm:hover { background:var(--bg-hover); color:var(--text-1); }
-.icon-btn-sm.has-dot::after { content:''; position:absolute; top:2px; right:2px; width:6px; height:6px; border-radius:50%; background:linear-gradient(135deg,#2977f5,#e75ac5); }
+.icon-btn-sm.has-dot::after { content:''; position:absolute; top:2px; right:2px; width:6px; height:6px; border-radius:50%; background:linear-gradient(135deg,var(--brand-strong),var(--accent-violet)); }
 .empty-hint { display:flex; align-items:center; gap:8px; padding:10px 12px; color:var(--text-3); font-size:12.5px; }
 
 .tool-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:var(--r-sm); cursor:pointer; transition:background .15s; color:var(--text-1); }
@@ -458,7 +458,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
 .integration-item { display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:var(--r-sm); cursor:pointer; transition:background .15s; color:var(--text-1); font-size:13px; }
 .integration-item:hover { background:var(--bg-hover); }
 .integ-icon { width:26px; height:26px; border-radius:7px; border:1px solid transparent; display:flex; align-items:center; justify-content:center; font-size:12px; }
-.integ-dot { width:7px; height:7px; border-radius:50%; background:linear-gradient(135deg,#2977f5,#e75ac5); margin-left:auto; }
+.integ-dot { width:7px; height:7px; border-radius:50%; background:linear-gradient(135deg,var(--brand-strong),var(--accent-violet)); margin-left:auto; }
 
 .search-result { display:flex; align-items:flex-start; gap:9px; padding:8px 10px; border-radius:var(--r-sm); cursor:pointer; transition:background .15s; }
 .search-result:hover { background:var(--bg-hover); }
@@ -482,7 +482,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
 .upgrade-link:hover { text-decoration:underline; }
 .upgrade-link.as-btn { background:none; border:none; cursor:pointer; padding:0; font-family:inherit; }
 .used-label { font-size:11px; color:var(--text-3); }
-.accent-item { color:#d9f76e !important; }
+.accent-item { color:var(--brand-text) !important; }
 .credits-icon { font-size:11px; color:var(--text-3); }
 .credits-ring { position:relative; width:36px; height:36px; flex-shrink:0; }
 .credits-svg { width:100%; height:100%; transform:rotate(-90deg); }
@@ -494,19 +494,19 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
 .mini-modal h3 { font-size:14.5px; font-weight:600; margin-bottom:.9rem; display:flex; align-items:center; gap:8px; }
 .mini-modal p { font-size:13px; color:var(--text-2); margin-bottom:1.1rem; }
 .mini-input { width:100%; padding:9px 12px; background:var(--bg-input); border:1px solid var(--border-md); border-radius:var(--r-sm); color:var(--text-1); font-size:13.5px; margin-bottom:1.1rem; outline:none; }
-.mini-input:focus { border-color:#9db829; box-shadow:0 0 0 3px rgba(198,244,50,.15); }
+.mini-input:focus { border-color:var(--brand-text); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
 .mini-actions { display:flex; gap:8px; justify-content:flex-end; }
 .btn-cancel,.btn-ok,.btn-danger { padding:7px 16px; border:none; border-radius:var(--r-sm); font-size:13px; font-weight:500; cursor:pointer; transition:all .2s; }
 .btn-cancel { background:var(--bg-hover); color:var(--text-2); }
 .btn-cancel:hover { color:var(--text-1); }
-.btn-ok { background:#9db829; color:#fff; }
-.btn-ok:hover { background:#8860e0; }
+.btn-ok { background:var(--brand-text); color:#fff; }
+.btn-ok:hover { background:var(--brand-hover); }
 .btn-danger { background:#991b1b; color:#fff; }
 .btn-danger:hover { opacity:.85; }
 
 .feature-modal { width:min(460px,94vw); background:var(--bg-card); border:1px solid var(--border-md); border-radius:var(--r-xl); overflow:hidden; animation:fadeUp .2s ease; }
 .fm-header { display:flex; align-items:center; gap:10px; padding:16px 18px; border-bottom:1px solid var(--border); }
-.fm-header i { font-size:18px; color:#d9f76e; }
+.fm-header i { font-size:18px; color:var(--brand-text); }
 .fm-header h3 { font-size:15px; font-weight:700; flex:1; }
 .fm-header button { background:none; border:none; color:var(--text-2); font-size:15px; cursor:pointer; padding:4px; border-radius:6px; }
 .fm-header button:hover { background:var(--bg-hover); }
@@ -514,6 +514,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
 .fm-body p { font-size:13.5px; color:var(--text-2); margin-bottom:16px; line-height:1.6; }
 .fm-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .fm-btn { display:flex; align-items:center; gap:8px; padding:10px 14px; background:var(--bg-panel); border:1px solid var(--border-md); border-radius:var(--r-sm); color:var(--text-1); font-size:13px; cursor:pointer; transition:all .2s; }
-.fm-btn:hover { background:rgba(198,244,50,.12); border-color:rgba(198,244,50,.35); color:#d9f76e; }
+.fm-btn:hover { background:rgba(99,102,241,.12); border-color:rgba(99,102,241,.35); color:var(--brand-text); }
 .fm-btn i { font-size:13px; }
 </style>

@@ -7,36 +7,36 @@
 ══════════════════════════════════════════════════════════════ */
 
 .au-root {
-  /* surfaces — landing palette (near-black, green-tinted) */
-  --au-bg-left: #0d0e0a;
-  --au-bg-right: #0a0b07;
-  --au-panel-border: #1a1b12;
-  --au-card: #14150e;
-  --au-card-border: #262819;
-  --au-banner: #1a1d10;
-  --au-chip: #1e2013;
+  /* surfaces — KinyaBot dark technical foundation */
+  --au-bg-left: #0B1020;
+  --au-bg-right: #070A12;
+  --au-panel-border: #172033;
+  --au-card: #111827;
+  --au-card-border: #1F2937;
+  --au-banner: #131A30;
+  --au-chip: #151B2B;
   /* text */
-  --au-text: #f0f1ea;
-  --au-muted: #a1a695;
-  --au-faint: #6b7060;
+  --au-text: #F8FAFC;
+  --au-muted: #CBD5E1;
+  --au-faint: #94A3B8;
   /* fields */
-  --au-field: #1a1b12;
-  --au-field-border: #2b2d1e;
-  --au-social: #1a1c11;
-  --au-social-hover: #23251a;
-  --au-divider: #22241a;
-  /* accent — landing lime */
-  --au-accent: #c6f432;
-  --au-accent-hover: #d3f76e;
-  --au-on-accent: #14180a;
-  --au-ring: rgba(198, 244, 50, .30);
-  --au-link: #7db4ff;
-  --au-tint: rgba(198, 244, 50, .12);
+  --au-field: #111827;
+  --au-field-border: #1F2937;
+  --au-social: #111827;
+  --au-social-hover: #151B2B;
+  --au-divider: #1F2937;
+  /* accent — electric indigo */
+  --au-accent: #6366F1;
+  --au-accent-hover: #818CF8;
+  --au-on-accent: #FFFFFF;
+  --au-ring: rgba(99, 102, 241, .30);
+  --au-link: #818CF8;
+  --au-tint: rgba(99, 102, 241, .12);
   /* status */
-  --au-danger: #f87171;
-  --au-success: #34d399;
-  --au-warn: #fbbf24;
-  --au-info: #60a5fa;
+  --au-danger: #F87171;
+  --au-success: #22C55E;
+  --au-warn: #F59E0B;
+  --au-info: #22D3EE;
 
   display: flex;
   height: 100vh;
@@ -50,31 +50,31 @@
 }
 
 .au-root.light {
-  --au-bg-left: #fcfcf8;
-  --au-bg-right: #eef0e2;
-  --au-panel-border: #e3e6d5;
-  --au-card: #ffffff;
-  --au-card-border: #dfe3cf;
-  --au-banner: #eef3d8;
-  --au-chip: #f0f2e2;
-  --au-text: #191b12;
-  --au-muted: #5c614f;
-  --au-faint: #8b907e;
-  --au-field: #f1f3e6;
-  --au-field-border: #d9ddc8;
-  --au-social: #f2f4e8;
-  --au-social-hover: #eaedd8;
-  --au-divider: #e0e4d0;
-  --au-accent: #b8e62e;
-  --au-accent-hover: #a8d422;
-  --au-on-accent: #14180a;
-  --au-ring: rgba(140, 180, 20, .25);
-  --au-link: #2977f5;
-  --au-tint: rgba(140, 180, 20, .1);
-  --au-danger: #dc2626;
-  --au-success: #059669;
-  --au-warn: #b45309;
-  --au-info: #2563eb;
+  --au-bg-left: #FFFFFF;
+  --au-bg-right: #F8FAFC;
+  --au-panel-border: #E2E8F0;
+  --au-card: #FFFFFF;
+  --au-card-border: #E2E8F0;
+  --au-banner: #EEF2FF;
+  --au-chip: #F1F5F9;
+  --au-text: #0F172A;
+  --au-muted: #334155;
+  --au-faint: #64748B;
+  --au-field: #FFFFFF;
+  --au-field-border: #CBD5E1;
+  --au-social: #FFFFFF;
+  --au-social-hover: #F1F5F9;
+  --au-divider: #E2E8F0;
+  --au-accent: #4F46E5;
+  --au-accent-hover: #4338CA;
+  --au-on-accent: #FFFFFF;
+  --au-ring: rgba(79, 70, 229, .25);
+  --au-link: #4F46E5;
+  --au-tint: #EEF2FF;
+  --au-danger: #DC2626;
+  --au-success: #16A34A;
+  --au-warn: #D97706;
+  --au-info: #0891B2;
 }
 
 /* ── Layout ───────────────────────────────────────────────── */
@@ -114,7 +114,7 @@
 }
 
 /* ── Headings ─────────────────────────────────────────────── */
-.au-title { font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 2.2rem; line-height: 1.12; letter-spacing: -.01em; color: var(--au-text); margin: 0 0 .45rem; }
+.au-title { font-family: var(--font); font-weight: 600; font-size: 1.9rem; line-height: 1.15; letter-spacing: -.02em; color: var(--au-text); margin: 0 0 .45rem; }
 .au-lead { font-size: .92rem; line-height: 1.5; color: var(--au-muted); margin: 0 0 1.5rem; }
 .au-lead strong { color: var(--au-text); font-weight: 600; word-break: break-all; }
 
@@ -236,9 +236,9 @@
 }
 .au-notice i { margin-top: .15rem; flex-shrink: 0; }
 .au-notice.is-error { color: var(--au-danger); background: rgba(248,113,113,.1);  border-color: rgba(248,113,113,.35); }
-.au-notice.is-ok    { color: var(--au-success); background: rgba(52,211,153,.1);   border-color: rgba(52,211,153,.35); }
+.au-notice.is-ok    { color: var(--au-success); background: rgba(34,197,94,.1);   border-color: rgba(34,197,94,.35); }
 .au-notice.is-warn  { color: var(--au-warn);    background: rgba(251,191,36,.11);  border-color: rgba(251,191,36,.38); }
-.au-notice.is-info  { color: var(--au-info);    background: rgba(96,165,250,.1);   border-color: rgba(96,165,250,.35); }
+.au-notice.is-info  { color: var(--au-info);    background: rgba(34,211,238,.1);   border-color: rgba(34,211,238,.35); }
 @supports (color: color-mix(in srgb, red, blue)) {
   .au-notice.is-error { background: color-mix(in srgb, var(--au-danger) 10%, transparent); border-color: color-mix(in srgb, var(--au-danger) 35%, transparent); }
   .au-notice.is-ok    { background: color-mix(in srgb, var(--au-success) 10%, transparent); border-color: color-mix(in srgb, var(--au-success) 35%, transparent); }
@@ -274,8 +274,8 @@
   display: grid; place-items: center; font-size: 1.35rem;
   color: var(--au-accent); background: var(--au-tint);
 }
-.au-icon-badge.is-green { color: var(--au-success); background: rgba(52,211,153,.14); }
-.au-icon-badge.is-blue { color: var(--au-info); background: rgba(96,165,250,.14); }
+.au-icon-badge.is-green { color: var(--au-success); background: rgba(34,197,94,.14); }
+.au-icon-badge.is-blue { color: var(--au-info); background: rgba(34,211,238,.14); }
 
 /* ── OTP boxes ────────────────────────────────────────────── */
 .au-otp { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .5rem; margin-bottom: 1rem; }

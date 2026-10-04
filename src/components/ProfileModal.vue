@@ -70,19 +70,19 @@ async function save() {
 .pm-close:hover { background:var(--bg-hover);color:var(--text-1) }
 .pm-body { padding:18px;display:flex;flex-direction:column;gap:14px }
 .pm-avatar { display:flex;align-items:center;gap:14px }
-.avatar-circle { width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#2977f5,#e75ac5);display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:700;color:#fff;overflow:hidden;flex-shrink:0 }
+.avatar-circle { width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--brand-strong),var(--accent-violet));display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:700;color:#fff;overflow:hidden;flex-shrink:0 }
 .avatar-circle img { width:100%;height:100%;object-fit:cover }
 .pm-name { font-size:14.5px;font-weight:600 }
 .pm-email { font-size:12px;color:var(--text-2) }
 .pm-field { display:flex;flex-direction:column;gap:5px }
 .pm-field label { font-size:12.5px;font-weight:500;color:var(--text-2) }
 .pm-input { padding:9px 12px;background:var(--bg-input);border:1px solid var(--border-md);border-radius:var(--r-sm);color:var(--text-1);font-size:13.5px }
-.pm-input:focus { border-color:#9db829;outline:none }
+.pm-input:focus { border-color:var(--brand-text);outline:none }
 .pm-input::placeholder { color:var(--text-3) }
 .pm-notice { padding:8px 12px;border-radius:var(--r-sm);font-size:12.5px;display:flex;align-items:center;gap:7px }
-.pm-notice.ok { background:rgba(52,168,83,.12);border:1px solid rgba(52,168,83,.3);color:#34a853 }
+.pm-notice.ok { background:rgba(52,168,83,.12);border:1px solid rgba(52,168,83,.3);color:var(--success) }
 .pm-notice.err { background:rgba(242,139,130,.12);border:1px solid rgba(242,139,130,.3);color:var(--red) }
-.pm-save { padding:10px;background:#9db829;border:none;border-radius:var(--r-sm);color:#fff;font-size:13.5px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px }
-.pm-save:hover:not(:disabled) { background:#8860e0 }
+.pm-save { padding:10px;background:var(--brand-text);border:none;border-radius:var(--r-sm);color:#fff;font-size:13.5px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px }
+.pm-save:hover:not(:disabled) { background:var(--brand-hover) }
 .pm-save:disabled { opacity:.5;cursor:not-allowed }
 </style>

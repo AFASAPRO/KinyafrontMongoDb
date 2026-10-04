@@ -330,7 +330,7 @@ onBeforeUnmount(() => {
 .topbar-icon-btn { width:32px; height:32px; background:none; border:none; border-radius:50%; color:var(--text-2); font-size:14px; display:flex; align-items:center; justify-content:center; transition:all .2s; cursor:pointer; }
 .topbar-icon-btn:hover { background:var(--bg-hover); color:var(--text-1); }
 
-.user-avatar-btn { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#2977f5,#e75ac5); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:white; cursor:pointer; overflow:hidden; flex-shrink:0; border:2px solid var(--border-md); transition:opacity .2s; }
+.user-avatar-btn { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,var(--brand-strong),var(--accent-violet)); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:white; cursor:pointer; overflow:hidden; flex-shrink:0; border:2px solid var(--border-md); transition:opacity .2s; }
 .user-avatar-btn:hover { opacity:.85; }
 .user-avatar-btn img { width:100%; height:100%; object-fit:cover; }
 
@@ -344,7 +344,7 @@ onBeforeUnmount(() => {
 .auth-btn { padding:7px 16px; border-radius:99px; font-size:13px; font-weight:600; cursor:pointer; transition:all .2s; white-space:nowrap; }
 .auth-btn.ghost { background:transparent; border:1px solid var(--border-md); color:var(--text-2); }
 .auth-btn.ghost:hover { background:var(--bg-hover); color:var(--text-1); }
-.auth-btn.solid { background:var(--accent); border:1px solid transparent; color:#fff; box-shadow:0 2px 10px rgba(198,244,50,.3); }
+.auth-btn.solid { background:var(--accent); border:1px solid transparent; color:#fff; box-shadow:0 2px 10px rgba(99,102,241,.3); }
 .auth-btn.solid:hover { filter:brightness(1.12); transform:translateY(-1px); }
 
 /* ── MOBILE ── */

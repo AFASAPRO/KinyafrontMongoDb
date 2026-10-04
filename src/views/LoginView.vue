@@ -265,8 +265,8 @@ async function handleForgot() {
 <style scoped>
 .auth-form-wrap { width: 100%; }
 .auth-kicker { display: flex; align-items: center; gap: 8px; color: var(--text-2); font-size: 10px; font-weight: 700; letter-spacing: .12em; margin-bottom: 15px; }
-.auth-kicker span { width: 7px; height: 7px; border-radius: 50%; background: #34a853; box-shadow: 0 0 0 4px rgba(52,168,83,.13); }
-.auth-heading { font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif; font-size: 2.5rem; line-height: 1.1; font-weight: 400; letter-spacing: -.01em; color: var(--text-1); margin-bottom: 8px; }
+.auth-kicker span { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 4px rgba(52,168,83,.13); }
+.auth-heading { font-family: var(--font); font-size: 1.9rem; line-height: 1.1; font-weight: 600; letter-spacing: -.02em; color: var(--text-1); margin-bottom: 8px; }
 .sub-heading { font-size: 1.25rem; font-weight: 650; color: var(--text-1); margin-bottom: .5rem; }
 .auth-sub { font-size: 14px; color: var(--text-2); margin-bottom: 1.6rem; line-height: 1.55; }
 .back-link { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--purple); cursor: pointer; margin-bottom: 1.25rem; font-weight: 600; }
@@ -305,7 +305,7 @@ async function handleForgot() {
 .checkbox-label input:checked + .checkmark { background: var(--accent-solid); border-color: var(--accent-solid); }
 .checkbox-label input:checked + .checkmark::after { content: '✓'; color: var(--on-accent); font-size: 11px; font-weight: 700; }
 .notice { padding: 11px 13px; border-radius: 9px; font-size: 12.5px; display: flex; align-items: center; gap: 9px; margin-bottom: 1rem; line-height: 1.45; }
-.notice.ok { background: rgba(52,168,83,.1); border: 1px solid rgba(52,168,83,.3); color: #34a853; }
+.notice.ok { background: rgba(52,168,83,.1); border: 1px solid rgba(52,168,83,.3); color: var(--success); }
 .notice.err, .error-notice { background: color-mix(in srgb, var(--red) 10%, transparent); border: 1px solid color-mix(in srgb, var(--red) 26%, transparent); color: var(--red); }
 .notice.warn-notice { background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3); color: #d89a22; }
 .submit-btn { width: 100%; min-height: 49px; padding: 12px 16px; background: var(--accent-solid); border: 1px solid transparent; border-radius: 9px; color: var(--on-accent); font-size: 14px; font-weight: 700; cursor: pointer; transition: background .18s, transform .18s, box-shadow .18s; display: flex; align-items: center; justify-content: center; gap: 9px; margin-bottom: 1.15rem; box-shadow: 0 5px 14px color-mix(in srgb, var(--accent-solid) 22%, transparent); }
