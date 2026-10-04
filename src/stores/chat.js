@@ -26,6 +26,21 @@ export const useChatStore = defineStore('chat', () => {
   // Track IDs already added via streaming to prevent socket duplicates
   const seenMessageIds = ref(new Set())
 
+  // Per-chat reply preferences (language / style) — stored locally, sent as
+  // whitelisted headers with each generation request.
+  const chatPrefs = ref((() => { try { return JSON.parse(localStorage.getItem('kb_chat_prefs') || '{}') } catch { return {} } })())
+  function getPrefs(chatId) { return chatPrefs.value[chatId] || { lang: '', style: '' } }
+  function setPrefs(chatId, patch) {
+    chatPrefs.value = { ...chatPrefs.value, [chatId]: { ...getPrefs(chatId), ...patch } }
+    try { localStorage.setItem('kb_chat_prefs', JSON.stringify(chatPrefs.value)) } catch {}
+  }
+  function prefHeaders(chatId) {
+    const p = getPrefs(chatId), h = {}
+    if (p.lang) h['X-Reply-Language'] = p.lang
+    if (p.style) h['X-Reply-Style'] = p.style
+    return h
+  }
+
   // AbortController for the in-flight generation (Stop button)
   let activeAbort = null
   // Last payload per failed/temp message (for Retry)
@@ -241,7 +256,7 @@ export const useChatStore = defineStore('chat', () => {
 
       const response = await fetch(`${API_BASE}${url}`, {
         method: 'POST',
-        headers: authHeader(),
+        headers: { ...authHeader(), ...prefHeaders(activeChat.value.id) },
         body: fd,
         signal: abort.signal
       })
@@ -449,9 +464,9 @@ export const useChatStore = defineStore('chat', () => {
 
   return {
     chats, activeChat, messages, loading, sending, streaming, searchResults, stats, pendingChatId,
-    pinnedChats, recentChats,
+    pinnedChats, recentChats, chatPrefs,
     fetchChats, fetchStats, createChat, loadChat, renameChat, pinChat,
-    deleteChat, deleteAllChats, sendMessage, regenerate, retry, stopGeneration,
+    deleteChat, deleteAllChats, getPrefs, setPrefs, sendMessage, regenerate, retry, stopGeneration,
     deleteMessage, searchMessages, clearSearch,
     setupSocketListeners, resetChatState
   }

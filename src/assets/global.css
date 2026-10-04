@@ -643,3 +643,8 @@ html.kb-open .chat-ta { max-height: 110px !important; }
 @media (max-width: 480px) {
   html { font-size: 14px; }
 }
+
+/* Brief highlight when the details panel jumps to a message */
+@keyframes kbFlash { 0%,100% { box-shadow: 0 0 0 0 transparent } 25% { box-shadow: 0 0 0 3px var(--brand-ring) } }
+.kb-flash { animation: kbFlash 1.4s var(--ease); border-radius: var(--r-lg); }
+@media (prefers-reduced-motion: reduce) { .kb-flash { animation: none; outline: 2px solid var(--brand); } }
