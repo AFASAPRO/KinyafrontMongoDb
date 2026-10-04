@@ -97,10 +97,10 @@ function Home() {
   const [flowIdea, setFlowIdea] = useState("");
   const [previewIdea, setPreviewIdea] = useState("");
   const demo = [previewIdea || "A request comes in", "KinyaBot checks the details", "The right person gets notified", "Every step is recorded"];
-  const [theme, setTheme] = useState<"dark" | "light">("light");
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
   useEffect(() => {
     const saved = localStorage.getItem("kinyabot-theme");
-    const t = saved === "light" || saved === "dark" ? saved : "light";
+    const t = saved === "light" || saved === "dark" ? saved : "dark";
     setTheme(t);
     document.documentElement.dataset["theme"] = t;
   }, []);
