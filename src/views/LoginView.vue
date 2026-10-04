@@ -7,7 +7,7 @@
 
     <form @submit.prevent="handleLogin" novalidate>
       <div class="m-field">
-        <label class="m-label" for="m-email">Email</label>
+        <label class="m-label" for="m-email">Email <span v-if="lastAuthMethod === 'email'" class="last-used-badge">Last used</span></label>
         <div class="m-input-wrap">
           <i class="m-ic fas fa-envelope"></i>
           <input id="m-email" v-model="form.email" type="email" inputmode="email" class="m-input has-ic" :class="{error:errors.email}" placeholder="your@email.com" autocomplete="email" autocapitalize="none" />
@@ -44,7 +44,9 @@
 
     <div class="m-or"><span>Or</span></div>
     <div class="m-social">
-      <button type="button" @click="showOAuth('Google')" aria-label="Continue with Google"><i class="fab fa-google"></i></button>
+      <button type="button" @click="showOAuth('Google')" aria-label="Continue with Google" :title="lastAuthMethod === 'google' ? 'Last used sign-in method: Google' : 'Continue with Google'">
+        <i class="fab fa-google"></i><span v-if="lastAuthMethod === 'google'" class="last-used-badge" aria-hidden="true">Last used</span>
+      </button>
       <button type="button" @click="showOAuth('Apple')" aria-label="Continue with Apple"><i class="fab fa-apple"></i></button>
     </div>
     <transition name="fade">
@@ -94,6 +96,7 @@
           <div class="social-btns">
             <button type="button" class="social-btn" @click="showOAuth('Google')">
               <i class="fab fa-google"></i><span>Continue with Google</span>
+              <span v-if="lastAuthMethod === 'google'" class="last-used-badge" aria-hidden="true">Last used</span>
             </button>
             <button type="button" class="social-btn" @click="showOAuth('Apple')">
               <i class="fab fa-apple"></i><span>Continue with Apple</span>
@@ -110,7 +113,7 @@
           <div class="divider"><span>OR</span></div>
 
           <div class="field">
-            <label class="field-label" for="login-email">Email address</label>
+            <label class="field-label" for="login-email">Email address <span v-if="lastAuthMethod === 'email'" class="last-used-badge">Last used</span></label>
             <div class="field-input-wrap">
               <i class="field-icon fas fa-envelope" aria-hidden="true"></i>
               <input id="login-email" v-model="form.email" type="email" class="field-input" :class="{error:errors.email}" placeholder="name@example.com" autocomplete="email" />
@@ -197,6 +200,14 @@ const forgotEmail = ref('')
 const forgotLoading = ref(false)
 const forgotMsg = ref(null)
 const oauthToast = ref('')
+const lastAuthMethod = ref('')
+try { lastAuthMethod.value = localStorage.getItem('kb_last_auth_method') || '' } catch {}
+function rememberAuthMethod(method) {
+  lastAuthMethod.value = method
+  try { localStorage.setItem('kb_last_auth_method', method) } catch (err) {
+    console.warn('[Login] Could not remember the last sign-in method:', err)
+  }
+}
 
 // Chat-first: after authentication the user returns to the chat
 // (`/`). A redirect target is set by the guest auth gate.
@@ -217,6 +228,7 @@ async function showOAuth(provider) {
     serverError.value = ''; loading.value = true
     try {
       const result = await auth.loginWithGoogle()
+      rememberAuthMethod('google')
       afterAuth(result)
     } catch (err) {
       serverError.value = err.response?.data?.error || 'Google login failed. Please try again.'
@@ -245,6 +257,7 @@ async function handleLogin() {
   serverError.value = ''; loading.value = true
   try {
     const result = await auth.login(form.email, form.password, rememberMe.value)
+    rememberAuthMethod('email')
     afterAuth(result)
   } catch (err) {
     serverError.value = err.response?.data?.error || 'Login failed. Please try again.'
@@ -273,6 +286,10 @@ async function handleForgot() {
 .back-link:hover { text-decoration: underline; }
 .social-btns { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.2rem; }
 .social-btn { min-height: 46px; display: flex; align-items: center; justify-content: center; gap: 11px; width: 100%; padding: 10px 16px; background: var(--bg-card); border: 1px solid var(--border-md); border-radius: 9px; color: var(--text-1); font-size: 13.5px; font-weight: 600; transition: background .18s, border-color .18s, transform .18s; }
+.last-used-badge { margin-left:auto; padding:2px 7px; border:1px solid var(--accent-solid); border-radius:99px; color:var(--accent-solid); font-size:10px; font-weight:600; line-height:1.4; white-space:nowrap; }
+.m-label .last-used-badge { float:right; }
+.m-social button { position:relative; }
+.m-social button .last-used-badge { position:absolute; right:-8px; top:-8px; margin:0; background:var(--bg-base); }
 .social-btn:hover { background: var(--bg-hover); border-color: var(--text-3); transform: translateY(-1px); }
 .social-btn:focus-visible, .submit-btn:focus-visible, .eye-btn:focus-visible, .forgot-link:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent-solid) 35%, transparent); outline-offset: 2px; }
 .fa-google { color: #ea4335; font-size: 16px; }

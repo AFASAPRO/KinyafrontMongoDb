@@ -119,6 +119,11 @@ function socialSoon(p){ socialToast.value = p; setTimeout(()=>{ socialToast.valu
 
 const router = useRouter()
 const auth = useAuthStore()
+function rememberAuthMethod(method) {
+  try { localStorage.setItem('kb_last_auth_method', method) } catch (err) {
+    console.warn('[Register] Could not remember the last sign-in method:', err)
+  }
+}
 const form = reactive({ username:'', email:'', password:'' })
 const errors = reactive({ username:'', email:'', password:'' })
 const loading = ref(false); const showPass = ref(false); const serverError = ref('')
@@ -149,7 +154,8 @@ async function handleRegister() {
   if(!validate())return; serverError.value=''; loading.value=true
   try {
     await auth.register(form.username,form.email,form.password)
-    router.push('/verify-email') // Confirm the inbox before onboarding
+    rememberAuthMethod('email')
+    router.push('/onboarding')
   } catch(err){ serverError.value=err.response?.data?.error||'Registration failed.' }
   finally{loading.value=false}
 }
@@ -157,7 +163,8 @@ async function handleGoogleRegister() {
   serverError.value = ''; loading.value = true
   try {
     const result = await auth.loginWithGoogle()
-    router.push(result.user.email_verified === false ? '/verify-email' : (result.user.onboarded ? '/' : '/onboarding'))
+    rememberAuthMethod('google')
+    router.push(result.user.onboarded ? '/' : '/onboarding')
   } catch(err) {
     serverError.value = err.response?.data?.error || 'Google sign-up failed. Please try again.'
   } finally {

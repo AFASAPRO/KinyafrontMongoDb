@@ -18,8 +18,10 @@
          visible on desktop AND as a mobile drawer for both. -->
     <Sidebar
       :mobile-open="mobileSidebarOpen"
+      :collapsed="sidebarCollapsed"
       :guest="isGuest"
       @close-mobile="mobileSidebarOpen=false"
+      @toggle-collapse="toggleSidebarCollapse"
       @new-chat="handleNewChat"
       @load-chat="handleLoadChat"
       @authrequired="showAuthGate=true"
@@ -169,7 +171,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue'
 import { isLightMode as sharedIsLightMode } from '../theme'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
@@ -188,6 +190,7 @@ const route = useRoute()
 const router = useRouter()
 
 const mobileSidebarOpen = ref(false)
+const sidebarCollapsed = ref(localStorage.getItem('kb_sidebar_collapsed') === '1')
 const showSettings = ref(false)
 const chatWindow = ref(null)
 const chatScrolled = ref(false)
@@ -231,6 +234,15 @@ async function commitChatRename() {
 
 function cancelChatRename() {
   renamingChat.value = false
+}
+
+function toggleSidebarCollapse() {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+  try {
+    localStorage.setItem('kb_sidebar_collapsed', sidebarCollapsed.value ? '1' : '0')
+  } catch (err) {
+    console.warn('[Sidebar] Could not save collapsed state:', err)
+  }
 }
 
 function openVoiceMode() {

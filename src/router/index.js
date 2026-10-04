@@ -41,7 +41,7 @@ const routes = [
   { path: '/welcome',         component: () => import('../views/GetStartedView.vue'),       meta: { guestOnly: true } },
   { path: '/login',           component: () => import('../views/LoginView.vue'),            meta: { guestOnly: true } },
   { path: '/register',        component: () => import('../views/RegisterView.vue'),         meta: { guestOnly: true } },
-  { path: '/verify-email',    component: () => import('../views/VerifyEmailView.vue'),       meta: { requiresAuth: true } },
+  { path: '/verify-email',    redirect: '/onboarding' },
   { path: '/onboarding',      component: () => import('../views/OnboardingView.vue'),       meta: { requiresAuth: true } },
   { path: '/forgot-password', component: () => import('../views/ForgotPasswordView.vue'),   meta: { guestOnly: true } },
   { path: '/reset-password',  component: () => import('../views/ResetPasswordView.vue'),    meta: { guestOnly: true } },
@@ -96,7 +96,7 @@ router.beforeEach(async (to) => {
      decision NEVER runs against an undefined auth state.         */
   const authed = auth.status === 'authenticated'
 
-  // Protected routes (the chat UI itself, verify-email, onboarding):
+  // Protected routes (the chat UI itself and onboarding):
   // unauthenticated visitors are bounced to the public landing page —
   // EXCEPT inside the installed app (PWA), where they stay in the app
   // and land on the user login screen instead.
@@ -108,15 +108,9 @@ router.beforeEach(async (to) => {
 
   // Guest-only routes (login/register/reset): members go straight to chat
   if (to.meta.guestOnly && authed) {
-    if (auth.needsEmailVerification) return '/verify-email'
     return auth.needsOnboarding ? '/onboarding' : '/'
   }
 
-  // Fresh registrations confirm their email, then finish onboarding —
-  // in that order — before anything else in the app.
-  if (authed && auth.needsEmailVerification) {
-    return to.path !== '/verify-email' ? '/verify-email' : true
-  }
   if (authed && auth.needsOnboarding && to.path !== '/onboarding') return '/onboarding'
 
   return true

@@ -22,7 +22,7 @@
       </div>
     </transition>
 
-    <div class="input-box" :class="{ focused, sending: disabled, 'has-text': !!(inputVal.trim() || selectedFile) }">
+    <div class="input-box" :class="{ focused, sending: disabled, 'has-text': !!(inputVal.trim() || selectedFile), 'has-suggestions': showSuggestions }">
       <!-- Voice waveform -->
       <transition name="fade">
         <div v-if="isRec || transcribing" class="wave-bar">
@@ -50,10 +50,17 @@
         :disabled="disabled"
         enterkeyhint="send"
         aria-label="Message KinyaBot"
+        aria-autocomplete="list"
+        aria-controls="prompt-suggestions"
+        :aria-expanded="showSuggestions"
+        :aria-activedescendant="showSuggestions ? `prompt-suggestion-${activeSuggestion}` : undefined"
         @focus="onFocus"
         @blur="focused=false"
-        @keydown.enter.exact.prevent="submit"
+        @keydown.enter.exact.prevent="handleSuggestionEnter"
         @keydown.enter.shift.exact="() => {}"
+        @keydown.down="moveSuggestion(1, $event)"
+        @keydown.up="moveSuggestion(-1, $event)"
+        @keydown.esc="dismissSuggestions"
         @input="resize"
       ></textarea>
 
@@ -117,6 +124,25 @@
           </button>
         </div>
       </div>
+      <div v-if="showSuggestions" id="prompt-suggestions" class="prompt-suggestions" role="listbox" aria-label="Prompt suggestions">
+        <button
+          v-for="(suggestion, index) in suggestions"
+          :key="suggestion"
+          :id="`prompt-suggestion-${index}`"
+          class="prompt-suggestion"
+          :class="{ selected: index === activeSuggestion }"
+          type="button"
+          role="option"
+          :aria-selected="index === activeSuggestion"
+          @mousedown.prevent
+          @mouseenter="activeSuggestion = index"
+          @click="selectSuggestion(suggestion)"
+        >
+          <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+          <span>{{ suggestion }}</span>
+          <i v-if="index === activeSuggestion" class="fas fa-arrow-up-right-from-square suggestion-open" aria-hidden="true"></i>
+        </button>
+      </div>
     </div>
 
     <p v-if="!centered" class="disclaimer">KinyaBot may make mistakes. Verify important info. · POWERED BY AFASA</p>
@@ -152,6 +178,76 @@ const notice       = ref('')
 const taRef        = ref(null)
 const fileRef      = ref(null)
 const waveH        = ref(Array(16).fill(4))
+const activeSuggestion = ref(0)
+const suggestionsDismissed = ref(false)
+let selectingSuggestion = false
+
+const suggestionCatalog = [
+  'create a website',
+  'create a website for free',
+  'create a website with AI',
+  'create a website for my business',
+  'create a website for free with AI',
+  'create a drop-down list in Excel',
+  'create a study plan',
+  'create a business plan',
+  'create a professional resume',
+  'write an email',
+  'write a cover letter',
+  'write a project proposal',
+  'write a short story',
+  'write a social media post',
+  'build a mobile app',
+  'build a portfolio website',
+  'build a weekly meal plan',
+  'explain this in simple terms',
+  'explain this step by step',
+  'explain how artificial intelligence works',
+  'help me learn a new skill',
+  'help me learn English',
+  'help me learn programming',
+  'help me prepare for an interview',
+  'help me plan a trip',
+  'help me solve this problem',
+  'translate this into Kinyarwanda',
+  'summarize this text',
+  'give me ideas for a small business',
+  'give me a beginner-friendly workout plan',
+  'make this more professional',
+  'make this shorter and clearer',
+  'compare these options',
+  'debug my code',
+  'generate Python code',
+  'plan a productive day',
+  'recommend books about'
+]
+
+const suggestions = computed(() => {
+  const query = inputVal.value.trim().toLocaleLowerCase()
+  if (query.length < 3 || selectedFile.value || props.disabled) return []
+  const matches = suggestionCatalog.filter(item => item.toLocaleLowerCase().startsWith(query))
+  if (matches.length) return matches.slice(0, 6)
+  return [
+    `${inputVal.value.trim()} step by step`,
+    `${inputVal.value.trim()} with examples`,
+    `${inputVal.value.trim()} for beginners`,
+    `${inputVal.value.trim()} in simple terms`,
+    `${inputVal.value.trim()} for my business`,
+    `${inputVal.value.trim()} and explain why`
+  ].slice(0, 6)
+})
+const showSuggestions = computed(() =>
+  focused.value && !suggestionsDismissed.value && suggestions.value.length > 0
+)
+
+watch(inputVal, () => {
+  if (selectingSuggestion) {
+    selectingSuggestion = false
+    return
+  }
+  suggestionsDismissed.value = false
+  activeSuggestion.value = 0
+})
 
 /* ── Attach menu ─────────────────────────────────────────────── */
 const attachOpen = ref(false)
@@ -249,8 +345,38 @@ function resize() {
 
 function onFocus() {
   focused.value = true
+  suggestionsDismissed.value = false
   // ChatWindow scrolls to the latest message when the composer is focused
   emit('focus')
+}
+
+function handleSuggestionEnter() {
+  if (showSuggestions.value) {
+    selectSuggestion(suggestions.value[activeSuggestion.value])
+    return
+  }
+  submit()
+}
+
+function moveSuggestion(direction, event) {
+  if (!showSuggestions.value) return
+  event.preventDefault()
+  const count = suggestions.value.length
+  activeSuggestion.value = (activeSuggestion.value + direction + count) % count
+}
+
+function selectSuggestion(suggestion) {
+  selectingSuggestion = inputVal.value !== suggestion
+  inputVal.value = suggestion
+  suggestionsDismissed.value = true
+  nextTick(() => {
+    resize()
+    taRef.value?.focus()
+  })
+}
+
+function dismissSuggestions() {
+  suggestionsDismissed.value = true
 }
 
 function submit() {
@@ -436,6 +562,7 @@ onBeforeUnmount(() => {
 .input-area.centered { padding: 0 0 2px; background: transparent; position: static; }
 .input-box {
   border: 1px solid var(--border-md); border-radius: 18px;
+  position:relative;
   background: var(--bg-input); overflow: visible;
   transition: border-color .2s, box-shadow .2s;
 }
@@ -485,6 +612,26 @@ onBeforeUnmount(() => {
 .toolbar {
   display:flex; align-items:center; justify-content:space-between;
   padding:5px 8px 7px; gap:6px;
+}
+.prompt-suggestions {
+  position:absolute; z-index:30; top:calc(100% + 1px); left:-1px; right:-1px;
+  padding:8px; background:var(--bg-input); border:1px solid var(--border-md);
+  border-top:1px solid var(--border); border-radius:0 0 var(--r-input) var(--r-input);
+  box-shadow:0 14px 30px rgba(0,0,0,.2);
+}
+.input-box.has-suggestions { border-bottom-left-radius:0; border-bottom-right-radius:0; }
+.prompt-suggestion {
+  display:flex; align-items:center; gap:12px; width:100%; min-height:42px; padding:8px 10px;
+  border:0; border-radius:10px; background:transparent; color:var(--text-1);
+  text-align:left; font-size:14px; cursor:pointer;
+}
+.prompt-suggestion > i:first-child { width:16px; flex-shrink:0; color:var(--text-3); font-size:13px; }
+.prompt-suggestion span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+.prompt-suggestion:hover,.prompt-suggestion.selected { background:var(--bg-hover); }
+.suggestion-open { color:var(--accent-cyan); font-size:12px; }
+.prompt-suggestion:focus-visible { outline:2px solid var(--brand-text); outline-offset:-2px; }
+.input-area:not(.centered) .prompt-suggestions {
+  top:auto; bottom:calc(100% + 8px); border:1px solid var(--border-md); border-radius:var(--r-input);
 }
 .tl-left,.tl-right { display:flex; align-items:center; gap:5px; }
 

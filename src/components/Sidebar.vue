@@ -1,5 +1,5 @@
 <template>
-  <aside class="sidebar" :class="{ 'mob-open': mobileOpen }" role="dialog" aria-modal="true" aria-label="Chats sidebar">
+  <aside class="sidebar" :class="{ 'mob-open': mobileOpen, collapsed }" role="dialog" aria-modal="true" aria-label="Chats sidebar">
     <!-- ── Header: brand + actions ── -->
     <div class="sb-header">
       <img src="/logo.png" alt="KinyaBot" class="sb-logo" />
@@ -8,8 +8,10 @@
         <button class="icon-btn" @click="toggleSearch" title="Search chats (Ctrl+/)" aria-label="Search chats">
           <i class="fas fa-magnifying-glass"></i>
         </button>
-        <button class="icon-btn mob-only" @click="$emit('close-mobile')" title="Close sidebar" aria-label="Close sidebar">
-          <i class="fas fa-table-columns"></i>
+        <button class="icon-btn sidebar-toggle" @click="handleSidebarControl"
+          :title="mobileOpen ? 'Close sidebar' : collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+          :aria-label="mobileOpen ? 'Close sidebar' : collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+          <i :class="mobileOpen ? 'fas fa-xmark' : collapsed ? 'fas fa-angles-right' : 'fas fa-angles-left'"></i>
         </button>
       </div>
     </div>
@@ -41,23 +43,23 @@
     <div v-else class="sb-scroll">
       <!-- ── Primary navigation ── -->
       <nav class="nav" aria-label="Primary">
-        <button class="nav-item" @click="newChat">
+        <button class="nav-item" title="New chat" aria-label="New chat" @click="newChat">
           <span class="nav-ico new"><i class="fas fa-plus"></i></span>
           <span class="nav-label">New chat</span>
         </button>
-        <button class="nav-item" @click="openCanvas">
+        <button class="nav-item" title="Create Image" aria-label="Create Image" @click="openCanvas">
           <span class="nav-ico"><i class="fas fa-image"></i></span>
           <span class="nav-label">Create Image</span>
         </button>
-        <button class="nav-item" @click="openCanvas">
+        <button class="nav-item" title="Canvas" aria-label="Canvas" @click="openCanvas">
           <span class="nav-ico"><i class="fas fa-pen-to-square"></i></span>
           <span class="nav-label">Canvas</span>
         </button>
-        <button class="nav-item" @click="openGuided">
+        <button class="nav-item" title="Guided Learning" aria-label="Guided Learning" @click="openGuided">
           <span class="nav-ico"><i class="fas fa-graduation-cap"></i></span>
           <span class="nav-label">Guided Learning</span>
         </button>
-        <button class="nav-item" @click="showSettings=true">
+        <button class="nav-item" title="Customize" aria-label="Customize" @click="showSettings=true">
           <span class="nav-ico"><i class="fas fa-sliders"></i></span>
           <span class="nav-label">Customize</span>
         </button>
@@ -276,8 +278,8 @@ import HelpModal from './HelpModal.vue'
 import InstallHint from './InstallHint.vue'
 import { setThemeMode, themeMode } from '../theme'
 
-const props = defineProps({ mobileOpen: Boolean, guest: Boolean })
-const emit = defineEmits(['close-mobile','new-chat','load-chat','authrequired'])
+const props = defineProps({ mobileOpen: Boolean, collapsed: Boolean, guest: Boolean })
+const emit = defineEmits(['close-mobile','toggle-collapse','new-chat','load-chat','authrequired'])
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -333,6 +335,10 @@ const visibleRecent = computed(() =>
   showAllChats.value ? chatStore.recentChats : chatStore.recentChats.slice(0, RECENT_LIMIT))
 
 function newChat() { emit('close-mobile'); emit('new-chat') }
+function handleSidebarControl() {
+  if (props.mobileOpen) emit('close-mobile')
+  else emit('toggle-collapse')
+}
 
 /* ── Account menu ── */
 const menuOpen = ref(false)
@@ -448,7 +454,7 @@ onBeforeUnmount(() => {
   background: var(--surface-sidebar);
   border-right: 1px solid var(--border-subtle);
   display: flex; flex-direction: column; overflow: hidden;
-  flex-shrink: 0; transition: transform var(--t-base) var(--ease);
+  flex-shrink: 0; transition: width var(--t-base) var(--ease), min-width var(--t-base) var(--ease), transform var(--t-base) var(--ease);
   color: var(--text-2);
 }
 @media (max-width: 900px) {
@@ -473,6 +479,29 @@ onBeforeUnmount(() => {
 .sb-actions { display:flex; align-items:center; gap:2px; }
 .icon-btn { width:32px; height:32px; border-radius:var(--r-sm); background:none; border:none; color:var(--icon); font-size:14px; display:grid; place-items:center; cursor:pointer; transition:background var(--t-fast), color var(--t-fast); }
 .icon-btn:hover { background:var(--bg-hover); color:var(--icon-hover); }
+.icon-btn:focus-visible { outline:2px solid var(--brand-text); outline-offset:2px; }
+
+@media (min-width: 901px) {
+  .sidebar.collapsed { width:68px; min-width:68px; overflow:visible; }
+  .sidebar.collapsed .sb-header { flex-direction:column; gap:8px; padding:12px 6px 8px; }
+  .sidebar.collapsed .sb-brand { display:none; }
+  .sidebar.collapsed .sb-actions { flex-direction:column; gap:4px; }
+  .sidebar.collapsed .sb-search,
+  .sidebar.collapsed .group,
+  .sidebar.collapsed .nav-label,
+  .sidebar.collapsed .usage,
+  .sidebar.collapsed .upgrade-row,
+  .sidebar.collapsed .account-id,
+  .sidebar.collapsed .account-chev { display:none; }
+  .sidebar.collapsed .sb-scroll { overflow:visible; padding:4px 6px 12px; }
+  .sidebar.collapsed .nav { align-items:center; }
+  .sidebar.collapsed .nav-item { justify-content:center; width:48px; padding:0; }
+  .sidebar.collapsed .nav-ico { margin:0; }
+  .sidebar.collapsed .nav-ico.new { margin:0; }
+  .sidebar.collapsed .sb-footer { padding:8px 6px; }
+  .sidebar.collapsed .account-btn { justify-content:center; padding:7px 0; }
+  .sidebar.collapsed .menu { left:calc(100% + 8px); right:auto; bottom:0; width:240px; transform-origin:bottom left; }
+}
 
 /* Search */
 .sb-search { padding:4px 12px 6px; flex-shrink:0; }
