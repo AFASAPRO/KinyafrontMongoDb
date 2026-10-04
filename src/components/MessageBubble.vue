@@ -177,42 +177,11 @@
 
 <script setup>
 import { ref, computed, onBeforeUnmount } from 'vue'
-import { marked } from 'marked'
 import { useAuthStore } from '../stores/auth'
 import api from '../api'
 import MessageAttachment from './MessageAttachment.vue'
 import { register as registerAudio, unregister as unregisterAudio } from '../utils/audio'
-import hljs from 'highlight.js/lib/core'
-// Register only the languages KinyaBot users actually get back from the AI.
-// (importing the full highlight.js bundle adds ~700 kB to the bundle)
-import javascript from 'highlight.js/lib/languages/javascript'
-import typescript from 'highlight.js/lib/languages/typescript'
-import python from 'highlight.js/lib/languages/python'
-import xml from 'highlight.js/lib/languages/xml'
-import css from 'highlight.js/lib/languages/css'
-import java from 'highlight.js/lib/languages/java'
-import cpp from 'highlight.js/lib/languages/cpp'
-import c from 'highlight.js/lib/languages/c'
-import csharp from 'highlight.js/lib/languages/csharp'
-import bash from 'highlight.js/lib/languages/bash'
-import json from 'highlight.js/lib/languages/json'
-import sql from 'highlight.js/lib/languages/sql'
-import ruby from 'highlight.js/lib/languages/ruby'
-import php from 'highlight.js/lib/languages/php'
-import go from 'highlight.js/lib/languages/go'
-import rust from 'highlight.js/lib/languages/rust'
-import kotlin from 'highlight.js/lib/languages/kotlin'
-import swift from 'highlight.js/lib/languages/swift'
-import yaml from 'highlight.js/lib/languages/yaml'
-import markdown from 'highlight.js/lib/languages/markdown'
-import plaintext from 'highlight.js/lib/languages/plaintext'
-
-const LANGS = { javascript, typescript, python, xml, html: xml, css, java, cpp, c, csharp, bash, sh: bash, json, sql, ruby, php, go, rust, kotlin, swift, yaml, markdown, plaintext }
-Object.entries(LANGS).forEach(([name, def]) => hljs.registerLanguage(name, def))
-hljs.registerAliases(['js'], { languageName: 'javascript' })
-hljs.registerAliases(['ts'], { languageName: 'typescript' })
-hljs.registerAliases(['py'], { languageName: 'python' })
-hljs.registerAliases(['shell', 'zsh'], { languageName: 'bash' })
+import { renderMarkdown } from '../utils/markdown'
 
 const props = defineProps({
   message: Object,
@@ -229,30 +198,6 @@ const copied = ref(false)
 const confirmDelete = ref(false)
 const feedbackMsg = ref('')
 const lightboxImg = ref(null)
-
-// Marked setup
-const renderer = new marked.Renderer()
-renderer.code = (code, lang) => {
-  const language = hljs.getLanguage(lang) ? lang : 'plaintext'
-  const highlighted = hljs.highlight(String(code), { language }).value
-  const safeLang = lang || 'text'
-  const ext = { javascript:'js', typescript:'ts', python:'py', html:'html', css:'css', java:'java', cpp:'cpp', c:'c', bash:'sh', json:'json', sql:'sql', ruby:'rb', php:'php', go:'go', rust:'rs', kotlin:'kt', swift:'swift' }[safeLang] || 'txt'
-  return `<div class="code-block" data-lang="${safeLang}" data-ext="${ext}">
-    <div class="code-header">
-      <span class="code-lang">${safeLang}</span>
-      <div class="code-actions">
-        <button class="copy-code-btn" onclick="(function(btn){const code=btn.closest('.code-block').querySelector('code');navigator.clipboard.writeText(code.innerText);btn.innerHTML='<i class=\\'fas fa-check\\'></i> Copied';setTimeout(()=>{btn.innerHTML='<i class=\\'fas fa-copy\\'></i> Copy'},1500)})(this)">
-          <i class='fas fa-copy'></i> Copy
-        </button>
-        <button class="download-code-btn" onclick="(function(btn){const block=btn.closest('.code-block');const code=block.querySelector('code').innerText;const ext=block.dataset.ext||'txt';const lang=block.dataset.lang||'code';const blob=new Blob([code],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='kinyabot-code-'+Date.now()+'.'+ext;a.click()})(this)">
-          <i class='fas fa-download'></i> Download
-        </button>
-      </div>
-    </div>
-    <pre class="hljs"><code class="language-${language}">${highlighted}</code></pre>
-  </div>`
-}
-marked.use({ renderer, breaks: true, gfm: true })
 
 // Emoji reaction system - adds contextual emoji to AI responses
 function addEmojiReactions(text) {
@@ -328,7 +273,7 @@ const rendered = computed(() => {
       .replace(/\n/g,'<br>')
   }
   const enhanced = addEmojiReactions(props.message.content)
-  return marked.parse(enhanced)
+  return renderMarkdown(enhanced)
 })
 
 const hasCode = computed(() => /```[\s\S]*?```/.test(props.message.content || '') || props.message.content?.includes('<code-block'))

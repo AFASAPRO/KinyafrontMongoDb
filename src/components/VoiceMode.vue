@@ -40,8 +40,22 @@
       <!-- RIGHT (desktop) / BOTTOM (mobile): conversation + voice command -->
       <section class="vm-chat-pane">
         <header class="vm-top">
-          <h2 class="vm-top-title">Conversation</h2>
+          <div class="vm-top-left">
+            <h2 class="vm-top-title">Conversation</h2>
+            <button class="vm-view-chat" @click="exit" title="This conversation is saved — open it in the full chat view">
+              <i class="fas fa-arrow-right-arrow-left"></i> View full chat
+            </button>
+          </div>
           <div class="vm-top-actions">
+            <button
+              v-if="Object.keys(memory).length"
+              class="vm-icon-btn vm-mem-btn"
+              @click="showMemory = !showMemory"
+              :aria-pressed="showMemory ? 'true' : 'false'"
+              title="What Kinya remembers about you"
+            >
+              <i class="fas fa-brain"></i>
+            </button>
             <button
               class="vm-icon-btn"
               :class="{ active: live }"
@@ -54,7 +68,7 @@
             <button
               class="vm-icon-btn"
               :class="{ active: autoSpeak }"
-              @click="autoSpeak = !autoSpeak"
+              @click="toggleAutoSpeak"
               :aria-pressed="autoSpeak ? 'true' : 'false'"
               :title="autoSpeak ? 'Spoken answers: on' : 'Spoken answers: off'"
             >
@@ -63,6 +77,25 @@
           </div>
         </header>
 
+        <!-- "What Kinya remembers about you" panel -->
+        <transition name="fade">
+          <div v-if="showMemory" class="vm-memory-panel">
+            <div class="vm-memory-head">
+              <span><i class="fas fa-brain"></i> Kinya knows</span>
+              <button class="vm-mem-clear" @click="forgetAll" title="Forget everything">Forget all</button>
+            </div>
+            <ul class="vm-memory-list">
+              <li v-for="(val, key) in memory" :key="key">
+                <span class="vm-mem-key">{{ friendlyMemoryKey(key) }}</span>
+                <span class="vm-mem-val">{{ val }}</span>
+                <button class="vm-mem-x" @click="forgetKey(key)" :aria-label="`Forget ${friendlyMemoryKey(key)}`">
+                  <i class="fas fa-xmark"></i>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </transition>
+
         <!-- Conversation feed -->
         <section class="vm-feed" ref="feedRef">
           <div v-for="(t, i) in feed" :key="i" class="vm-turn" :class="t.role">
@@ -70,7 +103,19 @@
               <span class="vm-turn-avatar" :class="t.role">{{ t.role === 'assistant' ? 'K' : (userInitial) }}</span>
               <span>{{ t.role === 'assistant' ? 'Kinya' : (userName || 'You') }}</span>
             </div>
-            <p class="vm-turn-text">{{ t.text }}</p>
+            <div
+              class="vm-turn-text"
+              :class="{ prose: t.role === 'assistant', streaming: t._streaming }"
+              v-html="t.role === 'assistant' ? renderMarkdown(t.text || (t._streaming ? '…' : '')) : renderPlainText(t.text)"
+            ></div>
+            <div v-if="t.role === 'assistant' && i === lastAssistantIndex && phase === 'idle'" class="vm-turn-actions">
+              <button class="vm-turn-act" @click="replay(t.text)" title="Read again">
+                <i class="fas fa-rotate"></i> Read again
+              </button>
+              <button class="vm-turn-act" @click="regenerateLast" :class="{ spin: regenBusy }" title="Regenerate response">
+                <i class="fas fa-arrows-rotate"></i> Regenerate
+              </button>
+            </div>
           </div>
           <div v-if="interim" class="vm-turn user interim">
             <div class="vm-turn-head"><span class="vm-turn-avatar user">{{ userInitial }}</span><span>{{ userName || 'You' }}</span></div>
@@ -108,7 +153,7 @@
             v-model="typed"
             class="vm-typed"
             type="text"
-            placeholder="Type to Kinya…"
+            placeholder="Type to Kinya… or say “stop”, “repeat that”, “go back to chat”"
             :disabled="phase === 'thinking'"
             @keydown.enter="sendTyped"
           />
@@ -117,18 +162,37 @@
           </button>
         </footer>
       </section>
+
+      <!-- Pre-permission mic explainer -->
+      <teleport to="body">
+        <div v-if="showMicExplainer" class="vm-mic-overlay" @click.self="showMicExplainer=false">
+          <div class="vm-mic-modal">
+            <div class="vm-mic-icon"><i class="fas fa-microphone"></i></div>
+            <h3>Let Kinya hear you</h3>
+            <p>Kinya uses your microphone only while you're talking to her — to transcribe your voice and reply out loud. Nothing is recorded or shared beyond this conversation.</p>
+            <div class="vm-mic-actions">
+              <button class="vm-mic-skip" @click="showMicExplainer=false">Not now</button>
+              <button class="vm-mic-allow" @click="confirmMicExplainer">
+                <i class="fas fa-microphone"></i> Allow microphone
+              </button>
+            </div>
+          </div>
+        </div>
+      </teleport>
     </div>
   </teleport>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useChatStore } from '../stores/chat'
 import { useAuthStore } from '../stores/auth'
 import api from '../api'
 import RiveStage from './RiveStage.vue'
 import { RiveCharacterController } from '../character/riveController.js'
 import { matchRequestedMove, matchReactionMove, pickAmbientMove } from '../character/moves.js'
+import { matchCommand } from '../character/commands.js'
+import { renderMarkdown, renderPlainText } from '../utils/markdown.js'
 
 const emit = defineEmits(['close'])
 const chatStore = useChatStore()
@@ -138,11 +202,46 @@ const userInitial = computed(() => (userName.value ? userName.value.trim()[0].to
 
 const controller = new RiveCharacterController()
 
-/* ── Personalized greeting ─────────────────────────────────────────
+/* ── What Kinya remembers about you ──────────────────────────────
+   Backed by the existing userMemory GET/DELETE endpoints. Surfaced as a
+   small chip + panel so personalization feels earned/visible, and reused
+   below to make the greeting proactively continue past conversations
+   instead of only saying a generic "hi". */
+const memory = ref({})
+const showMemory = ref(false)
+const MEMORY_LABELS = {
+  name: 'Name', profession: 'Profession',
+}
+function friendlyMemoryKey(key) {
+  if (MEMORY_LABELS[key]) return MEMORY_LABELS[key]
+  if (key.startsWith('preference_')) return 'Prefers'
+  return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+async function loadMemory() {
+  try {
+    const { data } = await api.get('/memory')
+    memory.value = data || {}
+  } catch { /* memory is a nice-to-have, never block voice mode on it */ }
+}
+async function forgetKey(key) {
+  try { await api.delete(`/memory/${encodeURIComponent(key)}`) } catch {}
+  const next = { ...memory.value }
+  delete next[key]
+  memory.value = next
+}
+async function forgetAll() {
+  try { await api.delete('/memory') } catch {}
+  memory.value = {}
+  showMemory.value = false
+}
+
+/* ── Personalized + proactive greeting ─────────────────────────────
    Kinya already knows the user's profession/interests from onboarding
-   (authStore.user.profession / .use_cases) — greet like a friend who
-   remembers, instead of a generic "hi". Falls back gracefully for users
-   who skipped onboarding or picked "Other". */
+   (authStore.user.profession / .use_cases), and now also whatever she's
+   picked up in userMemory (e.g. "preference_*" entries with timestamps).
+   Prefer a proactive continuity line ("last time you mentioned X — still
+   on that?") over the static greeting whenever memory has something
+   recent to reference. */
 const PROFESSION_GREETINGS = {
   developer: (n) => `Hey ${n}! Ready to code? Tell me what you're building, or paste a bug and I'll dig in.`,
   designer: (n) => `Hey ${n}! Got something to design today? I can riff on ideas or give feedback.`,
@@ -162,8 +261,19 @@ const USE_CASE_LABELS = {
   image: 'generating images',
   kinyarwanda: 'chatting en français',
 }
+function mostRecentPreference() {
+  const entries = Object.entries(memory.value).filter(([k]) => k.startsWith('preference_'))
+  if (!entries.length) return null
+  // preference_<timestamp> keys sort naturally by recency
+  entries.sort((a, b) => (a[0] < b[0] ? 1 : -1))
+  return entries[0][1]
+}
 function buildGreeting() {
   const name = userName.value
+  const recent = mostRecentPreference()
+  if (name && recent) {
+    return `Hey ${name}! Last time you mentioned ${recent} — still on that, or starting something new today?`
+  }
   const profession = authStore.user?.profession
   if (name && profession && PROFESSION_GREETINGS[profession]) {
     return PROFESSION_GREETINGS[profession](name)
@@ -178,10 +288,17 @@ function buildGreeting() {
 }
 
 /* ── Live caption over Kinya while she speaks (karaoke-style) ────── */
+function stripMdForCaption(t) {
+  return (t || '')
+    .replace(/```[\s\S]*?```/g, ' (code) ')
+    .replace(/[*_`#>~-]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
 const currentCaption = computed(() => {
   if (phase.value !== 'speaking') return ''
   const last = [...feed.value].reverse().find((f) => f.role === 'assistant')
-  return last?.text || ''
+  return stripMdForCaption(last?.text || '')
 })
 
 /* ── Quick-start suggestions — reuses what onboarding already learned
@@ -231,13 +348,19 @@ const typed = ref('')
 const feed = ref([])
 const error = ref('')
 const busyTts = ref(false)
+const regenBusy = ref(false)
 const autoSpeak = ref(true)
 const live = ref(false)
 const audioLevel = ref(0)
 const feedRef = ref(null)
 const waveRef = ref(null)
+const rate = ref(Number(localStorage.getItem('kb_vm_rate')) || 1)
 
 const canTalk = computed(() => !['transcribing', 'thinking'].includes(phase.value))
+const lastAssistantIndex = computed(() => {
+  for (let i = feed.value.length - 1; i >= 0; i--) if (feed.value[i].role === 'assistant') return i
+  return -1
+})
 
 const statusText = computed(() => ({
   idle: 'Ready',
@@ -318,6 +441,61 @@ function stopSpeakMeter() {
   audioLevel.value = 0
 }
 
+/* ── Barge-in: start talking over Kinya and she stops ───────────────
+   While she's speaking, we quietly watch the mic (only once the person
+   has already granted permission once this session — we never pop the
+   browser's mic prompt mid-sentence, that would be jarring). Sustained
+   loud input stops her audio and drops straight into listening, so the
+   user never has to manually tap the orb to interrupt her. */
+let micPermissionGranted = false
+let bargeStream = null
+let bargeCtx = null
+let bargeAnalyser = null
+let bargeRaf = 0
+let bargeLoudFrames = 0
+const BARGE_THRESHOLD = 0.16
+const BARGE_FRAMES_NEEDED = 4
+
+async function startBargeInWatch() {
+  if (!micPermissionGranted || bargeStream) return
+  try {
+    bargeStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+  } catch { bargeStream = null; return }
+  bargeCtx = new (window.AudioContext || window.webkitAudioContext)()
+  const src = bargeCtx.createMediaStreamSource(bargeStream)
+  bargeAnalyser = bargeCtx.createAnalyser()
+  bargeAnalyser.fftSize = 256
+  src.connect(bargeAnalyser)
+  const data = new Uint8Array(bargeAnalyser.fftSize)
+  bargeLoudFrames = 0
+  const tick = () => {
+    if (!bargeAnalyser) return
+    bargeAnalyser.getByteTimeDomainData(data)
+    let sum = 0
+    for (let i = 0; i < data.length; i++) { const v = (data[i] - 128) / 128; sum += v * v }
+    const level = Math.sqrt(sum / data.length)
+    if (level > BARGE_THRESHOLD) bargeLoudFrames++
+    else bargeLoudFrames = 0
+    if (bargeLoudFrames >= BARGE_FRAMES_NEEDED) {
+      stopBargeInWatch()
+      stopSpeaking()
+      ttsQueue.length = 0
+      startRec()
+      return
+    }
+    bargeRaf = requestAnimationFrame(tick)
+  }
+  bargeRaf = requestAnimationFrame(tick)
+}
+function stopBargeInWatch() {
+  cancelAnimationFrame(bargeRaf); bargeRaf = 0
+  bargeAnalyser = null
+  try { bargeCtx?.close() } catch {}
+  bargeCtx = null
+  try { bargeStream?.getTracks?.().forEach(t => t.stop()) } catch {}
+  bargeStream = null
+}
+
 /* ── Waveform visualizer (canvas, flat solid bars — no gradients) ─ */
 const ACCENT_RGB = '245,165,36'
 let waveRaf = 0
@@ -381,8 +559,28 @@ function pickMime() {
   return candidates.find(c => window.MediaRecorder?.isTypeSupported?.(c)) || ''
 }
 
-async function startRec() {
+const MIC_EXPLAINER_KEY = 'kb_vm_mic_explained'
+const showMicExplainer = ref(false)
+let pendingAfterExplainer = null
+function confirmMicExplainer() {
+  showMicExplainer.value = false
+  try { localStorage.setItem(MIC_EXPLAINER_KEY, '1') } catch {}
+  const fn = pendingAfterExplainer
+  pendingAfterExplainer = null
+  if (fn) fn()
+}
+
+function startRec() {
   if (!canTalk.value) return
+  if (!localStorage.getItem(MIC_EXPLAINER_KEY) && !micPermissionGranted) {
+    pendingAfterExplainer = () => startRecReal()
+    showMicExplainer.value = true
+    return
+  }
+  startRecReal()
+}
+
+async function startRecReal() {
   error.value = ''
   interim.value = ''
   if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
@@ -392,6 +590,7 @@ async function startRec() {
   stopSpeaking()
   try {
     recStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    micPermissionGranted = true
   } catch (err) {
     error.value = err?.name === 'NotAllowedError'
       ? 'Microphone access was denied. Allow it in your browser settings and try again.'
@@ -458,6 +657,76 @@ function cleanupRec() {
   stopMicMeter()
 }
 
+/* ── Functional voice commands (stop / repeat / slower / exit / …) ── */
+async function handleCommand(cmd) {
+  switch (cmd.type) {
+    case 'stop':
+      stopSpeaking(); goIdle()
+      feed.value.push({ role: 'assistant', text: 'Stopped.' })
+      scrollFeed()
+      break
+    case 'repeat': {
+      const last = [...feed.value].reverse().find(f => f.role === 'assistant')
+      if (last?.text) { goIdle(); await speak(last.text) }
+      else { goIdle(); error.value = "There's nothing to repeat yet." }
+      break
+    }
+    case 'slower':
+      rate.value = Math.max(0.6, rate.value - 0.2)
+      localStorage.setItem('kb_vm_rate', String(rate.value))
+      if (audioEl) audioEl.playbackRate = rate.value
+      feed.value.push({ role: 'assistant', text: `Reading slower now (${Math.round(rate.value * 100)}% speed).` })
+      goIdle(); scrollFeed()
+      break
+    case 'faster':
+      rate.value = Math.min(1.6, rate.value + 0.2)
+      localStorage.setItem('kb_vm_rate', String(rate.value))
+      if (audioEl) audioEl.playbackRate = rate.value
+      feed.value.push({ role: 'assistant', text: `Reading faster now (${Math.round(rate.value * 100)}% speed).` })
+      goIdle(); scrollFeed()
+      break
+    case 'mute':
+      autoSpeak.value = false
+      stopSpeaking(); goIdle()
+      feed.value.push({ role: 'assistant', text: "Okay, I'll reply in text only." })
+      scrollFeed()
+      break
+    case 'unmute':
+      autoSpeak.value = true
+      feed.value.push({ role: 'assistant', text: "I'll speak my replies again." })
+      goIdle(); scrollFeed()
+      break
+    case 'exit':
+      exit()
+      break
+    case 'forget_me':
+      await forgetAll()
+      feed.value.push({ role: 'assistant', text: "Done — I've cleared everything I remembered about you." })
+      goIdle(); scrollFeed()
+      break
+    case 'what_do_you_know': {
+      const entries = Object.entries(memory.value)
+      const text = entries.length
+        ? `Here's what I know: ${entries.map(([k, v]) => `${friendlyMemoryKey(k).toLowerCase()} — ${v}`).join('; ')}.`
+        : "I don't have anything saved about you yet."
+      feed.value.push({ role: 'assistant', text })
+      goIdle(); scrollFeed()
+      if (autoSpeak.value) await speak(text)
+      break
+    }
+    case 'language': {
+      // TTS itself runs on a single server-configured voice, so we can't
+      // change the spoken accent — but we CAN ask the AI to reply in the
+      // requested language, which is the honest, real version of this.
+      const note = `(Switching replies to ${cmd.language}. My speaking voice stays the same — only one voice is configured — but I'll write and read my replies in ${cmd.language} from here.)`
+      feed.value.push({ role: 'assistant', text: note })
+      scrollFeed()
+      await submitToAI(`From now on, please reply to me in ${cmd.language}.`, { silent: true })
+      break
+    }
+  }
+}
+
 /* ── Send + spoken reply ───────────────────────────────────────── */
 async function sendTyped() {
   const t = typed.value.trim()
@@ -471,53 +740,196 @@ async function handleUserText(text) {
   feed.value.push({ role: 'user', text })
   scrollFeed()
 
+  // Functional commands ("stop", "repeat that", "go back to chat"...) are
+  // handled entirely on the client and never reach the AI.
+  const cmd = matchCommand(text)
+  if (cmd) { await handleCommand(cmd); return }
+
+  await submitToAI(text)
+}
+
+/**
+ * Sends `text` to the AI and streams the reply: as soon as the first
+ * complete sentence has arrived we start TTS on it while the rest of the
+ * reply is still generating, instead of waiting for the whole answer —
+ * this is what makes voice mode feel responsive instead of laggy.
+ * `opts.silent` skips pushing the user's own text into the feed again
+ * (used for commands that inject an instruction behind the scenes, e.g.
+ * the language-switch command).
+ */
+async function submitToAI(text, opts = {}) {
   const requested = matchRequestedMove(text)
   if (requested) controller.perform(requested)
 
   phase.value = 'thinking'
   controller.setMode('think')
+
+  let feedIdx = -1
+  let spokenChars = 0
+  let sentenceQueue = []
+  let streamDone = false
+  let stopWatching = null
+
+  function flushNewSentences(fullText, isFinal) {
+    const unseen = fullText.slice(spokenChars)
+    if (!unseen) return
+    // Sentence-boundary split: keep decimals/abbreviations ("3.5", "Mr.")
+    // reasonably intact by requiring the end of a sentence to be followed
+    // by whitespace + a capital letter/quote, or to be the very end.
+    const re = /[^.!?]+(?:[.!?]+(?=\s+[A-Z"'“(]|\s*$)|\s*$)/g
+    let m, lastEnd = 0
+    while ((m = re.exec(unseen))) {
+      const chunk = m[0].trim()
+      if (chunk) {
+        if (!isFinal && re.lastIndex >= unseen.length) break // wait for more text, might not be a real sentence end
+        sentenceQueue.push(chunk)
+      }
+      lastEnd = re.lastIndex
+    }
+    if (lastEnd > 0) spokenChars += lastEnd
+    if (isFinal && spokenChars < fullText.length) {
+      const rest = fullText.slice(spokenChars).trim()
+      if (rest) sentenceQueue.push(rest)
+      spokenChars = fullText.length
+    }
+    pumpQueue()
+  }
+
+  let pumping = false
+  async function pumpQueue() {
+    if (pumping || !autoSpeak.value) return
+    const next = sentenceQueue.shift()
+    if (!next) return
+    pumping = true
+    await speak(next, null, { chain: true })
+    pumping = false
+    if (sentenceQueue.length) pumpQueue()
+    else if (streamDone && phase.value === 'speaking') finishSpeaking()
+  }
+
+  stopWatching = watch(
+    () => chatStore.messages.map(m => ({ id: m.id, content: m.content, streaming: m._streaming, role: m.role })),
+    (list) => {
+      const liveMsg = [...list].reverse().find(m => m.role === 'assistant' && m.content)
+      if (!liveMsg) return
+      if (feedIdx === -1) {
+        feed.value.push({ role: 'assistant', text: liveMsg.content, _streaming: true })
+        feedIdx = feed.value.length - 1
+        scrollFeed()
+      } else {
+        feed.value[feedIdx].text = liveMsg.content
+      }
+      flushNewSentences(liveMsg.content, !liveMsg.streaming)
+      if (!liveMsg.streaming) streamDone = true
+      scrollFeed()
+    },
+    { deep: true }
+  )
+
   try {
     if (!chatStore.activeChat) await chatStore.createChat()
     await chatStore.sendMessage(text)
+    streamDone = true
+    const lastAi = [...chatStore.messages].reverse().find(m => m.role === 'assistant' && !m._error && m.content)
+    const reply = lastAi ? lastAi.content : ''
+    if (feedIdx !== -1) {
+      feed.value[feedIdx].text = reply
+      feed.value[feedIdx]._streaming = false
+    } else if (reply) {
+      feed.value.push({ role: 'assistant', text: reply })
+      feedIdx = feed.value.length - 1
+    }
+    if (!reply) { goIdle(); return }
+    flushNewSentences(reply, true)
+    const move = requested || matchReactionMove(reply) || pickAmbientMove()
+    if (move) later(() => controller.perform(move), 300)
+    if (!autoSpeak.value) goIdle()
+    // if autoSpeak is on, the sentence queue (already pumping/pumped) owns
+    // the phase transition back to idle via finishSpeaking().
+    else if (!sentenceQueue.length && phase.value !== 'speaking') goIdle()
+  } catch (err) {
+    goIdle()
+    error.value = err?.message || 'Kinya could not answer right now. Please try again.'
+  } finally {
+    stopWatching?.()
+  }
+}
+
+async function regenerateLast() {
+  if (regenBusy.value) return
+  regenBusy.value = true
+  error.value = ''
+  // Drop the last assistant turn from the visible feed — a fresh one
+  // streams in to replace it via the same watcher-driven path.
+  const idx = lastAssistantIndex.value
+  if (idx !== -1) feed.value.splice(idx, 1)
+  phase.value = 'thinking'
+  controller.setMode('think')
+  try {
+    await chatStore.regenerate()
     const lastAi = [...chatStore.messages].reverse().find(m => m.role === 'assistant' && !m._error && m.content)
     const reply = lastAi ? lastAi.content : ''
     if (!reply) { goIdle(); return }
     feed.value.push({ role: 'assistant', text: reply })
     scrollFeed()
-    // Every move Kinya makes is chosen automatically — never from a menu.
-    const move = requested || matchReactionMove(reply) || pickAmbientMove()
+    const move = matchReactionMove(reply) || pickAmbientMove()
     if (autoSpeak.value) await speak(reply, move)
     else { if (move) controller.perform(move); goIdle() }
   } catch (err) {
     goIdle()
-    error.value = err?.message || 'Kinya could not answer right now. Please try again.'
+    error.value = err?.message || 'Could not regenerate that reply. Please try again.'
+  } finally {
+    regenBusy.value = false
   }
 }
 
-async function speak(text, move) {
+function replay(text) {
+  if (!text) return
+  goIdle()
+  speak(text)
+}
+
+/* ── TTS: speak one line of text, cached so repeats are instant ──── */
+const ttsQueue = [] // kept for barge-in to clear in-flight chained speech
+const ttsCache = new Map() // text -> blob URL, lives for the app session
+
+async function speak(text, move, opts = {}) {
   if (!text) return
   error.value = ''
   busyTts.value = true
   try {
-    const res = await api.post('/tts', { text }, { responseType: 'blob', timeout: 90000 })
-    stopAudioEl()
-    const ctx = ensureAudioCtx()
-    audioEl = new Audio(URL.createObjectURL(res.data))
-    audioEl.crossOrigin = 'anonymous'
-    const src = ctx.createMediaElementSource(audioEl)
-    speakAnalyser = ctx.createAnalyser()
-    speakAnalyser.fftSize = 256
-    src.connect(speakAnalyser)
-    speakAnalyser.connect(ctx.destination)
+    let url = ttsCache.get(text)
+    if (!url) {
+      const res = await api.post('/tts', { text }, { responseType: 'blob', timeout: 90000 })
+      url = URL.createObjectURL(res.data)
+      ttsCache.set(text, url)
+    }
+    await new Promise((resolve, reject) => {
+      stopAudioEl()
+      const ctx = ensureAudioCtx()
+      audioEl = new Audio(url)
+      audioEl.crossOrigin = 'anonymous'
+      audioEl.playbackRate = rate.value
+      const src = ctx.createMediaElementSource(audioEl)
+      speakAnalyser = ctx.createAnalyser()
+      speakAnalyser.fftSize = 256
+      src.connect(speakAnalyser)
+      speakAnalyser.connect(ctx.destination)
 
-    controller.setMode('talk')
-    controller.setSpeaking(true)
-    phase.value = 'speaking'
-    if (move) later(() => controller.perform(move), 200)
-    startSpeakMeter()
+      controller.setMode('talk')
+      controller.setSpeaking(true)
+      phase.value = 'speaking'
+      if (move) later(() => controller.perform(move), 200)
+      startSpeakMeter()
+      startBargeInWatch()
 
-    audioEl.onended = () => { if (phase.value === 'speaking') finishSpeaking() }
-    await audioEl.play()
+      audioEl.onended = () => {
+        stopBargeInWatch()
+        if (!opts.chain) { if (phase.value === 'speaking') finishSpeaking() }
+        resolve()
+      }
+      audioEl.play().catch(reject)
+    })
   } catch (err) {
     finishSpeaking()
     let msg = null
@@ -539,6 +951,7 @@ function stopAudioEl() {
 }
 
 function stopSpeaking() {
+  stopBargeInWatch()
   stopSpeakMeter()
   stopAudioEl()
   controller.setSpeaking(false)
@@ -559,6 +972,11 @@ function goIdle() {
 function toggleLive() {
   live.value = !live.value
   if (live.value && phase.value === 'idle') startRec()
+}
+
+function toggleAutoSpeak() {
+  autoSpeak.value = !autoSpeak.value
+  if (!autoSpeak.value) stopSpeaking()
 }
 
 /* ── Poke: tapping Kinya directly triggers an automatic reaction ── */
@@ -595,8 +1013,9 @@ function onKey(e) {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('keydown', onKey)
+  await loadMemory()
   feed.value.push({ role: 'assistant', text: buildGreeting() })
   sizeWave()
   waveRo = new ResizeObserver(sizeWave)
@@ -611,7 +1030,11 @@ onBeforeUnmount(() => {
   try { mediaRecorder?.state !== 'inactive' && mediaRecorder?.stop() } catch {}
   cleanupRec()
   stopSpeaking()
+  stopBargeInWatch()
   try { audioCtx?.close() } catch {}
+  // Release cached TTS blob URLs.
+  ttsCache.forEach(url => { try { URL.revokeObjectURL(url) } catch {} })
+  ttsCache.clear()
 })
 </script>
 
@@ -770,8 +1193,42 @@ onBeforeUnmount(() => {
   padding: max(12px, env(safe-area-inset-top)) 2px 10px;
   flex-shrink: 0; gap: 8px;
 }
+.vm-top-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .vm-top-title { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--vm-text-faint); }
-.vm-top-actions { display: flex; gap: 8px; }
+.vm-view-chat {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11.5px; font-weight: 600; color: var(--vm-text-dim);
+  background: var(--vm-panel); border: 1px solid var(--vm-border); border-radius: 99px;
+  padding: 5px 11px; cursor: pointer; transition: background .15s, color .15s, border-color .15s; white-space: nowrap;
+}
+.vm-view-chat:hover { background: var(--vm-panel-2); color: var(--vm-accent); border-color: var(--vm-accent); }
+.vm-top-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.vm-mem-btn.active, .vm-mem-btn[aria-pressed="true"] { background: var(--vm-accent); border-color: var(--vm-accent); color: var(--vm-accent-ink); }
+
+/* ── Memory panel ──────────────────────────────────────────────── */
+.vm-memory-panel {
+  flex-shrink: 0; margin-bottom: 8px;
+  background: var(--vm-panel); border: 1px solid var(--vm-border); border-radius: 14px;
+  padding: 10px 12px;
+}
+.vm-memory-head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px; font-weight: 700; color: var(--vm-text-dim); margin-bottom: 8px;
+}
+.vm-memory-head i { color: var(--vm-accent); margin-right: 5px; }
+.vm-mem-clear {
+  background: none; border: none; color: var(--vm-text-faint); font-size: 11px; cursor: pointer;
+  text-decoration: underline;
+}
+.vm-mem-clear:hover { color: var(--vm-danger); }
+.vm-memory-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.vm-memory-list li { display: flex; align-items: baseline; gap: 7px; font-size: 13px; }
+.vm-mem-key { color: var(--vm-text-faint); font-weight: 600; flex-shrink: 0; }
+.vm-mem-val { color: var(--vm-text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vm-mem-x { background: none; border: none; color: var(--vm-text-faint); cursor: pointer; font-size: 11px; padding: 2px; flex-shrink: 0; }
+.vm-mem-x:hover { color: var(--vm-danger); }
+.fade-enter-active, .fade-leave-active { transition: opacity .15s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 
 /* ── Feed ──────────────────────────────────────────────────────── */
 .vm-feed {
@@ -804,8 +1261,24 @@ onBeforeUnmount(() => {
   background: var(--vm-panel); border: 1px solid var(--vm-border);
   white-space: pre-wrap; word-break: break-word; color: var(--vm-text);
 }
+.vm-turn-text.prose :deep(p) { margin: 0 0 8px; }
+.vm-turn-text.prose :deep(p:last-child) { margin-bottom: 0; }
+.vm-turn-text.prose :deep(ul), .vm-turn-text.prose :deep(ol) { margin: 6px 0; padding-left: 20px; }
+.vm-turn-text.prose :deep(code:not(.hljs code)) { background: var(--vm-panel-2); padding: 1px 5px; border-radius: 5px; font-size: 13px; }
+.vm-turn-text.streaming::after { content: ''; display: inline-block; width: 6px; height: 13px; margin-left: 3px; background: var(--vm-accent); animation: vmBlink 1s step-end infinite; vertical-align: middle; }
+@keyframes vmBlink { 50% { opacity: 0; } }
 .vm-turn.user .vm-turn-text { background: var(--vm-accent); border-color: var(--vm-accent); color: var(--vm-accent-ink); font-weight: 500; }
 .vm-turn.interim .vm-turn-text { opacity: .6; font-style: italic; }
+.vm-turn-actions { display: flex; gap: 8px; margin-top: 6px; }
+.vm-turn-act {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 600; color: var(--vm-text-faint);
+  background: none; border: 1px solid var(--vm-border); border-radius: 99px;
+  padding: 4px 10px; cursor: pointer; transition: color .15s, border-color .15s;
+}
+.vm-turn-act:hover { color: var(--vm-accent); border-color: var(--vm-accent); }
+.vm-turn-act.spin i { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── Error ─────────────────────────────────────────────────────── */
 .vm-error {
@@ -854,6 +1327,31 @@ onBeforeUnmount(() => {
 }
 .vm-send:disabled { opacity: .4; cursor: not-allowed; }
 .vm-send:not(:disabled):hover { background: var(--vm-accent); border-color: var(--vm-accent); color: var(--vm-accent-ink); }
+
+/* ── Pre-permission mic explainer ─────────────────────────────── */
+.vm-mic-overlay {
+  position: fixed; inset: 0; z-index: 1400;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.6); padding: 20px;
+}
+.vm-mic-modal {
+  background: var(--vm-panel, #16181f); border: 1px solid var(--vm-border, #292d38);
+  border-radius: 18px; padding: 26px; max-width: 360px; text-align: center;
+  color: var(--vm-text, #f4f5f7);
+}
+.vm-mic-icon {
+  width: 52px; height: 52px; border-radius: 50%; margin: 0 auto 14px;
+  display: flex; align-items: center; justify-content: center; font-size: 20px;
+  background: var(--vm-accent, #f5a524); color: var(--vm-accent-ink, #22150a);
+}
+.vm-mic-modal h3 { margin: 0 0 8px; font-size: 16px; }
+.vm-mic-modal p { margin: 0 0 18px; font-size: 13px; line-height: 1.5; color: var(--vm-text-dim, #9aa1b0); }
+.vm-mic-actions { display: flex; gap: 10px; }
+.vm-mic-skip, .vm-mic-allow {
+  flex: 1; padding: 11px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.vm-mic-skip { background: none; border: 1px solid var(--vm-border, #292d38); color: var(--vm-text-dim, #9aa1b0); }
+.vm-mic-allow { background: var(--vm-accent, #f5a524); border: 1px solid var(--vm-accent, #f5a524); color: var(--vm-accent-ink, #22150a); display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 
 @media (prefers-reduced-motion: reduce) {
   .vm-eq i, .vm-blob, .vm-particle { animation: none !important; }

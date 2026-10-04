@@ -10,7 +10,16 @@
         {{ chatStore.activeChat.title }}
       </div>
       <!-- Voice Mode (optional, authed users) -->
-      <button v-if="!guest" class="voice-pill" @click="showVoiceMode=true" title="Voice mode" aria-label="Enable voice mode">
+      <button
+        v-if="!guest"
+        class="voice-pill"
+        @click="showVoiceMode=true"
+        @mouseenter="preloadVoiceMode"
+        @focus="preloadVoiceMode"
+        @touchstart="preloadVoiceMode"
+        title="Voice mode"
+        aria-label="Enable voice mode"
+      >
         <i class="fas fa-microphone-lines"></i>
         <span class="vp-label">Voice</span>
       </button>
@@ -190,6 +199,20 @@ import InputBox from './InputBox.vue'
 // Lazy-loaded: Voice Mode pulls in three.js + the 3D character, so it
 // should only be downloaded when the person actually opens it.
 const VoiceMode = defineAsyncComponent(() => import('./VoiceMode.vue'))
+
+// Warm the voice mode chunk + Kinya's .riv character file as soon as the
+// person shows intent to open it (hover/focus/touch), so by the time they
+// actually tap the button both the component and the character asset are
+// already in cache and there's no loading spinner on open.
+let voiceModePreloaded = false
+function preloadVoiceMode() {
+  if (voiceModePreloaded) return
+  voiceModePreloaded = true
+  import('./VoiceMode.vue').catch(() => { voiceModePreloaded = false })
+  try {
+    fetch(`${import.meta.env.BASE_URL}rive/kinya-character.riv`, { cache: 'force-cache' }).catch(() => {})
+  } catch {}
+}
 
 const props = defineProps({
   guest: { type: Boolean, default: false },
