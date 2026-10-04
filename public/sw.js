@@ -22,19 +22,20 @@ const SHELL_CACHE = `kb-shell-${VERSION}`
 const ASSET_CACHE = `kb-assets-${VERSION}`
 const CDN_CACHE = `kb-cdn-${VERSION}`
 
+const BASE = '/chat/'
 const SHELL_ASSETS = [
-  '/',
-  '/site.webmanifest',
-  '/admin-manifest.webmanifest',
-  '/logo.png',
-  '/favicon.svg',
-  '/favicon.ico',
-  '/favicon-96x96.png',
-  '/apple-touch-icon.png',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/admin-icon-192.png',
-  '/admin-icon-512.png'
+  BASE,
+  `${BASE}site.webmanifest`,
+  `${BASE}admin-manifest.webmanifest`,
+  `${BASE}logo.png`,
+  `${BASE}favicon.svg`,
+  `${BASE}favicon.ico`,
+  `${BASE}favicon-96x96.png`,
+  `${BASE}apple-touch-icon.png`,
+  `${BASE}icon-192.png`,
+  `${BASE}icon-512.png`,
+  `${BASE}admin-icon-192.png`,
+  `${BASE}admin-icon-512.png`
 ]
 
 /* Endpoints that must NEVER be served from cache */
@@ -93,11 +94,11 @@ self.addEventListener('fetch', (event) => {
       fetch(req)
         .then((res) => {
           const copy = res.clone()
-          caches.open(SHELL_CACHE).then((c) => c.put('/', copy)).catch(() => {})
+          caches.open(SHELL_CACHE).then((c) => c.put(BASE, copy)).catch(() => {})
           return res
         })
         .catch(() =>
-          caches.match(req).then((hit) => hit || caches.match('/'))
+          caches.match(req).then((hit) => hit || caches.match(BASE))
         )
     )
     return

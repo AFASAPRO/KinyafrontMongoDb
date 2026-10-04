@@ -1,16 +1,17 @@
 <template>
   <div class="das">
     <header class="das-nav">
-      <button class="das-brand" type="button" @click="$router.push('/landing')">
+      <button class="das-brand" type="button" @click="goToLanding('')">
         <img src="/logo.png" alt="KinyaBot" />
         <span>Kinya<b>Bot</b></span>
       </button>
 
       <nav class="das-links">
-        <router-link :to="{ path: '/landing' }">Overview</router-link>
-        <router-link :to="{ path: '/landing', hash: '#pricing' }">Pricing</router-link>
-        <router-link :to="{ path: '/landing', hash: '#footer' }">Privacy and terms</router-link>
-        <router-link :to="{ path: '/landing', hash: '#faq' }">FAQ</router-link>
+        <!-- The marketing landing page is now the static site at `/` -->
+        <a href="/" >Overview</a>
+        <a href="/#plans">Pricing</a>
+        <a href="/#contact">Privacy and terms</a>
+        <a href="/#how-it-works">FAQ</a>
       </nav>
 
       <button class="das-theme" type="button" @click="toggleThemeMode"
@@ -33,6 +34,11 @@
 
 <script setup>
 import { isLightMode, toggleThemeMode } from '../../theme'
+
+// The landing page lives at the domain root, outside the /chat/ router base
+function goToLanding(hash = '') {
+  window.location.href = `/${hash}`
+}
 </script>
 
 <style scoped>

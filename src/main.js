@@ -21,9 +21,10 @@ app.mount('#app')
  * The swap must happen before the browser reads the manifest for an install
  * prompt, so it runs in the router's afterEach hook.
  */
+const BASE = import.meta.env.BASE_URL // '/chat/' in production, '/' in dev
 const MANIFESTS = {
-  admin: '/admin-manifest.webmanifest',
-  user: '/site.webmanifest'
+  admin: `${BASE}admin-manifest.webmanifest`,
+  user: `${BASE}site.webmanifest`
 }
 const manifestLink = document.querySelector('link[rel="manifest"]')
 const themeMeta = document.querySelector('meta[name="theme-color"]')
@@ -31,12 +32,13 @@ const appleTouch = document.querySelector('link[rel="apple-touch-icon"]')
 
 function applyManifestForPath(path) {
   if (!manifestLink) return
+  // to.path is relative to the router base, so '/admin' == URL '/chat/admin'
   const isAdmin = path === '/admin' || path.startsWith('/admin/')
   const target = isAdmin ? MANIFESTS.admin : MANIFESTS.user
   if (manifestLink.getAttribute('href') !== target) {
     manifestLink.setAttribute('href', target)
     if (themeMeta) themeMeta.setAttribute('content', isAdmin ? '#4f46e5' : '#131314')
-    if (appleTouch) appleTouch.setAttribute('href', isAdmin ? '/admin-icon-192.png' : '/apple-touch-icon.png')
+    if (appleTouch) appleTouch.setAttribute('href', isAdmin ? `${BASE}admin-icon-192.png` : `${BASE}apple-touch-icon.png`)
   }
 }
 applyManifestForPath(window.location.pathname)
@@ -52,7 +54,8 @@ router.afterEach((to) => {
  */
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((err) => {
+    // Registered under /chat/ — the SW scope covers the chat app only
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch((err) => {
       console.warn('[PWA] Service worker registration failed:', err)
     })
   })

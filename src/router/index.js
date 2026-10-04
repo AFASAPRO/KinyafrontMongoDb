@@ -1,30 +1,36 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { isMobileViewport, hasSeenIntro } from '../composables/useIsMobile'
 
 /**
- * CHAT-FIRST ROUTING
+ * LANDING + CHAT ROUTING
  * ─────────────────────────────────────────────────────────────────
- * `/` IS the KinyaBot chat interface (the app itself — no landing page).
- *   • Guests  : full chat UI in read/explore mode + Sign In / Sign Up in
- *               the header. Sending a message triggers the auth gate.
- *   • Members : restored session, conversation history, normal chat.
+ * The marketing landing page (static site, dist root — see
+ * landing-dist/) is served at `/`. This Vue SPA is mounted under
+ * `/chat/` (vite.config.js `base`) and owns everything below it:
  *
- * /login, /register … are guest-only and bounce authenticated users
- * straight back to the chat. The admin app (/admin) stays fully separate.
+ *   • /chat/          : the KinyaBot chat interface — AUTHENTICATED
+ *                       USERS ONLY. Guests are bounced back to the
+ *                       landing page at `/` (full-page navigation,
+ *                       because the landing lives outside this SPA's
+ *                       /chat/ router base).
+ *   • /chat/login, /chat/register … are guest-only and bounce
+ *     authenticated users straight back to the chat.
+ *   • The admin app (/chat/admin) stays fully separate.
+ *
+ * Signed-in visitors who open the domain root `/` are sent straight
+ * to /chat/ by a tiny redirect script embedded in the landing page
+ * (localStorage kb_token check), so members land in the app, while
+ * everyone else sees the marketing site.
  */
 const routes = [
   {
     path: '/',
     component: () => import('../views/ChatView.vue'),
-    meta: { allowGuest: true }
+    meta: { requiresAuth: true }
   },
-  { path: '/landing', component: () => import('../views/LandingView.vue'), meta: { allowGuest: true } },
-  // Legacy deep links & the PWA "New Chat" shortcut still land here
-  // (query — e.g. ?new=1 — is preserved through the redirect)
-  { path: '/chat', redirect: (to) => ({ path: '/', query: to.query }) },
-  // First-run mobile intro (image-1 style "Get Started" screen). Guest-only,
-  // shown once per device — see the beforeEach guard below.
+  // First-run mobile intro (image-1 style "Get Started" screen). Guest-only;
+  // reachable by direct link — first-time visitors now meet the marketing
+  // landing page at `/` instead.
   { path: '/welcome',         component: () => import('../views/GetStartedView.vue'),       meta: { guestOnly: true } },
   { path: '/login',           component: () => import('../views/LoginView.vue'),            meta: { guestOnly: true } },
   { path: '/register',        component: () => import('../views/RegisterView.vue'),         meta: { guestOnly: true } },
@@ -37,7 +43,19 @@ const routes = [
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
-const router = createRouter({ history: createWebHistory(), routes })
+const router = createRouter({
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes
+})
+
+/**
+ * Send the browser to the marketing landing page. The landing site is
+ * served from the domain root (`/`), OUTSIDE this SPA's `/chat/` base —
+ * so this must be a full-page navigation, never a router push.
+ */
+function gotoLanding() {
+  window.location.replace('/')
+}
 
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
@@ -55,20 +73,17 @@ router.beforeEach(async (to) => {
      decision NEVER runs against an undefined auth state.         */
   const authed = auth.status === 'authenticated'
 
-  // Protected routes: unauthenticated → login
-  if (to.meta.requiresAuth && !authed) return '/login'
+  // Protected routes (the chat UI itself, verify-email, onboarding):
+  // unauthenticated visitors are bounced to the public landing page.
+  if (to.meta.requiresAuth && !authed) {
+    gotoLanding()
+    return false
+  }
 
   // Guest-only routes (login/register/reset): members go straight to chat
   if (to.meta.guestOnly && authed) {
     if (auth.needsEmailVerification) return '/verify-email'
     return auth.needsOnboarding ? '/onboarding' : '/'
-  }
-
-  // First-time phone visitors land on the "Get Started" intro once, before
-  // ever seeing the chat UI. Desktop is unaffected; returning/logged-in
-  // visitors skip straight past it.
-  if (to.path === '/' && !authed && isMobileViewport() && !hasSeenIntro()) {
-    return '/welcome'
   }
 
   // Fresh registrations confirm their email, then finish onboarding —
@@ -103,7 +118,9 @@ router.onError((error, to) => {
   if (isChunkError) {
     if (!sessionStorage.getItem('kb_chunk_reload')) {
       sessionStorage.setItem('kb_chunk_reload', '1')
-      window.location.assign(to?.fullPath || '/')
+      // to.fullPath is relative to the router base (/chat/) — re-add it
+      const base = import.meta.env.BASE_URL.replace(/\/+$/, '')
+      window.location.assign(base + (to?.fullPath || '/'))
     }
     return
   }

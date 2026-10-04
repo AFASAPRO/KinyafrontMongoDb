@@ -2,14 +2,15 @@
   <div class="fp-page">
     <!-- Desktop-only top nav (hidden on mobile via CSS) -->
     <header class="fp-nav">
-      <button class="fp-nav-brand" type="button" @click="$router.push('/landing')">
+      <button class="fp-nav-brand" type="button" @click="goToLanding('')">
         <img src="/logo.png" alt="KinyaBot" /><span>Kinya<b>Bot</b></span>
       </button>
       <nav class="fp-nav-links">
-        <router-link :to="{ path: '/landing' }">Overview</router-link>
-        <router-link :to="{ path: '/landing', hash: '#pricing' }">Pricing</router-link>
-        <router-link :to="{ path: '/landing', hash: '#footer' }">Privacy and terms</router-link>
-        <router-link :to="{ path: '/landing', hash: '#faq' }">FAQ</router-link>
+        <!-- The marketing landing page is now the static site at `/` -->
+        <a href="/" >Overview</a>
+        <a href="/#plans">Pricing</a>
+        <a href="/#contact">Privacy and terms</a>
+        <a href="/#how-it-works">FAQ</a>
       </nav>
       <button class="fp-nav-theme" type="button" @click="toggleThemeMode"
         :aria-label="isLightMode ? 'Switch to dark mode' : 'Switch to light mode'">
@@ -228,6 +229,11 @@
 import { ref, computed, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { isLightMode, toggleThemeMode } from '../theme'
+
+// The landing page lives at the domain root, outside the /chat/ router base
+function goToLanding(hash = '') {
+  window.location.href = `/${hash}`
+}
 
 const auth = useAuthStore()
 

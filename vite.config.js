@@ -4,6 +4,9 @@ import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
   plugins: [vue()],
+  // The chat SPA is mounted under /chat/ — the domain root (/) serves the
+  // static marketing landing page (see landing-dist/ + scripts/merge-dist.mjs).
+  base: '/chat/',
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) }
   },
