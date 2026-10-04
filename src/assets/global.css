@@ -284,14 +284,6 @@ html.light-mode .typing-bubble { background: var(--surface-secondary); border-co
 .download-code-btn:hover { background: var(--bg-hover); color: var(--text-1); }
 .code-actions { display: flex; gap: 4px; }
 
-/* Sidebar light mode */
-html.light-mode .sidebar { background: var(--surface); border-right-color: var(--border); }
-html.light-mode .sb-footer { border-top-color: var(--border); }
-html.light-mode .model-card { background: var(--background); border-color: var(--border); }
-html.light-mode .tool-item:hover,
-html.light-mode .integration-item:hover,
-html.light-mode .footer-item:hover,
-html.light-mode .chat-row:hover { background: var(--surface-secondary); }
 
 /* Top bar light mode */
 html.light-mode .top-bar { background: var(--surface); border-bottom-color: var(--border); }
@@ -319,6 +311,7 @@ html.light-mode .main-col { background: var(--background); }
 
 /* Right panel light */
 html.light-mode .right-panel { background: var(--surface); border-left-color: var(--border); }
+html.light-mode .right-panel { border-color: var(--border); }
 html.light-mode .rp-header { border-bottom-color: var(--border); }
 html.light-mode .rp-chat-row:hover { background: var(--surface-secondary); }
 html.light-mode .rp-chat-row.active { background: var(--brand-soft); }
@@ -392,11 +385,6 @@ body, .sidebar, .main-col, .right-panel,
 }
 
 /* ─── Light mode component overrides ──── */
-html.light-mode .sidebar,
-html.light-mode .right-panel {
-  background: var(--surface);
-  border-color: var(--border);
-}
 html.light-mode .top-bar,
 html.light-mode .chat-window,
 html.light-mode .msg-area {
@@ -419,16 +407,6 @@ html.light-mode .mini-modal,
 html.light-mode .del-modal {
   background: var(--surface);
   border-color: var(--border);
-}
-html.light-mode .model-card,
-html.light-mode .chat-row,
-html.light-mode .tool-item {
-  color: var(--text-1);
-}
-html.light-mode .sb-title,
-html.light-mode .section-label,
-html.light-mode .section-label-row {
-  color: var(--text-2);
 }
 html.light-mode .msg-content,
 html.light-mode .content {

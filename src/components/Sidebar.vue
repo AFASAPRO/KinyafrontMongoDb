@@ -1,12 +1,17 @@
 <template>
   <aside class="sidebar" :class="{ 'mob-open': mobileOpen }" role="dialog" aria-modal="true" aria-label="Chats sidebar">
-    <!-- ── Header: Logo + "Chats" + search icon ── -->
+    <!-- ── Header: brand + actions ── -->
     <div class="sb-header">
       <img src="/logo.png" alt="KinyaBot" class="sb-logo" />
-      <span class="sb-title">Chats</span>
-      <button class="icon-btn" @click="toggleSearch" title="Search chats (Ctrl+/)">
-        <i class="fas fa-magnifying-glass"></i>
-      </button>
+      <span class="sb-brand">KinyaBot</span>
+      <div class="sb-actions">
+        <button class="icon-btn" @click="toggleSearch" title="Search chats (Ctrl+/)" aria-label="Search chats">
+          <i class="fas fa-magnifying-glass"></i>
+        </button>
+        <button class="icon-btn mob-only" @click="$emit('close-mobile')" title="Close sidebar" aria-label="Close sidebar">
+          <i class="fas fa-table-columns"></i>
+        </button>
+      </div>
     </div>
 
     <!-- Search box (Ctrl+/ toggles) -->
@@ -16,168 +21,171 @@
           <i class="fas fa-magnifying-glass"></i>
           <input ref="searchRef" v-model="searchQ" type="text" placeholder="Search chats…"
             @input="doSearch" @keydown.esc="closeSearch" />
-          <button v-if="searchQ" @click="clearSearch"><i class="fas fa-xmark"></i></button>
+          <button v-if="searchQ" @click="clearSearch" aria-label="Clear search"><i class="fas fa-xmark"></i></button>
         </div>
       </div>
     </transition>
 
     <!-- Search results -->
     <div v-if="searchQ && chatStore.searchResults.length" class="sb-scroll">
-      <div class="section-label-row">Results</div>
-      <div v-for="r in chatStore.searchResults" :key="r.id" class="search-result" @click="goToChat(r.chat_id)">
+      <div class="section-title static">Results</div>
+      <button v-for="r in chatStore.searchResults" :key="r.id" class="search-result" @click="goToChat(r.chat_id)">
         <i class="fas fa-message"></i>
         <div class="sr-info">
           <div class="sr-chat">{{ r.chat_title }}</div>
           <div class="sr-text">{{ r.content.slice(0,70) }}…</div>
         </div>
-      </div>
+      </button>
     </div>
 
-    <!-- Chat list — IDENTICAL structure for guests and members -->
     <div v-else class="sb-scroll">
-      <!-- Pinned Models -->
-      <div class="section-group">
-        <div class="section-header">
-          <span class="section-label">Pinned Models</span>
-          <button class="icon-btn-sm has-dot" title="Add"><i class="fas fa-plus"></i></button>
-        </div>
-        <template v-if="chatStore.pinnedChats.length">
-          <SidebarChatItem
-            v-for="chat in chatStore.pinnedChats" :key="chat.id"
-            :chat="chat" :active="chatStore.activeChat?.id===chat.id" variant="model"
-            @click="$emit('load-chat',chat.id)"
-            @rename="startRename(chat)" @pin="chatStore.pinChat(chat.id,0)" @delete="startDelete(chat)"
-          />
-        </template>
-        <div v-else class="empty-hint"><i class="fas fa-thumbtack"></i><span>No pinned chats</span></div>
-      </div>
+      <!-- ── Primary navigation ── -->
+      <nav class="nav" aria-label="Primary">
+        <button class="nav-item" @click="newChat">
+          <span class="nav-ico new"><i class="fas fa-plus"></i></span>
+          <span class="nav-label">New chat</span>
+        </button>
+        <button class="nav-item" @click="openCanvas">
+          <span class="nav-ico"><i class="fas fa-image"></i></span>
+          <span class="nav-label">Create Image</span>
+        </button>
+        <button class="nav-item" @click="openCanvas">
+          <span class="nav-ico"><i class="fas fa-pen-to-square"></i></span>
+          <span class="nav-label">Canvas</span>
+        </button>
+        <button class="nav-item" @click="openGuided">
+          <span class="nav-ico"><i class="fas fa-graduation-cap"></i></span>
+          <span class="nav-label">Guided Learning</span>
+        </button>
+        <button class="nav-item" @click="showSettings=true">
+          <span class="nav-ico"><i class="fas fa-sliders"></i></span>
+          <span class="nav-label">Customize</span>
+        </button>
+      </nav>
 
-      <!-- Tool shortcuts -->
-      <div class="section-group">
-        <div class="tool-item" @click="openCanvas">
-          <div class="tool-icon"><i class="fas fa-image"></i></div>
-          <span>Create Image</span>
-          <i class="fas fa-ellipsis tool-more"></i>
+      <!-- ── Pinned ── -->
+      <section class="group">
+        <button class="section-title" :aria-expanded="pinnedOpen" @click="pinnedOpen=!pinnedOpen">
+          <span>Pinned</span>
+          <i class="fas fa-chevron-down chev" :class="{ closed: !pinnedOpen }"></i>
+        </button>
+        <div v-show="pinnedOpen" class="group-body">
+          <template v-if="chatStore.pinnedChats.length">
+            <SidebarChatItem
+              v-for="chat in chatStore.pinnedChats" :key="chat.id"
+              :chat="chat" :active="chatStore.activeChat?.id===chat.id" variant="model"
+              @click="$emit('load-chat',chat.id)"
+              @rename="startRename(chat)" @pin="chatStore.pinChat(chat.id,0)" @delete="startDelete(chat)"
+            />
+          </template>
+          <p v-else class="empty">No pinned chats</p>
         </div>
-        <div class="tool-item" @click="openCanvas">
-          <div class="tool-icon"><i class="fas fa-pen-to-square"></i></div>
-          <span>Canvas</span>
-          <i class="fas fa-ellipsis tool-more"></i>
-        </div>
-        <div class="tool-item" @click="openGuided">
-          <div class="tool-icon"><i class="fas fa-graduation-cap"></i></div>
-          <span>Guided Learning</span>
-          <i class="fas fa-ellipsis tool-more"></i>
-        </div>
-      </div>
+      </section>
 
-      <!-- Integrations -->
-      <div class="section-group">
-        <div class="section-header">
-          <span class="section-label">Integrations</span>
-          <button class="icon-btn-sm has-dot"><i class="fas fa-plus"></i></button>
+      <!-- ── Chats ── -->
+      <section class="group">
+        <button class="section-title" :aria-expanded="chatsOpen" @click="chatsOpen=!chatsOpen">
+          <span>Chats</span>
+          <i class="fas fa-chevron-down chev" :class="{ closed: !chatsOpen }"></i>
+        </button>
+        <div v-show="chatsOpen" class="group-body">
+          <template v-if="chatStore.recentChats.length">
+            <SidebarChatItem
+              v-for="chat in visibleRecent" :key="chat.id"
+              :chat="chat" :active="chatStore.activeChat?.id===chat.id"
+              @click="$emit('load-chat',chat.id)"
+              @rename="startRename(chat)" @pin="chatStore.pinChat(chat.id,1)" @delete="startDelete(chat)"
+            />
+            <button v-if="chatStore.recentChats.length > RECENT_LIMIT" class="view-all" @click="showAllChats=!showAllChats">
+              {{ showAllChats ? 'Show less' : 'View all' }}
+            </button>
+          </template>
+          <p v-else-if="guest" class="empty">Your conversations will appear here — sign in to keep them</p>
+          <p v-else class="empty">No conversations yet</p>
         </div>
-        <div class="integration-item">
-          <div class="integ-icon" style="background:#f24e1e12;border-color:#f24e1e25"><i class="fab fa-figma" style="color:#f24e1e"></i></div>
-          <span>Figma</span><div class="integ-dot"></div>
-        </div>
-        <div class="integration-item">
-          <div class="integ-icon" style="background:#00c4cc12;border-color:#00c4cc25"><i class="fas fa-pen-nib" style="color:#00c4cc"></i></div>
-          <span>Canva</span><div class="integ-dot"></div>
-        </div>
-        <div class="integration-item">
-          <div class="integ-icon" style="background:#3ecf8e12;border-color:#3ecf8e25"><i class="fas fa-database" style="color:#3ecf8e"></i></div>
-          <span>Superbase</span>
-        </div>
-      </div>
-
-      <!-- Recent chats -->
-      <div class="section-group">
-        <div class="section-label-row">Recent Chats</div>
-        <template v-if="chatStore.recentChats.length">
-          <SidebarChatItem
-            v-for="chat in chatStore.recentChats" :key="chat.id"
-            :chat="chat" :active="chatStore.activeChat?.id===chat.id"
-            @click="$emit('load-chat',chat.id)"
-            @rename="startRename(chat)" @pin="chatStore.pinChat(chat.id,1)" @delete="startDelete(chat)"
-          />
-        </template>
-        <div v-else class="empty-hint">
-          <i class="fas fa-clock-rotate-left"></i>
-          <span v-if="guest">Your conversations will appear here — sign in to keep them</span>
-          <span v-else>No conversations yet</span>
-        </div>
-      </div>
+      </section>
     </div>
 
+    <!-- ── Footer: plan / usage + account ── -->
     <div class="sb-footer">
-      <div class="footer-nav">
-        <InstallHint v-if="showInstall" variant="footer" />
-        <button class="footer-item" @click="showSettings=true">
-          <i class="fas fa-gear"></i><span>Settings</span>
-        </button>
-        <button class="footer-item" @click="showHelp=true">
-          <i class="fas fa-circle-question"></i><span>Help &amp; Support</span>
-        </button>
-        <!-- Guest: auth entries replace Log Out -->
-        <template v-if="guest">
-          <button class="footer-item" @click="goAuth('login')">
-            <i class="fas fa-right-to-bracket"></i><span>Sign In</span>
-          </button>
-          <button class="footer-item accent-item" @click="goAuth('register')">
-            <i class="fas fa-user-plus"></i><span>Sign Up</span>
-          </button>
-        </template>
-        <button v-else class="footer-item logout-item" @click="handleLogout">
-          <i class="fas fa-right-from-bracket"></i><span>Log Out</span>
-        </button>
+      <template v-if="!guest">
+        <div class="usage" :title="`${usage.today} used today`">
+          <div class="usage-text">
+            <span>{{ usage.remaining }} of {{ usage.daily_limit }} messages left today</span>
+            <span class="usage-pct">{{ usageRing }}%</span>
+          </div>
+          <div class="usage-bar" role="progressbar" :aria-valuenow="usageRing" aria-valuemin="0" aria-valuemax="100">
+            <i :style="{ width: usageRing + '%' }"></i>
+          </div>
+        </div>
+      </template>
+      <div v-else class="upgrade-row">
+        <button class="pill-btn" @click="goAuth('register')"><i class="fas fa-circle-arrow-up"></i> Sign up for free credits</button>
       </div>
-      <div class="credits-bar">
-        <!-- Real usage from /api/usage (authed) · sign-in hint (guest) -->
-        <template v-if="!guest">
-          <div class="credits-info">
-            <span class="credits-num">{{ usage.remaining }} of {{ usage.daily_limit }} messages left today</span>
-            <div class="credits-sub">
-              <span class="used-label">{{ usage.today }} used</span>
-              <i class="fas fa-circle-info credits-icon"></i>
+
+      <div class="account" ref="accountRef">
+        <!-- Account menu (opens upward) -->
+        <transition name="pop">
+          <div v-if="menuOpen" class="menu" role="menu">
+            <div v-if="!guest" class="menu-head">
+              <span class="avatar lg">
+                <img v-if="avatarUrl" :src="avatarUrl" alt="" />
+                <template v-else>{{ userInitial }}</template>
+              </span>
+              <div class="menu-id">
+                <strong>{{ userName }}</strong>
+                <span>{{ userEmail }}</span>
+              </div>
             </div>
-          </div>
-          <div class="credits-ring">
-            <svg viewBox="0 0 36 36" class="credits-svg">
-              <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(128,128,128,.2)" stroke-width="3"/>
-              <circle cx="18" cy="18" r="15.9" fill="none" stroke="url(#cg)" stroke-width="3"
-                :stroke-dasharray="`${usageRing} ${100 - usageRing}`" stroke-dashoffset="25" stroke-linecap="round"/>
-              <defs>
-                <linearGradient id="cg" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stop-color="#4F46E5"/>
-                  <stop offset="100%" stop-color="#8B5CF6"/>
-                </linearGradient>
-              </defs>
-            </svg>
-            <span class="credits-pct">{{ usageRing }}%</span>
-          </div>
-        </template>
-        <template v-else>
-          <div class="credits-info">
-            <span class="credits-num">Free daily credits included</span>
-            <div class="credits-sub">
-              <button class="upgrade-link as-btn" @click="goAuth('register')">Sign up to claim them</button>
+            <div v-else class="menu-head guest">
+              <span class="avatar lg"><i class="fas fa-user"></i></span>
+              <div class="menu-id"><strong>Guest</strong><span>Sign in to save your chats</span></div>
             </div>
+
+            <template v-if="guest">
+              <button class="menu-item" role="menuitem" @click="goAuth('login')"><i class="fas fa-right-to-bracket"></i><span>Sign in</span></button>
+              <button class="menu-item accent" role="menuitem" @click="goAuth('register')"><i class="fas fa-user-plus"></i><span>Sign up</span></button>
+              <div class="menu-sep"></div>
+            </template>
+
+            <button class="menu-item" role="menuitem" @click="openSettings"><i class="fas fa-gear"></i><span>All settings</span></button>
+            <div class="menu-sep"></div>
+
+            <button class="menu-item" role="menuitem" :aria-expanded="appearanceOpen" @click="appearanceOpen=!appearanceOpen">
+              <i class="fas fa-moon"></i>
+              <span class="two-line"><span>Appearance</span><small>{{ themeLabel }}</small></span>
+              <i class="fas fa-chevron-right sub-chev" :class="{ open: appearanceOpen }"></i>
+            </button>
+            <div v-if="appearanceOpen" class="submenu">
+              <button v-for="m in themeModes" :key="m.id" class="menu-item sub" role="menuitemradio"
+                :aria-checked="themeMode===m.id" @click="setThemeMode(m.id)">
+                <i :class="m.icon"></i><span>{{ m.label }}</span>
+                <i v-if="themeMode===m.id" class="fas fa-check tick"></i>
+              </button>
+            </div>
+
+            <InstallHint v-if="showInstall" variant="footer" />
+            <button class="menu-item" role="menuitem" @click="openHelp"><i class="fas fa-circle-question"></i><span>Help &amp; support</span></button>
+
+            <template v-if="!guest">
+              <div class="menu-sep"></div>
+              <button class="menu-item danger" role="menuitem" @click="handleLogout"><i class="fas fa-right-from-bracket"></i><span>Sign out</span></button>
+            </template>
           </div>
-          <div class="credits-ring">
-            <svg viewBox="0 0 36 36" class="credits-svg">
-              <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(128,128,128,.2)" stroke-width="3"/>
-              <circle cx="18" cy="18" r="15.9" fill="none" stroke="url(#cg)" stroke-width="3"
-                stroke-dasharray="0 100" stroke-dashoffset="25" stroke-linecap="round"/>
-              <defs>
-                <linearGradient id="cg" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stop-color="#4F46E5"/>
-                  <stop offset="100%" stop-color="#8B5CF6"/>
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-        </template>
+        </transition>
+
+        <button class="account-btn" :aria-expanded="menuOpen" aria-haspopup="menu" @click.stop="menuOpen=!menuOpen">
+          <span class="avatar">
+            <img v-if="avatarUrl && !guest" :src="avatarUrl" alt="" />
+            <i v-else-if="guest" class="fas fa-user"></i>
+            <template v-else>{{ userInitial }}</template>
+          </span>
+          <span class="account-id">
+            <strong>{{ guest ? 'Guest' : userName }}</strong>
+            <small>{{ guest ? 'Not signed in' : planLabel }}</small>
+          </span>
+          <i class="fas fa-up-down account-chev"></i>
+        </button>
       </div>
     </div>
 
@@ -266,6 +274,7 @@ import SidebarChatItem from './SidebarChatItem.vue'
 import SettingsModal from './SettingsModal.vue'
 import HelpModal from './HelpModal.vue'
 import InstallHint from './InstallHint.vue'
+import { setThemeMode, themeMode } from '../theme'
 
 const props = defineProps({ mobileOpen: Boolean, guest: Boolean })
 const emit = defineEmits(['close-mobile','new-chat','load-chat','authrequired'])
@@ -313,6 +322,41 @@ const showGuided = ref(false)
 // PWA install entry (hidden when already installed)
 const { canInstall, installed, isIOS } = usePwaInstall()
 const showInstall = computed(() => (canInstall.value || isIOS) && !installed.value)
+
+
+/* ── Sidebar sections ── */
+const RECENT_LIMIT = 10
+const pinnedOpen = ref(true)
+const chatsOpen = ref(true)
+const showAllChats = ref(false)
+const visibleRecent = computed(() =>
+  showAllChats.value ? chatStore.recentChats : chatStore.recentChats.slice(0, RECENT_LIMIT))
+
+function newChat() { emit('close-mobile'); emit('new-chat') }
+
+/* ── Account menu ── */
+const menuOpen = ref(false)
+const appearanceOpen = ref(false)
+const accountRef = ref(null)
+const themeModes = [
+  { id: 'dark',   icon: 'fas fa-moon',    label: 'Dark' },
+  { id: 'light',  icon: 'fas fa-sun',     label: 'Light' },
+  { id: 'system', icon: 'fas fa-desktop', label: 'System' },
+]
+const themeLabel = computed(() => themeModes.find(m => m.id === themeMode.value)?.label || 'System')
+const userName = computed(() => auth.user?.username || 'Account')
+const userEmail = computed(() => auth.user?.email || '')
+const avatarUrl = computed(() => auth.user?.avatar_url || '')
+const userInitial = computed(() => (userName.value[0] || 'K').toUpperCase())
+const planLabel = computed(() => {
+  const p = auth.user?.plan || 'free'
+  return p.charAt(0).toUpperCase() + p.slice(1) + ' plan'
+})
+function openSettings() { menuOpen.value = false; showSettings.value = true }
+function openHelp() { menuOpen.value = false; showHelp.value = true }
+function onDocClick(e) {
+  if (menuOpen.value && accountRef.value && !accountRef.value.contains(e.target)) menuOpen.value = false
+}
 
 // Toggle search (guests are asked to sign in — history is account data)
 function toggleSearch() {
@@ -379,114 +423,146 @@ function handleKeydown(e) {
   if (ctrl && e.key === '/') { e.preventDefault(); toggleSearch() }
   if (ctrl && e.key === 'b') { e.preventDefault(); emit('close-mobile') }
   if (e.key === 'Escape') {
-    if (searchOpen.value) closeSearch()
+    if (menuOpen.value) menuOpen.value = false
+    else if (searchOpen.value) closeSearch()
     else emit('close-mobile') // close the mobile drawer
   }
 }
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
+  document.addEventListener('click', onDocClick)
   fetchUsage()
 })
-onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeydown)
+  document.removeEventListener('click', onDocClick)
+})
 </script>
 
 <style scoped>
+/* ═══ Sidebar — structure: header · nav · collapsible lists · account ═══ */
 .sidebar {
   width: var(--sidebar-w); min-width: var(--sidebar-w);
   height: 100vh; height: 100dvh;
-  background: var(--bg-panel);
-  border-right: 1px solid var(--border);
+  background: var(--surface-sidebar);
+  border-right: 1px solid var(--border-subtle);
   display: flex; flex-direction: column; overflow: hidden;
-  flex-shrink: 0; transition: transform .3s ease;
+  flex-shrink: 0; transition: transform var(--t-base) var(--ease);
+  color: var(--text-2);
 }
-
-/* ── Off-canvas mobile drawer (≤900px) ────────────────────────
-   The overlay lives in ChatView (.mob-overlay, z-index: 90).
-   The drawer must sit ABOVE the overlay (z-index: 100) and must
-   never be caught by ancestor stacking contexts. */
 @media (max-width: 900px) {
   .sidebar {
-    position: fixed;
-    left: 0; top: 0; bottom: 0;
-    height: 100vh; height: 100dvh;
-    width: min(300px, 85vw); min-width: 0;
-    z-index: 100;
+    position: fixed; left: 0; top: 0; bottom: 0;
+    width: min(300px, 85vw); min-width: 0; z-index: 100;
     transform: translateX(-105%);
     transition: transform .28s cubic-bezier(.32,.72,.35,1);
     will-change: transform;
-    box-shadow: 4px 0 24px rgba(0,0,0,.5);
+    box-shadow: var(--shadow-md);
     padding-bottom: env(safe-area-inset-bottom);
   }
   .sidebar.mob-open { transform: translateX(0); }
 }
+@media (min-width: 901px) { .mob-only { display: none; } }
+@media (prefers-reduced-motion: reduce) { .sidebar { transition: none; } }
 
-/* Fullscreen overlay side-effects: keep drawer touch-scrolling smooth */
-.sb-scroll { -webkit-overflow-scrolling: touch; }
+/* Header */
+.sb-header { display:flex; align-items:center; gap:10px; padding:14px 14px 8px; flex-shrink:0; }
+.sb-logo { width:28px; height:28px; border-radius:8px; object-fit:contain; flex-shrink:0; }
+.sb-brand { font-size:15px; font-weight:600; color:var(--text-1); letter-spacing:-.01em; flex:1; min-width:0; }
+.sb-actions { display:flex; align-items:center; gap:2px; }
+.icon-btn { width:32px; height:32px; border-radius:var(--r-sm); background:none; border:none; color:var(--icon); font-size:14px; display:grid; place-items:center; cursor:pointer; transition:background var(--t-fast), color var(--t-fast); }
+.icon-btn:hover { background:var(--bg-hover); color:var(--icon-hover); }
 
-.sb-header { display:flex; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid var(--border); flex-shrink:0; }
-.sb-logo { width:28px; height:28px; border-radius:7px; object-fit:contain; flex-shrink:0; }
-.sb-title { font-size:15px; font-weight:700; color:var(--text-1); flex:1; }
-
-.icon-btn { width:32px; height:32px; border-radius:8px; background:none; border:none; color:var(--text-2); font-size:14px; display:flex; align-items:center; justify-content:center; transition:all .2s; cursor:pointer; }
-.icon-btn:hover { background:var(--bg-hover); color:var(--text-1); }
-
-.sb-search { padding:6px 10px 4px; flex-shrink:0; }
-.search-row { display:flex; align-items:center; gap:8px; background:var(--bg-card); border:1px solid var(--border-md); border-radius:99px; padding:7px 12px; }
+/* Search */
+.sb-search { padding:4px 12px 6px; flex-shrink:0; }
+.search-row { display:flex; align-items:center; gap:8px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r); padding:8px 12px; transition:border-color var(--t-fast), box-shadow var(--t-fast); }
+.search-row:focus-within { border-color:var(--brand); box-shadow:var(--focus-glow); }
 .search-row i { color:var(--text-3); font-size:13px; flex-shrink:0; }
-.search-row input { flex:1; background:none; border:none; color:var(--text-1); font-size:13px; outline:none; }
+.search-row input { flex:1; min-width:0; background:none; border:none; color:var(--text-1); font-size:13.5px; outline:none; }
 .search-row input::placeholder { color:var(--text-3); }
 .search-row button { background:none; border:none; color:var(--text-3); cursor:pointer; font-size:13px; padding:2px; }
 
-.sb-scroll { flex:1; overflow-y:auto; padding:4px 6px; display:flex; flex-direction:column; gap:0; }
-.section-group { margin-bottom:6px; }
-.section-header { display:flex; align-items:center; justify-content:space-between; padding:8px 8px 4px; }
-.section-label { font-size:11.5px; font-weight:600; color:var(--text-2); }
-.section-label-row { font-size:11.5px; font-weight:600; color:var(--text-2); padding:8px 8px 4px; }
-.icon-btn-sm { width:22px; height:22px; border-radius:6px; background:none; border:none; color:var(--text-3); font-size:11px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .2s; position:relative; }
-.icon-btn-sm:hover { background:var(--bg-hover); color:var(--text-1); }
-.icon-btn-sm.has-dot::after { content:''; position:absolute; top:2px; right:2px; width:6px; height:6px; border-radius:50%; background:linear-gradient(135deg,var(--brand-strong),var(--accent-violet)); }
-.empty-hint { display:flex; align-items:center; gap:8px; padding:10px 12px; color:var(--text-3); font-size:12.5px; }
+/* Scroll area */
+.sb-scroll { flex:1; overflow-y:auto; padding:4px 10px 12px; display:flex; flex-direction:column; -webkit-overflow-scrolling:touch; }
 
-.tool-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:var(--r-sm); cursor:pointer; transition:background .15s; color:var(--text-1); }
-.tool-item:hover { background:var(--bg-hover); }
-.tool-item span { font-size:13px; flex:1; }
-.tool-icon { width:26px; height:26px; border-radius:8px; background:var(--bg-card); border:1px solid var(--border-md); display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--text-2); }
-.tool-more { color:var(--text-3); font-size:12px; opacity:0; transition:opacity .2s; }
-.tool-item:hover .tool-more { opacity:1; }
+/* Primary nav */
+.nav { display:flex; flex-direction:column; gap:2px; padding-bottom:10px; }
+.nav-item { display:flex; align-items:center; gap:12px; width:100%; height:40px; padding:0 8px; border-radius:var(--r); background:none; border:none; color:var(--text-1); font-size:14.5px; font-weight:500; text-align:left; cursor:pointer; transition:background var(--t-fast); }
+.nav-item:hover { background:var(--bg-hover); }
+.nav-ico { width:24px; height:24px; display:grid; place-items:center; color:var(--icon); font-size:15px; flex-shrink:0; transition:color var(--t-fast); }
+.nav-item:hover .nav-ico { color:var(--icon-hover); }
+.nav-ico.new { width:28px; height:28px; margin:-2px; border-radius:50%; background:var(--bg-hover); color:var(--text-1); font-size:13px; }
+.nav-label { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-.integration-item { display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:var(--r-sm); cursor:pointer; transition:background .15s; color:var(--text-1); font-size:13px; }
-.integration-item:hover { background:var(--bg-hover); }
-.integ-icon { width:26px; height:26px; border-radius:7px; border:1px solid transparent; display:flex; align-items:center; justify-content:center; font-size:12px; }
-.integ-dot { width:7px; height:7px; border-radius:50%; background:linear-gradient(135deg,var(--brand-strong),var(--accent-violet)); margin-left:auto; }
+/* Collapsible groups */
+.group { margin-top:6px; }
+.section-title { display:flex; align-items:center; justify-content:space-between; width:100%; padding:8px 8px 6px; background:none; border:none; color:var(--text-3); font-size:14px; font-weight:500; text-align:left; cursor:pointer; border-radius:var(--r-sm); transition:color var(--t-fast); }
+.section-title:hover { color:var(--text-2); }
+.section-title.static { cursor:default; }
+.chev { font-size:11px; transition:transform var(--t-base) var(--ease); }
+.chev.closed { transform:rotate(-90deg); }
+.group-body { display:flex; flex-direction:column; gap:2px; }
+.empty { padding:4px 8px 8px; color:var(--text-disabled); font-size:13.5px; line-height:1.45; }
+.view-all { align-self:flex-start; margin:2px 0 0 8px; padding:6px 0; background:none; border:none; color:var(--text-3); font-size:13.5px; cursor:pointer; }
+.view-all:hover { color:var(--text-1); }
 
-.search-result { display:flex; align-items:flex-start; gap:9px; padding:8px 10px; border-radius:var(--r-sm); cursor:pointer; transition:background .15s; }
+/* Search results */
+.search-result { display:flex; align-items:flex-start; gap:10px; width:100%; padding:8px 10px; border-radius:var(--r-sm); background:none; border:none; text-align:left; cursor:pointer; transition:background var(--t-fast); }
 .search-result:hover { background:var(--bg-hover); }
-.search-result i { color:var(--text-3); font-size:12px; margin-top:2px; flex-shrink:0; }
+.search-result i { color:var(--text-3); font-size:12px; margin-top:3px; flex-shrink:0; }
 .sr-info { min-width:0; }
-.sr-chat { font-size:12px; font-weight:600; color:var(--text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.sr-text { font-size:11.5px; color:var(--text-2); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sr-chat { font-size:13px; font-weight:600; color:var(--text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sr-text { font-size:12px; color:var(--text-3); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-.sb-footer { flex-shrink:0; border-top:1px solid var(--border); padding:6px 8px; display:flex; flex-direction:column; gap:2px; }
-.footer-nav { display:flex; flex-direction:column; gap:1px; }
-.footer-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:var(--r-sm); background:none; border:none; color:var(--text-2); font-size:13px; cursor:pointer; transition:all .2s; text-align:left; width:100%; }
-.footer-item:hover { background:var(--bg-hover); color:var(--text-1); }
-.footer-item i { font-size:14px; width:18px; text-align:center; }
-.logout-item:hover { color:var(--error) !important; background:rgba(242,139,130,.08) !important; }
+/* Footer */
+.sb-footer { flex-shrink:0; border-top:1px solid var(--border-subtle); padding:10px; display:flex; flex-direction:column; gap:8px; }
+.usage { padding:2px 4px 0; }
+.usage-text { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--text-3); }
+.usage-pct { color:var(--text-2); font-variant-numeric:tabular-nums; }
+.usage-bar { height:4px; border-radius:99px; background:var(--border); margin-top:6px; overflow:hidden; }
+.usage-bar i { display:block; height:100%; border-radius:inherit; background:var(--gradient-brand); transition:width var(--t-slow) var(--ease); }
+.upgrade-row { display:flex; justify-content:center; }
+.pill-btn { display:inline-flex; align-items:center; gap:8px; padding:7px 14px; border-radius:99px; background:none; border:1px solid var(--border); color:var(--text-1); font-size:13px; font-weight:500; cursor:pointer; transition:background var(--t-fast), border-color var(--t-fast); }
+.pill-btn:hover { background:var(--bg-hover); border-color:var(--border-strong); }
 
-.credits-bar { display:flex; align-items:center; justify-content:space-between; padding:6px 4px 2px; }
-.credits-info { display:flex; flex-direction:column; gap:2px; }
-.credits-num { font-size:12px; font-weight:500; color:var(--text-1); }
-.credits-sub { display:flex; align-items:center; gap:6px; }
-.upgrade-link { font-size:11.5px; color:var(--blue); }
-.upgrade-link:hover { text-decoration:underline; }
-.upgrade-link.as-btn { background:none; border:none; cursor:pointer; padding:0; font-family:inherit; }
-.used-label { font-size:11px; color:var(--text-3); }
-.accent-item { color:var(--brand-text) !important; }
-.credits-icon { font-size:11px; color:var(--text-3); }
-.credits-ring { position:relative; width:36px; height:36px; flex-shrink:0; }
-.credits-svg { width:100%; height:100%; transform:rotate(-90deg); }
-.credits-pct { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:600; color:var(--text-2); }
+/* Account row */
+.account { position:relative; }
+.account-btn { display:flex; align-items:center; gap:10px; width:100%; padding:8px; border-radius:var(--r); background:none; border:none; text-align:left; cursor:pointer; transition:background var(--t-fast); }
+.account-btn:hover, .account-btn[aria-expanded="true"] { background:var(--bg-hover); }
+.avatar { width:34px; height:34px; border-radius:50%; background:var(--gradient-brand); color:#fff; display:grid; place-items:center; font-size:14px; font-weight:600; overflow:hidden; flex-shrink:0; }
+.avatar img { width:100%; height:100%; object-fit:cover; }
+.avatar.lg { width:40px; height:40px; font-size:16px; }
+.account-id { display:flex; flex-direction:column; min-width:0; flex:1; line-height:1.25; }
+.account-id strong { font-size:14px; font-weight:600; color:var(--text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.account-id small { font-size:12px; color:var(--text-3); }
+.account-chev { color:var(--text-3); font-size:12px; }
+
+/* Account menu */
+.menu { position:absolute; left:0; right:0; bottom:calc(100% + 8px); background:var(--surface-elevated); border:1px solid var(--border); border-radius:var(--r-lg); box-shadow:var(--shadow-md); padding:6px; max-height:min(70vh, 560px); overflow-y:auto; z-index:20; transform-origin:bottom center; }
+.menu-head { display:flex; align-items:center; gap:12px; padding:10px 10px 12px; }
+.menu-id { display:flex; flex-direction:column; min-width:0; line-height:1.3; }
+.menu-id strong { font-size:14.5px; font-weight:600; color:var(--text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.menu-id span { font-size:12.5px; color:var(--text-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.menu-sep { height:1px; background:var(--border-subtle); margin:4px 6px; }
+.menu-item, .menu :deep(.footer-item) { display:flex; align-items:center; gap:12px; width:100%; padding:9px 10px; border-radius:var(--r-sm); background:none; border:none; color:var(--text-1); font-size:14px; text-align:left; cursor:pointer; transition:background var(--t-fast); }
+.menu-item:hover, .menu :deep(.footer-item:hover) { background:var(--bg-hover); }
+.menu-item > i:first-child, .menu :deep(.footer-item i) { width:18px; text-align:center; font-size:14px; color:var(--icon); flex-shrink:0; }
+.menu-item.accent { color:var(--brand-text); }
+.menu-item.danger { color:var(--text-1); }
+.menu-item.danger:hover { color:var(--error); }
+.menu-item.danger:hover > i:first-child { color:var(--error); }
+.two-line { display:flex; flex-direction:column; flex:1; min-width:0; line-height:1.25; }
+.two-line small { font-size:12px; color:var(--text-3); }
+.menu-item > span:not(.two-line) { flex:1; min-width:0; }
+.sub-chev { font-size:11px; color:var(--text-3); transition:transform var(--t-fast); }
+.sub-chev.open { transform:rotate(90deg); }
+.submenu { margin:2px 0 4px 18px; padding-left:8px; border-left:1px solid var(--border-subtle); }
+.menu-item.sub { padding:7px 10px; font-size:13.5px; }
+.tick { color:var(--brand-text); font-size:12px; }
+
+.pop-enter-active, .pop-leave-active { transition:opacity var(--t-fast) var(--ease), transform var(--t-fast) var(--ease); }
+.pop-enter-from, .pop-leave-to { opacity:0; transform:translateY(6px) scale(.98); }
 
 /* ── Modals ── */
 .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:999; backdrop-filter:blur(4px); }
