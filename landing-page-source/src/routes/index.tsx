@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Check, ChevronDown, ChevronRight, Menu, Moon, Pause, Play, Plus, Sun, X } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Menu, Moon, Pause, Play, Plus, Sun, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import orbitVideo from "@/assets/kinyabot-light-orbit.webm.asset.json";
 import kinyaVideo from "@/assets/kinya-companion.webm.asset.json";
@@ -33,7 +33,8 @@ const nav = [
 ];
 
 function Mark({ small = false }: { small?: boolean }) {
-  return <span className={`brand-mark ${small ? "brand-mark-small" : ""}`} aria-hidden="true"><ChevronRight strokeWidth={3.5} /><ChevronRight strokeWidth={3.5} /></span>;
+  // KinyaBot app logo (blue phoenix) instead of the generic chevrons
+  return <span className={`brand-mark ${small ? "brand-mark-small" : ""}`} aria-hidden="true"><img src="/logo-mark.png" alt="" className="brand-logo-img" width="192" height="192" /></span>;
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {

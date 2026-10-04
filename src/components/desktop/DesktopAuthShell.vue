@@ -25,7 +25,19 @@
       <div class="das-left"><div class="das-left-inner"><slot /></div></div>
       <div class="das-right">
         <div class="das-panel">
-          <img src="/auth-hero.png" alt="KinyaBot AI running on desktop" loading="eager" />
+          <!-- KinyaBot mascot loop (the character on the landing page's
+               cream palette) — replaces the old static screenshot. -->
+          <video
+            class="das-video"
+            src="/media/kinya-mascot-auth.mp4"
+            poster="/media/kinya-mascot-auth-poster.jpg"
+            autoplay
+            muted
+            loop
+            playsinline
+            preload="metadata"
+            aria-label="KinyaBot mascot animation"
+          ></video>
         </div>
       </div>
     </main>
@@ -84,10 +96,15 @@ function goToLanding(hash = '') {
 .das-right { padding: 20px 20px 20px 0; display: flex; }
 .das-panel {
   flex: 1; border-radius: 22px; overflow: hidden; position: relative;
-  background: #0b1020; border: 1px solid var(--border);
+  background: #efe4d1; /* matches the mascot video's cream backdrop */
+  border: 1px solid var(--border);
   box-shadow: 0 24px 70px rgba(0,0,0,.18);
 }
-.das-panel img { width: 100%; height: 100%; object-fit: cover; object-position: left center; display: block; }
+.das-video {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: center;
+  display: block;
+}
 
 @media (max-width: 1180px) {
   .das-body { grid-template-columns: 1fr; }

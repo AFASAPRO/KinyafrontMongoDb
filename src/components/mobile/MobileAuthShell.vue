@@ -39,7 +39,7 @@ defineProps({ title: String, subtitle: String })
 .mas-hd {
   position: relative; flex-shrink: 0; overflow: hidden;
   padding: max(22px, calc(env(safe-area-inset-top) + 14px)) 24px 46px;
-  background: var(--accent-solid); color: #fff;
+  background: var(--accent-solid); color: var(--on-accent);
   border-bottom-left-radius: 50% 40px;
   border-bottom-right-radius: 50% 40px;
   box-shadow: 0 18px 34px -22px rgba(0,0,0,.5);

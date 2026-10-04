@@ -1,5 +1,5 @@
 <template>
-  <div class="input-area">
+  <div class="input-area" :class="{ centered }">
     <!-- Client-side error notice (invalid / too-large file, STT failure) -->
     <transition name="fade">
       <div v-if="notice" class="inline-notice" role="alert">
@@ -119,7 +119,7 @@
       </div>
     </div>
 
-    <p class="disclaimer">KinyaBot may make mistakes. Verify important info. · POWERED BY AFASA</p>
+    <p v-if="!centered" class="disclaimer">KinyaBot may make mistakes. Verify important info. · POWERED BY AFASA</p>
   </div>
 </template>
 
@@ -136,7 +136,10 @@ const props = defineProps({
   injectedText: { type: String, default: '' },
   // File injected from outside (restored pending attachment — kept
   // in memory across the guest sign-in round-trip)
-  injectedFile: { type: [Object, File], default: null }
+  injectedFile: { type: [Object, File], default: null },
+  // Centered hero mode (desktop empty state) — tighter chrome,
+  // disclaimer hidden, the welcome layout provides spacing.
+  centered: Boolean
 })
 const emit  = defineEmits(['send', 'focus'])
 
@@ -430,12 +433,13 @@ onBeforeUnmount(() => {
 .fp-x:hover { background:var(--bg-hover); color:var(--red); }
 
 /* Input box */
+.input-area.centered { padding: 0 0 2px; background: transparent; position: static; }
 .input-box {
-  border: 1px solid var(--border-md); border-radius: 14px;
+  border: 1px solid var(--border-md); border-radius: 18px;
   background: var(--bg-input); overflow: visible;
   transition: border-color .2s, box-shadow .2s;
 }
-.input-box.focused { border-color:rgba(109,40,217,.5); box-shadow:0 0 0 3px rgba(109,40,217,.1); }
+.input-box.focused { border-color:rgba(198,244,50,.45); box-shadow:0 0 0 3px rgba(198,244,50,.08); }
 .input-box.sending { opacity:.75; }
 
 /* Attach menu */
@@ -455,7 +459,7 @@ onBeforeUnmount(() => {
   color:var(--text-2); cursor:pointer; text-align:left; transition:all .15s;
 }
 .am-item:hover { background:var(--bg-hover); color:var(--text-1); }
-.am-item i { width:30px; height:30px; border-radius:8px; background:rgba(109,40,217,.16); border:1px solid rgba(109,40,217,.3); color:#c4b5fd; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+.am-item i { width:30px; height:30px; border-radius:8px; background:rgba(198,244,50,.16); border:1px solid rgba(198,244,50,.3); color:#d9f76e; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
 .am-item b { display:block; font-size:12.5px; font-weight:600; color:var(--text-1); }
 .am-item small { display:block; font-size:10.5px; color:var(--text-3); margin-top:1px; }
 
@@ -465,7 +469,7 @@ onBeforeUnmount(() => {
 .wave-info span:first-of-type { color:#f28b82; font-weight:500; }
 .wave-hint { color:var(--text-3); font-style:italic; }
 .wave-bars { display:flex; align-items:center; gap:2px; height:28px; }
-.wb { width:3px; border-radius:99px; background:linear-gradient(180deg,#f28b82,#a855f7); transition:height .08s ease; min-height:3px; }
+.wb { width:3px; border-radius:99px; background:linear-gradient(180deg,#f28b82,#e75ac5); transition:height .08s ease; min-height:3px; }
 
 /* Textarea */
 .chat-ta {
@@ -491,7 +495,7 @@ onBeforeUnmount(() => {
   cursor:pointer; transition:all .2s; white-space:nowrap;
 }
 .tb-btn:hover { background:var(--bg-hover); color:var(--text-1); }
-.tb-btn.on { background:rgba(109,40,217,.2); border-color:rgba(109,40,217,.4); color:#c4b5fd; }
+.tb-btn.on { background:rgba(198,244,50,.2); border-color:rgba(198,244,50,.4); color:#d9f76e; }
 .tb-btn i { font-size:12px; }
 
 .tb-ico {
@@ -506,13 +510,13 @@ onBeforeUnmount(() => {
 
 .send-btn {
   width:34px; height:34px; border-radius:50%;
-  background:linear-gradient(135deg,#4f46e5,#7c3aed);
-  border:none; color:#fff; font-size:13px;
+  background:var(--accent-solid);
+  border:none; color:var(--on-accent); font-size:13px;
   display:flex; align-items:center; justify-content:center;
   cursor:pointer; transition:all .2s; flex-shrink:0;
-  box-shadow:0 2px 8px rgba(79,70,229,.35);
+  box-shadow:0 2px 10px rgba(198,244,50,.28);
 }
-.send-btn:hover:not(:disabled) { transform:scale(1.1); box-shadow:0 4px 14px rgba(79,70,229,.5); }
+.send-btn:hover:not(:disabled) { transform:scale(1.1); box-shadow:0 4px 16px rgba(198,244,50,.45); }
 .send-btn:disabled { opacity:.32; cursor:not-allowed; transform:none; }
 
 .disclaimer { font-size:11px; color:var(--text-3); text-align:center; margin-top:5px; padding:0 4px; }
@@ -541,7 +545,7 @@ onBeforeUnmount(() => {
   .input-area { background:var(--bg-base); padding:4px 14px calc(max(10px, env(safe-area-inset-bottom)) + var(--kb, 0px)); }
   .disclaimer { display:none; }
   .input-box { display:flex; flex-wrap:wrap; align-items:center; gap:0; padding:4px 4px 4px 6px; border-radius:27px; background:var(--bg-card); border:1px solid var(--border-md); }
-  .input-box.focused { border-color:var(--accent-solid); box-shadow:0 0 0 3px rgba(109,40,217,.12); }
+  .input-box.focused { border-color:var(--accent-solid); box-shadow:0 0 0 3px rgba(198,244,50,.12); }
   .wave-bar { order:-1; width:100%; }
   .toolbar { display:contents; }
   .tl-left { order:0; }
@@ -554,7 +558,7 @@ onBeforeUnmount(() => {
   .am-item { min-height:48px; }
 
   /* mic when empty → send when there is something to send */
-  .tl-right .tb-ico, .send-btn { width:40px; height:40px; border-radius:50%; background:var(--accent-solid); color:#fff; font-size:15px; }
+  .tl-right .tb-ico, .send-btn { width:40px; height:40px; border-radius:50%; background:var(--accent-solid); color:var(--on-accent); font-size:15px; }
   .tl-right .tb-ico.rec { background:var(--red); color:#fff; }
   .input-box.has-text .tl-right .tb-ico:not(.rec) { display:none; }
   .input-box:not(.has-text) .send-btn { display:none; }

@@ -19,7 +19,7 @@
   font-size: 16px; transition: border-color .2s, box-shadow .2s, background .2s;
 }
 .m-input::placeholder { color: var(--text-3); }
-.m-input:focus { border-color: var(--accent-solid); background: var(--bg-panel); box-shadow: 0 0 0 3px rgba(109,40,217,.13); }
+.m-input:focus { border-color: var(--accent-solid); background: var(--bg-panel); box-shadow: 0 0 0 3px rgba(198,244,50,.13); }
 .m-input.error { border-color: var(--red); }
 .m-input.has-ic { padding-left: 44px; }
 .m-input-wrap .m-input { padding-right: 46px; }
@@ -54,7 +54,7 @@
 .m-notice { display: flex; align-items: flex-start; gap: 8px; padding: 10px 13px; border-radius: 13px; font-size: 12px; margin-bottom: 13px; line-height: 1.45; }
 .m-notice.err { background: rgba(242,139,130,.12); color: var(--red); }
 .m-notice.warn { background: rgba(251,188,4,.12); color: var(--yellow); }
-.m-notice.info { background: rgba(109,40,217,.12); color: var(--purple); }
+.m-notice.info { background: rgba(198,244,50,.12); color: var(--purple); }
 .m-notice.ok { background: rgba(52,168,83,.12); color: var(--green); }
 
 /* primary pill button — flat solid accent, no gradient */
@@ -63,10 +63,10 @@
   background: var(--accent-solid); color: #fff; font-size: 15px; font-weight: 700;
   letter-spacing: .01em;
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  box-shadow: 0 10px 22px -10px rgba(109,40,217,.65);
+  box-shadow: 0 10px 22px -10px rgba(198,244,50,.65);
   transition: transform .15s, opacity .2s, box-shadow .15s;
 }
-.m-btn:active:not(:disabled) { transform: scale(.97); box-shadow: 0 6px 14px -10px rgba(109,40,217,.6); }
+.m-btn:active:not(:disabled) { transform: scale(.97); box-shadow: 0 6px 14px -10px rgba(198,244,50,.6); }
 .m-btn:disabled { opacity: .5; box-shadow: none; }
 
 /* divider + circular social buttons */
@@ -89,7 +89,7 @@
 
 /* Center helper for status screens (forgot / reset done) */
 .m-center { text-align: center; padding: 8px 0; }
-.m-bigicon { width: 72px; height: 72px; border-radius: 50%; margin: 4px auto 14px; background: rgba(109,40,217,.13); color: var(--purple); font-size: 28px; display: flex; align-items: center; justify-content: center; }
+.m-bigicon { width: 72px; height: 72px; border-radius: 50%; margin: 4px auto 14px; background: rgba(198,244,50,.13); color: var(--purple); font-size: 28px; display: flex; align-items: center; justify-content: center; }
 
 .m-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
 .m-row .m-check { margin: 0 0 0 4px; }
@@ -108,7 +108,7 @@
   .fp-sub { color: var(--text-2) !important; font-size: 13px !important; }
   .fp-field label { color: var(--text-2) !important; }
   .fp-input-wrap { background: var(--bg-card) !important; border: 1.5px solid transparent !important; border-radius: 14px !important; min-height: 48px; }
-  .fp-input-wrap.focused { border-color: var(--accent-solid) !important; box-shadow: 0 0 0 3px rgba(109,40,217,.13) !important; }
+  .fp-input-wrap.focused { border-color: var(--accent-solid) !important; box-shadow: 0 0 0 3px rgba(198,244,50,.13) !important; }
   .fp-input-wrap.error { border-color: var(--red) !important; }
   .fp-input-wrap input { color: var(--text-1) !important; font-size: 16px !important; }
   .fp-btn { background: var(--accent-solid) !important; color: #fff !important; border: none !important; border-radius: 99px !important; min-height: 50px; font-size: 15px !important; box-shadow: none !important; }
@@ -165,7 +165,7 @@
   .option-card.selected .oc-label { color: #fff !important; }
   .option-card.selected .oc-icon { background: rgba(255,255,255,.22) !important; }
   .option-card.selected .oc-icon i { color: #fff !important; }
-  .oc-icon { width: 22px !important; height: 22px !important; border-radius: 50% !important; font-size: 11px !important; background: rgba(109,40,217,.14) !important; border-color: transparent !important; transition: background .2s; }
+  .oc-icon { width: 22px !important; height: 22px !important; border-radius: 50% !important; font-size: 11px !important; background: rgba(198,244,50,.14) !important; border-color: transparent !important; transition: background .2s; }
   .oc-icon i { color: var(--purple) !important; transition: color .2s; }
   .oc-label { color: var(--text-1) !important; font-size: 13px !important; font-weight: 600; transition: color .2s; }
   .oc-check { display: none !important; }
@@ -174,8 +174,8 @@
   .starter-list { gap: 8px !important; margin-bottom: 1.2rem !important; }
   .starter-row { background: var(--bg-card) !important; border: 1.5px solid var(--border-md) !important; border-radius: 15px !important; padding: 12px 14px !important; transition: transform .15s, border-color .2s; }
   .starter-row:active { transform: scale(.98); }
-  .starter-row.selected { border-color: var(--accent-solid) !important; background: rgba(109,40,217,.1) !important; }
-  .sr-icon { background: rgba(109,40,217,.14) !important; border-color: transparent !important; width: 34px !important; height: 34px !important; }
+  .starter-row.selected { border-color: var(--accent-solid) !important; background: rgba(198,244,50,.1) !important; }
+  .sr-icon { background: rgba(198,244,50,.14) !important; border-color: transparent !important; width: 34px !important; height: 34px !important; }
   .sr-icon i { color: var(--purple) !important; }
   .sr-title { color: var(--text-1) !important; font-size: 13.5px !important; }
   .sr-sub { font-size: 11px !important; }
@@ -208,7 +208,7 @@
 .gs-art { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; animation: fadeUp .5s ease both; }
 .gs-ring { position: absolute; border-radius: 50%; border: 1.5px solid var(--border-md); }
 .gs-ring.g1 { width: 78vw; max-width: 300px; aspect-ratio: 1; animation: gsSpin 22s linear infinite; }
-.gs-ring.g2 { width: 58vw; max-width: 220px; aspect-ratio: 1; border-color: rgba(109,40,217,.25); animation: gsSpin 16s linear infinite reverse; }
+.gs-ring.g2 { width: 58vw; max-width: 220px; aspect-ratio: 1; border-color: rgba(198,244,50,.25); animation: gsSpin 16s linear infinite reverse; }
 .gs-mark {
   position: relative; width: 34vw; max-width: 128px; aspect-ratio: 1; border-radius: 32px;
   background: var(--accent-solid); color: #fff; font-size: 15vw; display: flex; align-items: center; justify-content: center;

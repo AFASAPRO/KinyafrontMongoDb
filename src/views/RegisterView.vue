@@ -170,7 +170,7 @@ async function handleGoogleRegister() {
 .auth-form-wrap { width: 100%; }
 .auth-kicker { display: flex; align-items: center; gap: 8px; color: var(--text-2); font-size: 10px; font-weight: 700; letter-spacing: .12em; margin-bottom: 12px; }
 .auth-kicker span { width: 7px; height: 7px; border-radius: 50%; background: #34a853; box-shadow: 0 0 0 4px rgba(52,168,83,.13); }
-.auth-heading { font-size: 1.9rem; line-height: 1.15; font-weight: 700; color: var(--text-1); margin-bottom: 7px; }
+.auth-heading { font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif; font-size: 2.4rem; line-height: 1.1; font-weight: 400; letter-spacing: -.01em; color: var(--text-1); margin-bottom: 7px; }
 .auth-sub { font-size: 13.5px; color: var(--text-2); margin-bottom: 1.1rem; line-height: 1.5; }
 .social-btns { display: flex; flex-direction: column; gap: 9px; margin-bottom: 1rem; }
 .social-btn { min-height: 43px; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 9px 16px; background: var(--bg-card); border: 1px solid var(--border-md); border-radius: 9px; color: var(--text-1); font-size: 13px; font-weight: 600; transition: background .18s, border-color .18s, transform .18s; }
@@ -184,7 +184,7 @@ async function handleGoogleRegister() {
 .field-label { display: block; font-size: 11.5px; font-weight: 650; color: var(--text-1); margin-bottom: 5px; }
 .field-input-wrap, .pass-wrap { position: relative; }
 .field-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); z-index: 1; color: var(--text-3); font-size: 13px; pointer-events: none; transition: color .18s; }
-.field-input-wrap:focus-within .field-icon, .pass-wrap:focus-within .field-icon { color: var(--accent-solid); }
+.field-input-wrap:focus-within .field-icon, .pass-wrap:focus-within .field-icon { color: var(--purple); }
 .field-input { width: 100%; height: 43px; padding: 0 13px 0 40px; background: var(--bg-card); border: 1px solid var(--border-md); border-radius: 8px; color: var(--text-1); font-size: 13px; outline: none; transition: border-color .18s, box-shadow .18s, background .18s; }
 .field-input::placeholder { color: var(--text-3); }
 .field-input:hover { border-color: var(--text-3); }
@@ -198,12 +198,12 @@ async function handleGoogleRegister() {
 .strength-fill { height: 100%; border-radius: 99px; transition: width .35s, background .35s; }
 .strength-txt { font-size: 10px; font-weight: 650; display: block; margin-top: 3px; }
 .notice.err { background: color-mix(in srgb, var(--red) 10%, transparent); border: 1px solid color-mix(in srgb, var(--red) 26%, transparent); color: var(--red); padding: 9px 11px; border-radius: 8px; font-size: 12px; display: flex; align-items: center; gap: 8px; margin-bottom: .75rem; }
-.submit-btn { width: 100%; min-height: 45px; padding: 11px 14px; background: var(--accent-solid); border: 1px solid transparent; border-radius: 8px; color: #fff; font-size: 13.5px; font-weight: 700; cursor: pointer; transition: background .18s, transform .18s, box-shadow .18s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: .8rem; box-shadow: 0 5px 14px color-mix(in srgb, var(--accent-solid) 22%, transparent); }
+.submit-btn { width: 100%; min-height: 45px; padding: 11px 14px; background: var(--accent-solid); border: 1px solid transparent; border-radius: 8px; color: var(--on-accent); font-size: 13.5px; font-weight: 700; cursor: pointer; transition: background .18s, transform .18s, box-shadow .18s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: .8rem; box-shadow: 0 5px 14px color-mix(in srgb, var(--accent-solid) 22%, transparent); }
 .submit-btn:not(:disabled):hover { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 8px 18px color-mix(in srgb, var(--accent-solid) 30%, transparent); }
 .submit-btn:not(:disabled):active { transform: translateY(0); }
 .submit-btn:disabled { opacity: .62; cursor: wait; box-shadow: none; }
 .switch-text { font-size: 12.5px; color: var(--text-2); text-align: center; }
-.switch-text a { color: var(--accent-solid); font-weight: 700; text-decoration: none; }
+.switch-text a { color: var(--purple); font-weight: 700; text-decoration: none; }
 .switch-text a:hover { text-decoration: underline; }
 @media (max-height: 820px) and (min-width: 1181px) { .das-left { padding-top: 1.25rem; padding-bottom: 1.25rem; } .auth-heading { font-size: 1.7rem; } }
 </style>

@@ -217,9 +217,17 @@
     </div><!-- .fp-card -->
     </div><!-- .fp-root -->
 
-    <!-- Desktop-only hero image panel (hidden on mobile via CSS) -->
+    <!-- Desktop-only hero video panel (hidden on mobile via CSS) -->
     <div class="fp-hero">
-      <div class="fp-hero-panel"><img src="/auth-hero.png" alt="KinyaBot AI running on desktop" /></div>
+      <div class="fp-hero-panel">
+        <video
+          class="fp-hero-video"
+          src="/media/kinya-mascot-auth.mp4"
+          poster="/media/kinya-mascot-auth-poster.jpg"
+          autoplay muted loop playsinline preload="metadata"
+          aria-label="KinyaBot mascot animation"
+        ></video>
+      </div>
     </div>
     </div><!-- .fp-shell -->
   </div>
@@ -379,30 +387,30 @@ onBeforeUnmount(() => clearInterval(timerInterval))
 
   .fp-root { min-height: 0; flex: 1 1 620px; padding: 2.5rem; }
   .fp-hero { display: flex; padding: 24px 24px 24px 0; }
-  .fp-hero-panel { flex: 1; border-radius: 28px; overflow: hidden; background: #0b1020; border: 1px solid var(--border); }
-  .fp-hero-panel img { width: 100%; height: 100%; object-fit: cover; object-position: left center; display: block; }
+  .fp-hero-panel { flex: 1; border-radius: 28px; overflow: hidden; position: relative; background: #efe4d1; border: 1px solid var(--border); }
+  .fp-hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
 }
 @media (min-width: 1440px) { .fp-shell { max-width: 1600px; margin: 0 auto; width: 100%; } }
 
 .fp-bg { position: absolute; inset: 0; pointer-events: none; }
 .fp-orb { position: absolute; border-radius: 50%; filter: blur(100px); }
-.fp-orb1 { width: 600px; height: 600px; background: radial-gradient(circle, rgba(79,70,229,.18), transparent); top: -150px; left: -100px; }
-.fp-orb2 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(168,85,247,.12), transparent); bottom: -80px; right: -80px; }
+.fp-orb1 { width: 600px; height: 600px; background: radial-gradient(circle, rgba(41,119,245,.18), transparent); top: -150px; left: -100px; }
+.fp-orb2 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(231,90,197,.12), transparent); bottom: -80px; right: -80px; }
 .fp-grid {
   position: absolute; inset: 0;
-  background-image: linear-gradient(rgba(99,102,241,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,.04) 1px, transparent 1px);
+  background-image: linear-gradient(rgba(41,119,245,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(41,119,245,.04) 1px, transparent 1px);
   background-size: 48px 48px;
 }
 
 /* ── Card ─────────────────────────────────────────────────── */
 .fp-card {
   background: rgba(10,10,20,.92);
-  border: 1px solid rgba(99,102,241,.2);
+  border: 1px solid rgba(41,119,245,.2);
   border-radius: 24px;
   padding: 2.5rem 2rem;
   width: min(460px, 100%);
   position: relative; z-index: 2;
-  box-shadow: 0 0 60px rgba(79,70,229,.12), 0 32px 64px rgba(0,0,0,.6);
+  box-shadow: 0 0 60px rgba(41,119,245,.12), 0 32px 64px rgba(0,0,0,.6);
   backdrop-filter: blur(20px);
   animation: popIn .45s cubic-bezier(.34,1.56,.64,1);
 }
@@ -414,7 +422,7 @@ onBeforeUnmount(() => clearInterval(timerInterval))
 }
 .fp-logo img { width: 30px; height: 30px; border-radius: 8px; object-fit: contain; }
 .fp-logo span { font-size: 15px; font-weight: 800; color: #fff; }
-.fp-powered { font-size: 9px; font-weight: 700; color: #6366f1; background: rgba(99,102,241,.12); padding: 2px 7px; border-radius: 99px; margin-left: 4px; letter-spacing: .06em; }
+.fp-powered { font-size: 9px; font-weight: 700; color: #6366f1; background: rgba(41,119,245,.12); padding: 2px 7px; border-radius: 99px; margin-left: 4px; letter-spacing: .06em; }
 
 /* ── Step indicator ───────────────────────────────────────── */
 .fp-steps {
@@ -426,18 +434,18 @@ onBeforeUnmount(() => clearInterval(timerInterval))
 .fp-step:last-child { flex: none; }
 .fp-step-dot {
   width: 28px; height: 28px; border-radius: 50%;
-  border: 2px solid rgba(99,102,241,.2);
-  background: rgba(99,102,241,.05);
+  border: 2px solid rgba(41,119,245,.2);
+  background: rgba(41,119,245,.05);
   display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 700; color: #4b5563;
   flex-shrink: 0; transition: all .3s;
 }
-.fp-step.active .fp-step-dot { border-color: #6366f1; background: rgba(99,102,241,.15); color: #a5b4fc; }
-.fp-step.current .fp-step-dot { background: #6366f1; border-color: #6366f1; color: #fff; box-shadow: 0 0 12px rgba(99,102,241,.5); }
+.fp-step.active .fp-step-dot { border-color: #6366f1; background: rgba(41,119,245,.15); color: #a5b4fc; }
+.fp-step.current .fp-step-dot { background: #6366f1; border-color: #6366f1; color: #fff; box-shadow: 0 0 12px rgba(41,119,245,.5); }
 .fp-step-label { font-size: 11px; color: #4b5563; white-space: nowrap; }
 .fp-step.active .fp-step-label { color: #a5b4fc; }
-.fp-step-line { flex: 1; height: 2px; background: rgba(99,102,241,.12); border-radius: 99px; margin: 0 8px; transition: background .3s; }
-.fp-step-line.filled { background: rgba(99,102,241,.5); }
+.fp-step-line { flex: 1; height: 2px; background: rgba(41,119,245,.12); border-radius: 99px; margin: 0 8px; transition: background .3s; }
+.fp-step-line.filled { background: rgba(41,119,245,.5); }
 
 /* ── Body ─────────────────────────────────────────────────── */
 .fp-body { display: flex; flex-direction: column; gap: 1rem; }
@@ -448,7 +456,7 @@ onBeforeUnmount(() => clearInterval(timerInterval))
   font-size: 1.4rem; margin-bottom: .25rem;
 }
 .fp-icon-wrap.blue   { background: rgba(6,182,212,.12);  border: 2px solid rgba(6,182,212,.3);  color: #67e8f9; }
-.fp-icon-wrap.purple { background: rgba(99,102,241,.12); border: 2px solid rgba(99,102,241,.3); color: #a5b4fc; }
+.fp-icon-wrap.purple { background: rgba(41,119,245,.12); border: 2px solid rgba(41,119,245,.3); color: #a5b4fc; }
 .fp-icon-wrap.green  { background: rgba(52,168,83,.12);  border: 2px solid rgba(52,168,83,.3);  color: #34d399; }
 
 .fp-title { font-size: 1.5rem; font-weight: 800; color: #fff; letter-spacing: -.03em; margin: 0; }
@@ -460,14 +468,14 @@ onBeforeUnmount(() => clearInterval(timerInterval))
 .fp-input-wrap {
   display: flex; align-items: center; gap: 0;
   background: rgba(255,255,255,.04);
-  border: 1px solid rgba(99,102,241,.15);
+  border: 1px solid rgba(41,119,245,.15);
   border-radius: 11px; overflow: hidden;
   transition: border-color .2s, box-shadow .2s;
 }
 .fp-input-wrap > i { padding: 0 12px; color: #4b5563; font-size: 14px; flex-shrink: 0; }
 .fp-input-wrap input { flex: 1; padding: 12px 10px 12px 0; background: none; border: none; outline: none; color: #e2e8f0; font-size: 14px; font-family: inherit; }
 .fp-input-wrap input::placeholder { color: #374151; }
-.fp-input-wrap.focused { border-color: rgba(99,102,241,.5); box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+.fp-input-wrap.focused { border-color: rgba(41,119,245,.5); box-shadow: 0 0 0 3px rgba(41,119,245,.1); }
 .fp-input-wrap.error   { border-color: rgba(239,68,68,.45); }
 .fp-eye { background: none; border: none; color: #4b5563; padding: 10px 12px; cursor: pointer; transition: color .2s; }
 .fp-eye:hover { color: #e2e8f0; }
@@ -484,12 +492,12 @@ onBeforeUnmount(() => clearInterval(timerInterval))
   width: 46px; height: 54px;
   text-align: center; font-size: 1.35rem; font-weight: 700;
   background: rgba(255,255,255,.04);
-  border: 1.5px solid rgba(99,102,241,.2);
+  border: 1.5px solid rgba(41,119,245,.2);
   border-radius: 10px; color: #e2e8f0;
   transition: all .2s; outline: none; font-family: monospace;
 }
-.otp-box:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.15); background: rgba(99,102,241,.08); }
-.otp-box.filled { border-color: rgba(99,102,241,.5); background: rgba(99,102,241,.1); }
+.otp-box:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(41,119,245,.15); background: rgba(41,119,245,.08); }
+.otp-box.filled { border-color: rgba(41,119,245,.5); background: rgba(41,119,245,.1); }
 .otp-box.error  { border-color: #f87171; animation: shake .3s ease; }
 @keyframes shake { 0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)} }
 
@@ -508,19 +516,19 @@ onBeforeUnmount(() => clearInterval(timerInterval))
 .fp-notice.error   { background: rgba(239,68,68,.1);  border: 1px solid rgba(239,68,68,.25);  color: #f87171; }
 .fp-notice i { flex-shrink: 0; margin-top: 1px; }
 .demo-otp-row { display: flex; align-items: center; gap: 7px; margin-top: 8px; font-size: 12.5px; color: #9ca3af; }
-.otp-reveal { font-size: 1.1rem; letter-spacing: 4px; color: #c4b5fd; background: rgba(99,102,241,.15); padding: 2px 10px; border-radius: 6px; font-family: monospace; }
+.otp-reveal { font-size: 1.1rem; letter-spacing: 4px; color: #d9f76e; background: rgba(41,119,245,.15); padding: 2px 10px; border-radius: 6px; font-family: monospace; }
 
 /* ── Button ───────────────────────────────────────────────── */
 .fp-btn {
   width: 100%; padding: 13px;
-  background: linear-gradient(135deg,#4f46e5,#7c3aed);
+  background: linear-gradient(135deg,#2977f5,#8860e0);
   border: none; border-radius: 11px; color: #fff;
   font-size: 14.5px; font-weight: 600; cursor: pointer;
   transition: all .22s; display: flex; align-items: center; justify-content: center; gap: 9px;
   font-family: inherit; text-decoration: none;
-  box-shadow: 0 4px 20px rgba(79,70,229,.35);
+  box-shadow: 0 4px 20px rgba(41,119,245,.35);
 }
-.fp-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(79,70,229,.5); }
+.fp-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(41,119,245,.5); }
 .fp-btn:disabled { opacity: .42; cursor: not-allowed; transform: none; }
 
 /* Back link */

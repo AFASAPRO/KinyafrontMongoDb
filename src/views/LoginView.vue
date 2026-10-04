@@ -266,10 +266,10 @@ async function handleForgot() {
 .auth-form-wrap { width: 100%; }
 .auth-kicker { display: flex; align-items: center; gap: 8px; color: var(--text-2); font-size: 10px; font-weight: 700; letter-spacing: .12em; margin-bottom: 15px; }
 .auth-kicker span { width: 7px; height: 7px; border-radius: 50%; background: #34a853; box-shadow: 0 0 0 4px rgba(52,168,83,.13); }
-.auth-heading { font-size: 2rem; line-height: 1.15; font-weight: 700; color: var(--text-1); margin-bottom: 8px; }
+.auth-heading { font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif; font-size: 2.5rem; line-height: 1.1; font-weight: 400; letter-spacing: -.01em; color: var(--text-1); margin-bottom: 8px; }
 .sub-heading { font-size: 1.25rem; font-weight: 650; color: var(--text-1); margin-bottom: .5rem; }
 .auth-sub { font-size: 14px; color: var(--text-2); margin-bottom: 1.6rem; line-height: 1.55; }
-.back-link { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--accent-solid); cursor: pointer; margin-bottom: 1.25rem; font-weight: 600; }
+.back-link { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--purple); cursor: pointer; margin-bottom: 1.25rem; font-weight: 600; }
 .back-link:hover { text-decoration: underline; }
 .social-btns { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.2rem; }
 .social-btn { min-height: 46px; display: flex; align-items: center; justify-content: center; gap: 11px; width: 100%; padding: 10px 16px; background: var(--bg-card); border: 1px solid var(--border-md); border-radius: 9px; color: var(--text-1); font-size: 13.5px; font-weight: 600; transition: background .18s, border-color .18s, transform .18s; }
@@ -283,11 +283,11 @@ async function handleForgot() {
 .field-label { display: block; font-size: 12px; font-weight: 650; color: var(--text-1); margin-bottom: 7px; }
 .field-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
 .field-header .field-label { margin-bottom: 0; }
-.forgot-link { font-size: 12px; color: var(--accent-solid); cursor: pointer; font-weight: 600; }
+.forgot-link { font-size: 12px; color: var(--purple); cursor: pointer; font-weight: 600; }
 .forgot-link:hover { text-decoration: underline; }
 .field-input-wrap, .pass-wrap { position: relative; }
 .field-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); z-index: 1; color: var(--text-3); font-size: 14px; pointer-events: none; transition: color .18s; }
-.field-input-wrap:focus-within .field-icon, .pass-wrap:focus-within .field-icon { color: var(--accent-solid); }
+.field-input-wrap:focus-within .field-icon, .pass-wrap:focus-within .field-icon { color: var(--purple); }
 .field-input { width: 100%; height: 48px; padding: 0 14px 0 42px; background: var(--bg-card); border: 1px solid var(--border-md); border-radius: 9px; color: var(--text-1); font-size: 14px; transition: border-color .18s, box-shadow .18s, background .18s; outline: none; }
 .field-input::placeholder { color: var(--text-3); }
 .field-input:hover { border-color: var(--text-3); }
@@ -303,17 +303,17 @@ async function handleForgot() {
 .checkmark { width: 18px; height: 18px; border: 1px solid var(--border-md); border-radius: 5px; display: grid; place-items: center; transition: background .18s, border-color .18s; flex-shrink: 0; }
 .checkbox-label input:focus-visible + .checkmark { outline: 3px solid color-mix(in srgb, var(--accent-solid) 30%, transparent); outline-offset: 2px; }
 .checkbox-label input:checked + .checkmark { background: var(--accent-solid); border-color: var(--accent-solid); }
-.checkbox-label input:checked + .checkmark::after { content: '✓'; color: #fff; font-size: 11px; font-weight: 700; }
+.checkbox-label input:checked + .checkmark::after { content: '✓'; color: var(--on-accent); font-size: 11px; font-weight: 700; }
 .notice { padding: 11px 13px; border-radius: 9px; font-size: 12.5px; display: flex; align-items: center; gap: 9px; margin-bottom: 1rem; line-height: 1.45; }
 .notice.ok { background: rgba(52,168,83,.1); border: 1px solid rgba(52,168,83,.3); color: #34a853; }
 .notice.err, .error-notice { background: color-mix(in srgb, var(--red) 10%, transparent); border: 1px solid color-mix(in srgb, var(--red) 26%, transparent); color: var(--red); }
 .notice.warn-notice { background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3); color: #d89a22; }
-.submit-btn { width: 100%; min-height: 49px; padding: 12px 16px; background: var(--accent-solid); border: 1px solid transparent; border-radius: 9px; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; transition: background .18s, transform .18s, box-shadow .18s; display: flex; align-items: center; justify-content: center; gap: 9px; margin-bottom: 1.15rem; box-shadow: 0 5px 14px color-mix(in srgb, var(--accent-solid) 22%, transparent); }
+.submit-btn { width: 100%; min-height: 49px; padding: 12px 16px; background: var(--accent-solid); border: 1px solid transparent; border-radius: 9px; color: var(--on-accent); font-size: 14px; font-weight: 700; cursor: pointer; transition: background .18s, transform .18s, box-shadow .18s; display: flex; align-items: center; justify-content: center; gap: 9px; margin-bottom: 1.15rem; box-shadow: 0 5px 14px color-mix(in srgb, var(--accent-solid) 22%, transparent); }
 .submit-btn:not(:disabled):hover { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 8px 18px color-mix(in srgb, var(--accent-solid) 30%, transparent); }
 .submit-btn:not(:disabled):active { transform: translateY(0); }
 .submit-btn:disabled { opacity: .62; cursor: wait; box-shadow: none; }
 .switch-text { font-size: 13px; color: var(--text-2); text-align: center; }
-.switch-text a { color: var(--accent-solid); font-weight: 700; text-decoration: none; }
+.switch-text a { color: var(--purple); font-weight: 700; text-decoration: none; }
 .switch-text a:hover { text-decoration: underline; }
 .oauth-toast { background: color-mix(in srgb, var(--accent-solid) 9%, transparent); border: 1px solid color-mix(in srgb, var(--accent-solid) 22%, transparent); color: var(--text-1); padding: 11px 13px; border-radius: 9px; font-size: 12.5px; display: flex; align-items: center; gap: 9px; margin-bottom: .9rem; }
 .auth-install { margin-top: 1rem; display: flex; }

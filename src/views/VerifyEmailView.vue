@@ -160,14 +160,14 @@ onMounted(() => { sendCode(); nextTick(() => otpRefs.value[0]?.focus()) })
   background: var(--bg-card); border: 1.5px solid var(--border-md); border-radius: 12px;
   color: var(--text-1); outline: none; transition: border-color .2s, box-shadow .2s, background .2s;
 }
-.otp-box:focus { border-color: var(--accent-solid); box-shadow: 0 0 0 3px rgba(109,40,217,.16); }
-.otp-box.filled { border-color: var(--accent-solid); background: rgba(109,40,217,.08); }
+.otp-box:focus { border-color: var(--accent-solid); box-shadow: 0 0 0 3px rgba(198,244,50,.16); }
+.otp-box.filled { border-color: var(--accent-solid); background: rgba(198,244,50,.08); }
 .otp-box.error { border-color: var(--red); animation: shake .3s ease; }
 @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
 
 .notice { padding: 9px 12px; border-radius: 10px; font-size: 12.5px; display: flex; align-items: center; gap: 7px; margin-bottom: .9rem; text-align: left; }
 .err-notice { background: rgba(242,139,130,.1); border: 1px solid rgba(242,139,130,.25); color: var(--red); }
-.info-notice { background: rgba(109,40,217,.1); border: 1px solid rgba(109,40,217,.25); color: var(--purple); }
+.info-notice { background: rgba(198,244,50,.1); border: 1px solid rgba(198,244,50,.25); color: var(--purple); }
 
 .resend-link { display: block; margin: 0 auto 1.4rem; background: none; color: var(--purple); font-size: 13px; font-weight: 600; }
 .resend-link:disabled { color: var(--text-3); cursor: default; }
@@ -176,7 +176,7 @@ onMounted(() => { sendCode(); nextTick(() => otpRefs.value[0]?.focus()) })
 .btn-row { display: flex; gap: 10px; }
 .back-btn { flex: 0 0 auto; padding: 12px 20px; background: var(--bg-card); border: 1px solid var(--border-md); border-radius: var(--r-sm); color: var(--text-1); font-size: 14px; font-weight: 600; transition: background .2s; }
 .back-btn:hover { background: var(--bg-hover); }
-.submit-btn { flex: 1; padding: 12px; background: var(--accent-solid); border: none; border-radius: var(--r-sm); color: #fff; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .2s; }
+.submit-btn { flex: 1; padding: 12px; background: var(--accent-solid); border: none; border-radius: var(--r-sm); color: var(--on-accent); font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .2s; }
 .submit-btn:not(:disabled):hover { opacity: .92; }
 .submit-btn:disabled { opacity: .5; cursor: not-allowed; }
 @media (min-width: 861px) {
@@ -192,14 +192,14 @@ onMounted(() => { sendCode(); nextTick(() => otpRefs.value[0]?.focus()) })
   .notice { padding: 11px 13px; border-radius: 9px; font-size: 12.5px; display: flex; align-items: center; gap: 9px; margin-bottom: 1rem; text-align: left; }
   .err-notice { background: color-mix(in srgb, var(--red) 10%, transparent); border: 1px solid color-mix(in srgb, var(--red) 26%, transparent); color: var(--red); }
   .info-notice { background: color-mix(in srgb, var(--accent-solid) 9%, transparent); border: 1px solid color-mix(in srgb, var(--accent-solid) 22%, transparent); color: var(--text-1); }
-  .resend-link { display: block; margin: 0 0 1.4rem; background: none; color: var(--accent-solid); font-size: 12.5px; font-weight: 650; }
+  .resend-link { display: block; margin: 0 0 1.4rem; background: none; color: var(--purple); font-size: 12.5px; font-weight: 650; }
   .resend-link:disabled { color: var(--text-3); cursor: default; }
   .resend-link:not(:disabled):hover { text-decoration: underline; }
   .btn-row { display: flex; gap: 10px; }
   .back-btn, .submit-btn { min-height: 48px; border-radius: 9px; font-size: 13.5px; font-weight: 700; transition: transform .18s, background .18s, box-shadow .18s; }
   .back-btn { flex: 0 0 auto; padding: 12px 20px; background: var(--bg-card); border: 1px solid var(--border-md); color: var(--text-1); }
   .back-btn:hover { background: var(--bg-hover); }
-  .submit-btn { flex: 1; padding: 12px; background: var(--accent-solid); border: 0; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 5px 14px color-mix(in srgb, var(--accent-solid) 22%, transparent); }
+  .submit-btn { flex: 1; padding: 12px; background: var(--accent-solid); border: 0; color: var(--on-accent); display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 5px 14px color-mix(in srgb, var(--accent-solid) 22%, transparent); }
   .submit-btn:not(:disabled):hover { opacity: 1; transform: translateY(-1px); box-shadow: 0 8px 18px color-mix(in srgb, var(--accent-solid) 30%, transparent); }
   .submit-btn:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
 }

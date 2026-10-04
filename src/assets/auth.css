@@ -7,30 +7,31 @@
 ══════════════════════════════════════════════════════════════ */
 
 .au-root {
-  /* surfaces */
-  --au-bg-left: #0b1016;
-  --au-bg-right: #080b12;
-  --au-panel-border: #151c26;
-  --au-card: #0d1421;
-  --au-card-border: #222841;
-  --au-banner: #101537;
-  --au-chip: #182033;
+  /* surfaces — landing palette (near-black, green-tinted) */
+  --au-bg-left: #0d0e0a;
+  --au-bg-right: #0a0b07;
+  --au-panel-border: #1a1b12;
+  --au-card: #14150e;
+  --au-card-border: #262819;
+  --au-banner: #1a1d10;
+  --au-chip: #1e2013;
   /* text */
-  --au-text: #f3f5f9;
-  --au-muted: #9aa4b5;
-  --au-faint: #6b7688;
+  --au-text: #f0f1ea;
+  --au-muted: #a1a695;
+  --au-faint: #6b7060;
   /* fields */
-  --au-field: #151a21;
-  --au-field-border: #232b36;
-  --au-social: #181f27;
-  --au-social-hover: #1f2833;
-  --au-divider: #1c232d;
-  /* accent */
-  --au-accent: #6661fe;
-  --au-accent-hover: #7772ff;
-  --au-ring: rgba(102, 97, 254, .32);
-  --au-link: #5daaf4;
-  --au-tint: rgba(102, 97, 254, .14);
+  --au-field: #1a1b12;
+  --au-field-border: #2b2d1e;
+  --au-social: #1a1c11;
+  --au-social-hover: #23251a;
+  --au-divider: #22241a;
+  /* accent — landing lime */
+  --au-accent: #c6f432;
+  --au-accent-hover: #d3f76e;
+  --au-on-accent: #14180a;
+  --au-ring: rgba(198, 244, 50, .30);
+  --au-link: #7db4ff;
+  --au-tint: rgba(198, 244, 50, .12);
   /* status */
   --au-danger: #f87171;
   --au-success: #34d399;
@@ -49,26 +50,27 @@
 }
 
 .au-root.light {
-  --au-bg-left: #ffffff;
-  --au-bg-right: #eef1fb;
-  --au-panel-border: #e4e8f2;
+  --au-bg-left: #fcfcf8;
+  --au-bg-right: #eef0e2;
+  --au-panel-border: #e3e6d5;
   --au-card: #ffffff;
-  --au-card-border: #dde2f0;
-  --au-banner: #e6e9ff;
-  --au-chip: #eef0fa;
-  --au-text: #101828;
-  --au-muted: #475467;
-  --au-faint: #7a8496;
-  --au-field: #f6f7fb;
-  --au-field-border: #d5dae6;
-  --au-social: #f4f5fa;
-  --au-social-hover: #eceef6;
-  --au-divider: #e2e6f0;
-  --au-accent: #5b56f0;
-  --au-accent-hover: #4a45e0;
-  --au-ring: rgba(91, 86, 240, .25);
-  --au-link: #2563eb;
-  --au-tint: rgba(91, 86, 240, .1);
+  --au-card-border: #dfe3cf;
+  --au-banner: #eef3d8;
+  --au-chip: #f0f2e2;
+  --au-text: #191b12;
+  --au-muted: #5c614f;
+  --au-faint: #8b907e;
+  --au-field: #f1f3e6;
+  --au-field-border: #d9ddc8;
+  --au-social: #f2f4e8;
+  --au-social-hover: #eaedd8;
+  --au-divider: #e0e4d0;
+  --au-accent: #b8e62e;
+  --au-accent-hover: #a8d422;
+  --au-on-accent: #14180a;
+  --au-ring: rgba(140, 180, 20, .25);
+  --au-link: #2977f5;
+  --au-tint: rgba(140, 180, 20, .1);
   --au-danger: #dc2626;
   --au-success: #059669;
   --au-warn: #b45309;
@@ -112,7 +114,7 @@
 }
 
 /* ── Headings ─────────────────────────────────────────────── */
-.au-title { font-size: 1.85rem; line-height: 1.2; font-weight: 800; letter-spacing: -.02em; color: var(--au-text); margin: 0 0 .4rem; }
+.au-title { font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 2.2rem; line-height: 1.12; letter-spacing: -.01em; color: var(--au-text); margin: 0 0 .45rem; }
 .au-lead { font-size: .92rem; line-height: 1.5; color: var(--au-muted); margin: 0 0 1.5rem; }
 .au-lead strong { color: var(--au-text); font-weight: 600; word-break: break-all; }
 
@@ -198,7 +200,7 @@
   border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg) scale(0); transition: transform .15s;
 }
 .au-check input:checked + .au-check-box { background: var(--au-accent); border-color: var(--au-accent); }
-.au-check input:checked + .au-check-box::after { transform: rotate(45deg) scale(1); }
+.au-check input:checked + .au-check-box::after { border-color: var(--au-on-accent); transform: rotate(45deg) scale(1); }
 .au-check input:focus-visible + .au-check-box { box-shadow: 0 0 0 3px var(--au-ring); }
 
 /* ── Buttons ──────────────────────────────────────────────── */
@@ -209,7 +211,7 @@
   font: inherit; font-size: .95rem; font-weight: 700; cursor: pointer; text-decoration: none;
   transition: background .18s, transform .1s, box-shadow .18s, opacity .18s;
 }
-.au-btn-primary { background: var(--au-accent); color: #fff; }
+.au-btn-primary { background: var(--au-accent); color: var(--au-on-accent); }
 .au-btn-primary:hover:not(:disabled) { background: var(--au-accent-hover); box-shadow: 0 6px 18px var(--au-ring); }
 .au-btn-primary:active:not(:disabled) { transform: translateY(1px); }
 .au-btn:disabled { opacity: .5; cursor: not-allowed; }
@@ -253,6 +255,7 @@
 .au-install { margin-top: 1.5rem; }
 .au-root .au-install button.ih-btn {
   background: var(--au-accent); border: 0; border-radius: 9px;
+  color: var(--au-on-accent);
   padding: .6rem 1rem; font-size: .86rem; font-weight: 700; box-shadow: none;
 }
 .au-root .au-install button.ih-btn:hover { background: var(--au-accent-hover); transform: none; box-shadow: 0 6px 18px var(--au-ring); }
@@ -263,7 +266,7 @@
 .au-step { display: flex; align-items: center; gap: .5rem; font-size: .76rem; font-weight: 600; color: var(--au-faint); white-space: nowrap; }
 .au-step-dot { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: .7rem; background: var(--au-field); border: 1px solid var(--au-field-border); transition: all .2s; }
 .au-step.is-active { color: var(--au-text); }
-.au-step.is-active .au-step-dot { background: var(--au-accent); border-color: var(--au-accent); color: #fff; }
+.au-step.is-active .au-step-dot { background: var(--au-accent); border-color: var(--au-accent); color: var(--au-on-accent); }
 .au-step-line { flex: 1; min-width: 14px; height: 1px; margin: 0 .5rem; background: var(--au-divider); }
 .au-step-line.is-filled { background: var(--au-accent); }
 .au-icon-badge {

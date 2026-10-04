@@ -131,8 +131,8 @@
           <div class="option-grid cols3">
             <button v-for="p in professions" :key="p.id" class="option-card"
               :class="{ selected: form.profession === p.id }" @click="form.profession = p.id">
-              <div class="oc-icon" :style="{ background: 'rgba(79,70,229,.12)', borderColor: 'rgba(79,70,229,.25)' }">
-                <i :class="p.icon" style="color:#c4b5fd"></i>
+              <div class="oc-icon" :style="{ background: 'rgba(41,119,245,.12)', borderColor: 'rgba(41,119,245,.25)' }">
+                <i :class="p.icon" style="color:#d9f76e"></i>
               </div>
               <span class="oc-label">{{ p.label }}</span>
               <div class="oc-check" v-if="form.profession === p.id"><i class="fas fa-check"></i></div>
@@ -319,7 +319,7 @@ const usageTypes = [
 
 /* Use cases — custom multi-select with coloured tags */
 const useCaseOptions = ['Coding & debugging', 'Writing & editing', 'Research', 'Learning a topic', 'Customer support', 'Content creation', 'Data analysis', 'Personal productivity', 'Just exploring']
-const tagPalette = ['#a7f3d0', '#fde68a', '#c4b5fd', '#99f6e4', '#fbcfe8', '#bfdbfe', '#fecaca', '#fed7aa', '#d9f99d']
+const tagPalette = ['#a7f3d0', '#fde68a', '#d9f76e', '#99f6e4', '#fbcfe8', '#bfdbfe', '#fecaca', '#fed7aa', '#d9f99d']
 function tagStyle(uc) {
   const idx = useCaseOptions.indexOf(uc)
   const bg = tagPalette[idx % tagPalette.length]
@@ -347,7 +347,7 @@ const invited = ref([])
 function initials(name) {
   return (name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase()).join('') || '?'
 }
-const avatarPalette = ['#f472b6', '#60a5fa', '#34d399', '#fbbf24', '#a78bfa']
+const avatarPalette = ['#f472b6', '#60a5fa', '#34d399', '#fbbf24', '#d9f76e']
 function avatarColor(i) { return avatarPalette[i % avatarPalette.length] }
 async function sendInvite() {
   if (!inviteEmail.value || inviting.value) return
@@ -393,7 +393,7 @@ const professions = [
 ]
 
 const starters = [
-  { id:'code',      icon:'fas fa-code',        title:'Generate Code',      sub:'Build something with AI', color:'#c4b5fd', bg:'rgba(79,70,229,.12)',   border:'rgba(79,70,229,.25)',  prompt:'Write me a complete, responsive HTML/CSS landing page with a modern dark theme and smooth animations.' },
+  { id:'code',      icon:'fas fa-code',        title:'Generate Code',      sub:'Build something with AI', color:'#d9f76e', bg:'rgba(41,119,245,.12)',   border:'rgba(41,119,245,.25)',  prompt:'Write me a complete, responsive HTML/CSS landing page with a modern dark theme and smooth animations.' },
   { id:'learn',     icon:'fas fa-book-open',   title:'Learn a Topic',      sub:'Get structured lessons',  color:'#67e8f9', bg:'rgba(6,182,212,.12)',   border:'rgba(6,182,212,.25)',  prompt:'Create a beginner-friendly learning plan for machine learning with topics, resources, and weekly goals.' },
   { id:'write',     icon:'fas fa-pen-nib',      title:'Write Content',      sub:'Draft any document',      color:'#86efac', bg:'rgba(34,197,94,.12)',   border:'rgba(34,197,94,.25)',  prompt:'Help me write a compelling cover letter for a software engineering position at a tech startup.' },
   { id:'analyze',   icon:'fas fa-chart-bar',   title:'Analyze Data',       sub:'Make sense of numbers',   color:'#fcd34d', bg:'rgba(245,158,11,.12)',  border:'rgba(245,158,11,.25)', prompt:'Explain the key metrics I should track to measure the success of a SaaS product launch.' },
@@ -455,10 +455,10 @@ watch(step, (v) => { if (v === 6) runFinish() })
 
 .ob-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .ob-orb{position:absolute;border-radius:50%;filter:blur(100px);opacity:.1}
-.ob-orb1{width:600px;height:600px;background:linear-gradient(135deg,#4f46e5,#a855f7);top:-150px;left:-150px}
-.ob-orb2{width:500px;height:500px;background:linear-gradient(135deg,#ec4899,#a855f7);bottom:-100px;right:-100px}
-.ob-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(109,40,217,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(109,40,217,.025) 1px,transparent 1px);background-size:52px 52px}
-.particle{position:absolute;border-radius:50%;background:rgba(109,40,217,.4);animation:float ease-in-out infinite alternate}
+.ob-orb1{width:600px;height:600px;background:linear-gradient(135deg,#2977f5,#e75ac5);top:-150px;left:-150px}
+.ob-orb2{width:500px;height:500px;background:linear-gradient(135deg,#ec4899,#e75ac5);bottom:-100px;right:-100px}
+.ob-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(198,244,50,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(198,244,50,.025) 1px,transparent 1px);background-size:52px 52px}
+.particle{position:absolute;border-radius:50%;background:rgba(198,244,50,.4);animation:float ease-in-out infinite alternate}
 @keyframes float{from{transform:translateY(0) scale(1);opacity:.4}to{transform:translateY(-20px) scale(1.3);opacity:.1}}
 
 .ob-header{width:100%;max-width:700px;display:flex;align-items:center;gap:16px;padding:1.25rem 0;z-index:2}
@@ -466,7 +466,7 @@ watch(step, (v) => { if (v === 6) runFinish() })
 .ob-brand-logo{width:28px;height:28px;border-radius:7px;object-fit:contain}
 .ob-root.light .ob-brand{color:#202124}
 .ob-progress-bar{flex:1;height:4px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden}
-.ob-progress-fill{height:100%;background:linear-gradient(90deg,#4f46e5,#a855f7);transition:width .4s cubic-bezier(.4,0,.2,1)}
+.ob-progress-fill{height:100%;background:linear-gradient(90deg,#2977f5,#e75ac5);transition:width .4s cubic-bezier(.4,0,.2,1)}
 .ob-step-text{font-size:12px;font-weight:600;color:var(--text-3)}
 .ob-back-arrow{display:none}
 .ob-dashes{display:none}
@@ -477,7 +477,7 @@ watch(step, (v) => { if (v === 6) runFinish() })
 
 .ob-step-header{display:flex;gap:20px;margin-bottom:1.75rem}
 .ob-step-header.center{justify-content:center;text-align:center;margin-bottom:1.5rem}
-.ob-step-badge{width:56px;height:56px;border-radius:16px;background:rgba(109,40,217,.15);border:1px solid rgba(109,40,217,.3);display:flex;align-items:center;justify-content:center;font-size:24px;color:#c4b5fd;flex-shrink:0}
+.ob-step-badge{width:56px;height:56px;border-radius:16px;background:rgba(198,244,50,.15);border:1px solid rgba(198,244,50,.3);display:flex;align-items:center;justify-content:center;font-size:24px;color:#d9f76e;flex-shrink:0}
 .ob-step-badge.star{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.3);color:#fcd34d}
 
 .ob-title{font-size:24px;font-weight:700;color:#fff;margin-bottom:8px}
@@ -491,24 +491,24 @@ watch(step, (v) => { if (v === 6) runFinish() })
 
 .name-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .ob-input{width:100%;padding:14px 16px;background:#1a1a1c;border:1px solid rgba(255,255,255,.1);border-radius:12px;color:#fff;font-size:14.5px;outline:none;transition:all .2s}
-.ob-input:focus{border-color:#6d28d9;box-shadow:0 0 0 4px rgba(109,40,217,.15)}
+.ob-input:focus{border-color:#9db829;box-shadow:0 0 0 4px rgba(198,244,50,.15)}
 .ob-root.light .ob-input{background:#f8f9fa;border-color:#dadce0;color:#202124}
 
 .usage-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 @media(max-width:600px){.usage-grid{grid-template-columns:repeat(2,1fr)}}
 .usage-card{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 10px;background:#1a1a1c;border:1.5px solid rgba(255,255,255,.08);border-radius:14px;color:var(--text-2);font-size:12.5px;font-weight:600;transition:all .2s}
 .ob-root.light .usage-card{background:#f8f9fa;border-color:#e0e0e0}
-.usage-card i{font-size:17px;color:#c4b5fd}
-.usage-card:hover{border-color:rgba(109,40,217,.4)}
-.usage-card.selected{border-color:#6d28d9;background:rgba(109,40,217,.12);color:#fff}
+.usage-card i{font-size:17px;color:#d9f76e}
+.usage-card:hover{border-color:rgba(198,244,50,.4)}
+.usage-card.selected{border-color:#9db829;background:rgba(198,244,50,.12);color:#fff}
 .ob-root.light .usage-card.selected{color:#1a1a2e}
 .usage-check{position:absolute;top:8px;right:8px;width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff}
-.usage-card.selected .usage-check{background:#6d28d9;border-color:#6d28d9}
+.usage-card.selected .usage-check{background:#9db829;border-color:#9db829}
 
 .ms{position:relative}
 .ms-trigger{width:100%;min-height:50px;padding:10px 40px 10px 14px;background:#1a1a1c;border:1px solid rgba(255,255,255,.1);border-radius:12px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;text-align:left;position:relative;transition:border-color .2s}
 .ob-root.light .ms-trigger{background:#f8f9fa;border-color:#dadce0}
-.ms.open .ms-trigger{border-color:#6d28d9}
+.ms.open .ms-trigger{border-color:#9db829}
 .ms-placeholder{color:var(--text-3);font-size:14px}
 .ms-tags{display:flex;flex-wrap:wrap;gap:6px}
 .ms-tag{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:7px;font-size:12px;font-weight:600;border:1px solid}
@@ -523,7 +523,7 @@ watch(step, (v) => { if (v === 6) runFinish() })
 .ob-root.light .ms-option:hover{background:#f1f3f4}
 .ms-option.picked{font-weight:600}
 .ms-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;border:1px solid}
-.ms-opt-check{margin-left:auto;color:#6d28d9;font-size:11px}
+.ms-opt-check{margin-left:auto;color:#9db829;font-size:11px}
 
 .ob-fade-enter-active,.ob-fade-leave-active{transition:opacity .2s,max-height .25s}
 .ob-fade-enter-from,.ob-fade-leave-to{opacity:0}
@@ -538,12 +538,12 @@ watch(step, (v) => { if (v === 6) runFinish() })
 .ob-root.light .option-card{background:#f8f9fa;border-color:#e0e0e0}
 .option-card:hover{background:#222225;transform:translateY(-2px)}
 .ob-root.light .option-card:hover{background:#f1f3f4}
-.option-card.selected{background:rgba(109,40,217,.1);border-color:#6d28d9;box-shadow:0 0 0 1px #6d28d9}
+.option-card.selected{background:rgba(198,244,50,.1);border-color:#9db829;box-shadow:0 0 0 1px #9db829}
 
 .oc-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;border:1px solid transparent}
 .oc-label{font-size:13px;font-weight:600;color:var(--text-1)}
 .ob-root.light .oc-label{color:#202124}
-.oc-check{position:absolute;top:8px;right:8px;width:18px;height:18px;background:#6d28d9;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff}
+.oc-check{position:absolute;top:8px;right:8px;width:18px;height:18px;background:#9db829;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff}
 
 .invite-step{text-align:center}
 .invite-row{display:flex;gap:10px;margin-bottom:.9rem}
@@ -555,8 +555,8 @@ watch(step, (v) => { if (v === 6) runFinish() })
 .invite-list{display:flex;flex-direction:column;gap:8px;text-align:left;margin-bottom:1rem}
 .invite-member{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#1a1a1c;border:1px solid rgba(255,255,255,.06);border-radius:12px}
 .ob-root.light .invite-member{background:#f8f9fa;border-color:#e0e0e0}
-.invite-avatar{width:32px;height:32px;border-radius:50%;background:#6d28d9;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.invite-avatar.owner{background:#4f46e5}
+.invite-avatar{width:32px;height:32px;border-radius:50%;background:#9db829;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.invite-avatar.owner{background:#2977f5}
 .invite-name{font-size:13.5px;font-weight:600;color:var(--text-1)}
 .invite-name b{font-weight:700;color:var(--purple);margin-left:6px;font-size:11px}
 .invite-email{font-size:12.5px;color:var(--text-3);margin-left:auto}
@@ -566,13 +566,13 @@ watch(step, (v) => { if (v === 6) runFinish() })
 .starter-row{display:flex;align-items:center;gap:16px;padding:12px 16px;background:#1a1a1c;border:1px solid rgba(255,255,255,.06);border-radius:14px;cursor:pointer;transition:all .2s;text-align:left}
 .ob-root.light .starter-row{background:#f8f9fa;border-color:#e0e0e0}
 .starter-row:hover{background:#222225;border-color:rgba(255,255,255,.15)}
-.starter-row.selected{background:rgba(109,40,217,.1);border-color:#6d28d9}
+.starter-row.selected{background:rgba(198,244,50,.1);border-color:#9db829}
 .sr-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid transparent;flex-shrink:0}
 .sr-info{flex:1}
 .sr-title{font-size:14px;font-weight:700;color:#fff;margin-bottom:2px}
 .ob-root.light .sr-title{color:#1a1a2e}
 .sr-sub{font-size:12px;color:var(--text-3)}
-.sr-check{color:#6d28d9;font-size:14px}
+.sr-check{color:#9db829;font-size:14px}
 
 .divider-or{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;color:var(--text-3);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px}
 .divider-or::before,.divider-or::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08)}
@@ -580,11 +580,11 @@ watch(step, (v) => { if (v === 6) runFinish() })
 .custom-box{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#1a1a1c;border:1px solid rgba(255,255,255,.1);border-radius:14px;transition:all .2s}
 .custom-box i{color:var(--text-3);font-size:16px}
 .custom-box input{flex:1;background:none;border:none;color:#fff;font-size:14px;outline:none}
-.custom-box.active{border-color:#6d28d9;background:rgba(109,40,217,.05)}
+.custom-box.active{border-color:#9db829;background:rgba(198,244,50,.05)}
 
 .ob-actions{display:flex;gap:12px;margin-top:1.5rem}
-.ob-next-btn,.ob-finish-btn{flex:1;padding:14px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:12px;color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;box-shadow:0 4px 15px rgba(79,70,229,.3)}
-.ob-next-btn:hover:not(:disabled),.ob-finish-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 20px rgba(79,70,229,.4)}
+.ob-next-btn,.ob-finish-btn{flex:1;padding:14px;background:linear-gradient(135deg,#2977f5,#8860e0);border-radius:12px;color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;box-shadow:0 4px 15px rgba(41,119,245,.3)}
+.ob-next-btn:hover:not(:disabled),.ob-finish-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 20px rgba(41,119,245,.4)}
 .ob-next-btn:disabled,.ob-finish-btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
 .ob-back-btn{padding:14px 24px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:var(--text-2);font-weight:600;font-size:15px;transition:all .2s}
 .ob-back-btn:hover{background:rgba(255,255,255,.1);color:#fff}
@@ -594,8 +594,8 @@ watch(step, (v) => { if (v === 6) runFinish() })
 .load-card{margin-top:1.75rem;display:flex;flex-direction:column;gap:4px;text-align:left}
 .load-row{display:flex;align-items:center;gap:14px;padding:13px 6px;opacity:.4;transition:opacity .3s}
 .load-row.done,.load-row.active{opacity:1}
-.load-ic{width:26px;height:26px;border-radius:50%;border:2px solid rgba(109,40,217,.35);display:flex;align-items:center;justify-content:center;font-size:11px;color:#c4b5fd;flex-shrink:0}
-.load-row.done .load-ic{background:#6d28d9;border-color:#6d28d9;color:#fff}
+.load-ic{width:26px;height:26px;border-radius:50%;border:2px solid rgba(198,244,50,.35);display:flex;align-items:center;justify-content:center;font-size:11px;color:#d9f76e;flex-shrink:0}
+.load-row.done .load-ic{background:#9db829;border-color:#9db829;color:#fff}
 .load-title{font-size:14px;font-weight:700;color:var(--text-1)}
 .load-sub{font-size:12px;color:var(--text-3)}
 

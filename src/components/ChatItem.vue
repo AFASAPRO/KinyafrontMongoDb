@@ -58,8 +58,8 @@ const relativeTime = computed(() => {
   border-color: var(--border);
 }
 .chat-item.active {
-  background: rgba(99,102,241,0.12);
-  border-color: rgba(99,102,241,0.25);
+  background: rgba(41,119,245,0.12);
+  border-color: rgba(41,119,245,0.25);
 }
 
 .chat-icon {
@@ -68,13 +68,13 @@ const relativeTime = computed(() => {
   display: flex; align-items: center; justify-content: center;
   font-size: 0.75rem; color: var(--primary); flex-shrink: 0;
 }
-.chat-item.active .chat-icon { background: rgba(99,102,241,0.2); }
+.chat-item.active .chat-icon { background: rgba(41,119,245,0.2); }
 
 .chat-info { flex: 1; min-width: 0; }
 .chat-title { font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
 .chat-meta { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
 .chat-meta span { font-size: 0.72rem; color: var(--text3); }
-.msg-count { background: rgba(99,102,241,0.15); color: var(--primary); padding: 1px 5px; border-radius: 99px; font-size: 0.68rem !important; }
+.msg-count { background: rgba(41,119,245,0.15); color: var(--primary); padding: 1px 5px; border-radius: 99px; font-size: 0.68rem !important; }
 
 .chat-actions {
   display: flex;

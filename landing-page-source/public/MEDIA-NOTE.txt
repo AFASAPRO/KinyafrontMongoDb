@@ -1,0 +1,1 @@
+Note: media assets live in frontend/landing-dist/media/ (the built landing site). This source folder intentionally omits the duplicated video binaries to keep the download lean.

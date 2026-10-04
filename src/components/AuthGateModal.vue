@@ -64,7 +64,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   border-radius: 22px;
   padding: 2rem 1.75rem 1.5rem;
   text-align: center;
-  box-shadow: 0 30px 80px rgba(0,0,0,.55), 0 0 60px rgba(109,40,217,.12);
+  box-shadow: 0 30px 80px rgba(0,0,0,.55), 0 0 60px rgba(198,244,50,.12);
   animation: fadeUp .28s cubic-bezier(.34,1.4,.64,1);
   max-height: 90dvh; overflow-y: auto;
 }
@@ -79,7 +79,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 .gate-logo {
   width: 58px; height: 58px; margin: 0 auto 1rem;
   border-radius: 15px; overflow: hidden;
-  box-shadow: 0 0 30px rgba(109,40,217,.35);
+  box-shadow: 0 0 30px rgba(198,244,50,.35);
 }
 .gate-logo img { width: 100%; height: 100%; object-fit: contain; }
 
@@ -94,13 +94,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 }
 .gbtn.solid {
   background: var(--accent); border: 1px solid transparent; color: #fff;
-  box-shadow: 0 4px 16px rgba(109,40,217,.35);
+  box-shadow: 0 4px 16px rgba(198,244,50,.35);
 }
 .gbtn.solid:hover { filter: brightness(1.12); transform: translateY(-1px); }
 .gbtn.outline {
   background: transparent; border: 1px solid var(--border-md); color: var(--text-1);
 }
-.gbtn.outline:hover { background: var(--bg-hover); border-color: rgba(109,40,217,.4); }
+.gbtn.outline:hover { background: var(--bg-hover); border-color: rgba(198,244,50,.4); }
 
 .gate-later {
   background: none; border: none; color: var(--text-3);

@@ -2,7 +2,7 @@
   <div class="chat-window">
     <div v-if="!isPhone || hasMessages" class="chat-topbar">
       <button class="model-pill">
-        <i class="fas fa-star" style="color:#a855f7;font-size:11px"></i>
+        <i class="fas fa-star" style="color:#e75ac5;font-size:11px"></i>
         <span>KinyaBot AI</span>
         <i class="fas fa-chevron-down" style="font-size:10px;opacity:.6"></i>
       </button>
@@ -38,7 +38,7 @@
     </transition>
 
     <!-- Messages area -->
-    <div class="msg-area" ref="msgArea" @scroll="handleScroll">
+    <div v-if="hasMessages || isPhone" class="msg-area" ref="msgArea" @scroll="handleScroll">
       <!-- Welcome screen -->
       <!-- ═══ MOBILE HOME ═══ -->
       <div v-if="isPhone && !hasMessages" class="m-home">
@@ -55,64 +55,6 @@
                 <span>{{ c.lead }} <b>{{ c.accent }}</b></span>
               </button>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Welcome screen (desktop) -->
-      <div v-else-if="!hasMessages" class="welcome">
-        <div class="welcome-inner">
-          <div class="welcome-logo">
-            <img src="/logo.png" alt="KinyaBot" class="wl-img" />
-            <div class="wl-dots">
-              <div v-for="i in 4" :key="i" class="wl-dot" :class="`d${i}`"></div>
-            </div>
-          </div>
-          <h1 class="welcome-heading">
-            <template v-if="guest">How can I <span class="g-text">help you</span> today?</template>
-            <template v-else>
-              <span class="g-text">Think bigger</span> with KinyaBot AI<br />
-              <span style="color:var(--text-2);font-size:.65em;font-weight:400">innovation at your command</span>
-            </template>
-          </h1>
-          <p class="welcome-desc">
-            <template v-if="guest">
-              Ask anything, attach documents or images, or talk with your voice —
-              try a suggestion below, or type your own.
-              <strong>Sign in to start chatting.</strong>
-            </template>
-            <template v-else>
-              Turn imagination into impact — ask anything, attach documents and images, use your voice, and more.
-            </template>
-          </p>
-
-          <!-- Pinned cards (authenticated users) -->
-          <div v-if="!guest && chatStore.pinnedChats.length" class="pinned-section">
-            <div class="pinned-header">
-              <i class="fas fa-thumbtack" style="color:var(--text-2)"></i>
-              <span>Pinned Chats</span>
-              <i class="fas fa-chevron-down" style="font-size:11px;color:var(--text-3);margin-left:4px"></i>
-              <button class="sm-icon-btn" style="margin-left:auto"><i class="fas fa-ellipsis"></i></button>
-            </div>
-            <div class="pinned-cards">
-              <div v-for="chat in chatStore.pinnedChats.slice(0,3)" :key="chat.id"
-                class="pinned-card" @click="chatStore.loadChat(chat.id)">
-                <div class="pc-icon"><i class="fas fa-file-lines"></i></div>
-                <div class="pc-info">
-                  <div class="pc-title">{{ chat.title }}</div>
-                  <div class="pc-sub">{{ (chat.last_message || 'No messages yet').slice(0,50) }}</div>
-                  <div class="pc-date">{{ relTime(chat.updated_at) }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Quick chips -->
-          <div class="quick-chips">
-            <button v-for="c in chips" :key="c.label" class="chip" @click="useChip(c.prompt)">
-              <i :class="c.icon"></i>
-              <span>{{ c.label }}</span>
-            </button>
           </div>
         </div>
       </div>
@@ -150,6 +92,76 @@
       </transition>
     </div>
 
+    <!-- ═══ DESKTOP CENTERED HOME (empty state) — greeting + centered
+         composer + suggestion cards, styled after the marketing site ═══ -->
+    <div v-if="!isPhone && !hasMessages" class="welcome-hero">
+      <div class="wh-inner">
+        <div class="wh-brand">
+          <img src="/logo.png" alt="" />
+          <span>KinyaBot AI</span>
+        </div>
+        <h1 class="wh-greet serif-display">
+          <template v-for="(part, pi) in greeting.parts" :key="pi">
+            <em v-if="part.hl">{{ part.t }}</em><template v-else>{{ part.t }}</template>
+          </template>
+        </h1>
+        <p v-if="guest" class="wh-sub">
+          Ask anything, attach documents or images, or talk with your voice —
+          <strong>sign in to start chatting.</strong>
+        </p>
+
+        <InputBox
+          centered
+          class="wh-input"
+          @send="handleSend"
+          :disabled="chatStore.sending"
+          :preserve-on-send="guest"
+          :injected-text="composerInject"
+          :injected-file="restoredFile"
+          @focus="scrollBottom"
+        />
+
+        <div class="wh-cards">
+          <button type="button" class="wh-card" @click="useChip('Tell me a fun fact I probably do not know and explain it simply')">
+            <span class="whc-ic"><i class="fas fa-magnifying-glass"></i></span>
+            <span class="whc-body">
+              <b>Ask anything</b>
+              <small>Get fast, accurate answers — in English, Kinyarwanda, French and more.</small>
+            </span>
+          </button>
+          <button type="button" class="wh-card alt" @click="useChip('Help me plan and write a project brief — ask me for the details step by step')">
+            <span class="whc-ic"><i class="fas fa-robot"></i></span>
+            <span class="whc-body">
+              <b>Get work done with KinyaBot</b>
+              <em>NEW</em>
+              <small>Hand off writing, code and research — polished results around the clock.</small>
+            </span>
+          </button>
+        </div>
+
+        <!-- Pinned cards (authenticated users) -->
+        <div v-if="!guest && chatStore.pinnedChats.length" class="pinned-section">
+          <div class="pinned-header">
+            <i class="fas fa-thumbtack" style="color:var(--text-2)"></i>
+            <span>Pinned Chats</span>
+            <i class="fas fa-chevron-down" style="font-size:11px;color:var(--text-3);margin-left:4px"></i>
+            <button class="sm-icon-btn" style="margin-left:auto"><i class="fas fa-ellipsis"></i></button>
+          </div>
+          <div class="pinned-cards">
+            <div v-for="chat in chatStore.pinnedChats.slice(0,3)" :key="chat.id"
+              class="pinned-card" @click="chatStore.loadChat(chat.id)">
+              <div class="pc-icon"><i class="fas fa-file-lines"></i></div>
+              <div class="pc-info">
+                <div class="pc-title">{{ chat.title }}</div>
+                <div class="pc-sub">{{ (chat.last_message || 'No messages yet').slice(0,50) }}</div>
+                <div class="pc-date">{{ relTime(chat.updated_at) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Voice mode overlay -->
     <VoiceMode v-if="showVoiceMode" @close="showVoiceMode=false" />
 
@@ -177,6 +189,7 @@
     </transition>
 
     <InputBox
+      v-if="hasMessages || isPhone"
       @send="handleSend"
       :disabled="chatStore.sending"
       :preserve-on-send="guest"
@@ -424,7 +437,7 @@ onBeforeUnmount(() => {
   border-radius:99px; color:var(--text-2); font-size:12.5px; font-weight:500;
   cursor:pointer; transition:all .2s;
 }
-.voice-pill:hover { background:rgba(109,40,217,.14); color:#c4b5fd; border-color:rgba(109,40,217,.4); }
+.voice-pill:hover { background:rgba(198,244,50,.14); color:#d9f76e; border-color:rgba(198,244,50,.4); }
 .voice-pill i { font-size:12px; }
 @media(max-width:600px){ .voice-pill .vp-label { display:none; } .voice-pill { padding:6px 10px; } }
 .model-pill { display:flex; align-items:center; gap:6px; padding:6px 12px; background:var(--bg-card); border:1px solid var(--border); border-radius:99px; color:var(--text-1); font-size:13px; font-weight:500; cursor:pointer; transition:all .2s; }
@@ -433,22 +446,41 @@ onBeforeUnmount(() => {
 
 .msg-area { flex:1; overflow-y:auto; padding:12px 16px; display:flex; flex-direction:column; scroll-behavior:smooth; -webkit-overflow-scrolling: touch;  }
 
-/* Welcome */
-.welcome { flex:1; display:flex; align-items:center; justify-content:center; min-height:100%; }
-.welcome-inner { max-width:620px; width:100%; padding:20px 12px; animation:fadeUp .5s ease; }
+/* ── Desktop centered home (empty state) ── */
+.welcome-hero { flex:1; display:flex; align-items:center; justify-content:center; overflow-y:auto; padding:28px 18px 20px; }
+.wh-inner { width:100%; max-width:690px; animation:fadeUp .5s ease; }
 
-.welcome-logo { display:flex; align-items:center; justify-content:center; margin-bottom:1.25rem; position:relative; height:76px; }
-.wl-img { width:60px; height:60px; object-fit:contain; border-radius:14px; position:relative; z-index:2; box-shadow:0 0 28px rgba(109,40,217,.3); }
-.wl-dots { position:absolute; inset:0; pointer-events:none; }
-.wl-dot { position:absolute; width:9px; height:9px; border-radius:50%; background:linear-gradient(135deg,#4f46e5,#a855f7); }
-.d1{top:10px;left:calc(50% - 48px);animation:pulse 2s ease infinite}
-.d2{top:10px;left:calc(50% + 40px);animation:pulse 2s .4s ease infinite}
-.d3{bottom:14px;left:calc(50% - 58px);animation:pulse 2s .8s ease infinite}
-.d4{bottom:14px;left:calc(50% + 50px);animation:pulse 2s 1.2s ease infinite}
+.wh-brand { display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:16px; }
+.wh-brand img { width:26px; height:26px; border-radius:7px; object-fit:cover; }
+.wh-brand span { font-size:13px; font-weight:600; color:var(--text-2); letter-spacing:.05em; }
 
-.welcome-heading { font-size:clamp(1.2rem,3vw,1.65rem); font-weight:700; color:#fff; text-align:center; line-height:1.35; margin-bottom:.5rem; }
-.powered-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 12px; border-radius:99px; background:rgba(99,102,241,.1); border:1px solid rgba(99,102,241,.2); color:#a5b4fc; font-size:10.5px; font-weight:700; letter-spacing:.06em; margin-bottom:.75rem; }
-.welcome-desc { font-size:13.5px; color:var(--text-2); text-align:center; line-height:1.7; margin-bottom:1.5rem; max-width:480px; margin-left:auto; margin-right:auto; }
+.wh-greet { text-align:center; font-size:clamp(2rem,4vw,2.9rem); line-height:1.14; color:var(--text-1); margin:0 0 8px; }
+.wh-greet em { font-style:normal; color:var(--purple); }
+.wh-sub { text-align:center; font-size:13.5px; color:var(--text-2); line-height:1.65; margin:0 auto 22px; max-width:460px; }
+.wh-sub strong { color:var(--text-1); }
+
+.wh-input { margin-bottom:18px; }
+
+/* Suggestion cards — cyan/teal family like the landing accents */
+.wh-cards { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:1.25rem; }
+.wh-card {
+  display:flex; align-items:flex-start; gap:11px; padding:16px;
+  border-radius:16px; text-align:left; cursor:pointer;
+  border:1px solid rgba(69,196,212,.30);
+  background:linear-gradient(135deg, rgba(69,196,212,.17), rgba(69,196,212,.05));
+  color:var(--text-1);
+  transition:transform .18s ease, border-color .2s, background .2s;
+}
+.wh-card:hover { transform:translateY(-2px); border-color:rgba(69,196,212,.6); background:linear-gradient(135deg, rgba(69,196,212,.26), rgba(69,196,212,.09)); }
+.wh-card.alt { border-color:var(--border-md); background:var(--bg-card); }
+.wh-card.alt:hover { border-color:rgba(69,196,212,.45); background:var(--bg-hover); }
+.whc-ic { width:36px; height:36px; border-radius:11px; background:rgba(69,196,212,.18); display:grid; place-items:center; color:var(--cyan); font-size:14px; flex-shrink:0; }
+.wh-card.alt .whc-ic { background:var(--bg-hover); }
+.whc-body { display:block; position:relative; min-width:0; }
+.whc-body b { display:block; font-size:14.5px; font-weight:600; margin-bottom:3px; padding-right:34px; }
+.whc-body small { display:block; font-size:12.5px; line-height:1.5; color:var(--text-2); }
+.whc-body em { position:absolute; top:1px; right:0; font-style:normal; font-size:9.5px; font-weight:700; letter-spacing:.07em; color:var(--cyan); border:1px solid rgba(69,196,212,.45); border-radius:99px; padding:1px 7px; }
+@media(max-width:900px){ .wh-cards { grid-template-columns:1fr; } }
 
 .pinned-section { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r-lg); padding:14px; margin-bottom:1.25rem; }
 .pinned-header { display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:var(--text-1); margin-bottom:10px; }
@@ -457,15 +489,10 @@ onBeforeUnmount(() => {
 .pinned-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:10px; }
 .pinned-card { background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--r); padding:12px; cursor:pointer; transition:all .2s; }
 .pinned-card:hover { background:var(--bg-hover); border-color:var(--border-md); transform:translateY(-1px); }
-.pc-icon { width:28px; height:28px; border-radius:8px; background:rgba(109,40,217,.18); border:1px solid rgba(109,40,217,.28); display:flex; align-items:center; justify-content:center; color:#c4b5fd; font-size:12px; margin-bottom:8px; }
+.pc-icon { width:28px; height:28px; border-radius:8px; background:rgba(198,244,50,.18); border:1px solid rgba(198,244,50,.28); display:flex; align-items:center; justify-content:center; color:#d9f76e; font-size:12px; margin-bottom:8px; }
 .pc-title { font-size:12px; font-weight:600; color:var(--text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; }
 .pc-sub { font-size:11px; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:5px; }
 .pc-date { font-size:10.5px; color:var(--text-3); }
-
-.quick-chips { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
-.chip { display:flex; align-items:center; gap:7px; padding:8px 16px; background:var(--bg-card); border:1px solid var(--border-md); border-radius:99px; color:var(--text-2); font-size:13px; cursor:pointer; transition:all .2s; }
-.chip:hover { background:var(--bg-hover); color:var(--text-1); border-color:rgba(109,40,217,.4); }
-.chip i { font-size:12px; }
 
 .msgs-list { display:flex; flex-direction:column; }
 
@@ -490,8 +517,8 @@ onBeforeUnmount(() => {
 .restored-hint {
   display:flex; align-items:center; gap:8px;
   margin:0 12px 6px; padding:8px 12px;
-  background:rgba(99,102,241,.1); border:1px solid rgba(99,102,241,.25);
-  border-radius:10px; font-size:12.5px; color:#c4b5fd;
+  background:rgba(41,119,245,.1); border:1px solid rgba(41,119,245,.25);
+  border-radius:10px; font-size:12.5px; color:#d9f76e;
   animation:fadeUp .3s ease;
 }
 .restored-hint i { font-size:12px; flex-shrink:0; }
@@ -526,7 +553,7 @@ onBeforeUnmount(() => {
 .notif-drop-enter-active, .notif-drop-leave-active { transition:all .3s ease; }
 .notif-drop-enter-from, .notif-drop-leave-to { opacity:0; transform:translateY(-100%); max-height:0; }
 
-@media(max-width:600px){.msg-area{padding:8px 8px}.welcome-inner{padding:12px 6px}.nb-text{flex-direction:column;gap:2px}}
+@media(max-width:600px){.msg-area{padding:8px 8px}.wh-inner{padding:12px 6px}.nb-text{flex-direction:column;gap:2px}}
 
 /* ═══════════ MOBILE (≤768px): home + conversation ═══════════ */
 @media(max-width:768px){
@@ -553,12 +580,12 @@ onBeforeUnmount(() => {
   .m-chip { flex:0 0 auto; display:flex; align-items:center; gap:8px; height:40px; padding:0 14px 0 8px; border-radius:99px; background:var(--bg-card); border:1px solid var(--border-md); color:var(--text-1); font-size:12.5px; white-space:nowrap; transition:transform .15s, border-color .2s; }
   .m-chip:active { transform:scale(.95); border-color:var(--accent-solid); }
   .m-chip b { color:var(--purple); font-weight:600; }
-  .m-chip .ic { width:24px; height:24px; border-radius:50%; background:rgba(109,40,217,.14); color:var(--purple); font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .m-chip .ic { width:24px; height:24px; border-radius:50%; background:rgba(198,244,50,.14); color:var(--purple); font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 
   /* Suggested follow-ups */
   .m-follow { display:flex; flex-wrap:wrap; gap:7px; margin:2px 0 8px 40px; }
   .m-follow button { display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 13px; border-radius:99px; background:var(--bg-card); border:1px solid var(--border-md); color:var(--purple); font-size:12.5px; font-weight:600; transition:transform .15s, background .2s; }
-  .m-follow button:active { transform:scale(.94); background:rgba(109,40,217,.14); }
+  .m-follow button:active { transform:scale(.94); background:rgba(198,244,50,.14); }
   .m-follow i { font-size:10px; }
 
   .stop-btn { border-radius:99px; height:36px; }

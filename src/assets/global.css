@@ -1,29 +1,34 @@
-@import url('https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Instrument+Serif:ital@0;1&display=swap');
 
 :root {
-  --bg-base:    #131314;
-  --bg-panel:   #1b1c1d;
-  --bg-card:    #1e1f20;
-  --bg-hover:   #2a2b2d;
-  --bg-active:  #35363a;
-  --bg-input:   #282a2c;
+  /* ══ KinyaBot landing palette ══════════════════════════════
+     Matches the marketing site: near-black green-tinted base,
+     off-white text, lime primary, blue→pink arc gradient. */
+  --bg-base:    #0d0e0a;
+  --bg-panel:   #13140e;
+  --bg-card:    #16170f;
+  --bg-hover:   #20211a;
+  --bg-active:  #2a2b21;
+  --bg-input:   #1a1b12;
 
   --border:     rgba(255,255,255,0.07);
   --border-md:  rgba(255,255,255,0.11);
 
-  --text-1: #e3e3e3;
-  --text-2: #9aa0a6;
-  --text-3: #5f6368;
+  --text-1: #f0f1ea;
+  --text-2: #a1a695;
+  --text-3: #676c5e;
 
-  --blue:    #8ab4f8;
-  --purple:  #c58af9;
+  --blue:    #7db4ff;
+  --purple:  #c6f432;  /* landing lime primary (name kept for compat) */
+  --cyan:    #45c4d4;
   --orange:  #ffa726;
   --green:   #34a853;
   --red:     #f28b82;
   --yellow:  #fbbc04;
 
-  --accent:  linear-gradient(135deg,#4f46e5 0%,#7c3aed 60%,#a855f7 100%);
-  --accent-solid: #6d28d9;
+  --accent:  linear-gradient(90deg,#2977f5 0%,#8860e0 48%,#e75ac5 100%);
+  --accent-solid: #c6f432;
+  --on-accent: #14180a;  /* text/icon color placed on lime surfaces */
 
   --sidebar-w: 258px;
   --right-w:   284px;
@@ -79,19 +84,19 @@ input, textarea { font-family: var(--font); outline: none; }
 .prose h1{font-size:1.2rem}.prose h2{font-size:1.05rem}.prose h3{font-size:.95rem}
 .prose ul,.prose ol{padding-left:1.35rem;margin:.45rem 0}
 .prose li{margin:.18rem 0}
-.prose blockquote{border-left:3px solid #6d28d9;padding-left:.9rem;color:var(--text-2);margin:.7rem 0;font-style:italic}
+.prose blockquote{border-left:3px solid #9db829;padding-left:.9rem;color:var(--text-2);margin:.7rem 0;font-style:italic}
 .prose table{width:100%;border-collapse:collapse;margin:.7rem 0;font-size:13px}
 .prose th,.prose td{border:1px solid var(--border-md);padding:5px 10px;text-align:left}
 .prose th{background:var(--bg-card);font-weight:600}
 .prose a{color:var(--blue)}
 .prose strong{color:#fff;font-weight:600}
-.prose code:not(pre code){background:rgba(109,40,217,.16);color:#c4b5fd;padding:1px 5px;border-radius:4px;font-size:.84em;font-family:'JetBrains Mono','Fira Code',monospace}
+.prose code:not(pre code){background:rgba(198,244,50,.16);color:#d9f76e;padding:1px 5px;border-radius:4px;font-size:.84em;font-family:'JetBrains Mono','Fira Code',monospace}
 .prose pre{background:#0d0d0f;border:1px solid var(--border-md);border-radius:var(--r-sm);overflow:hidden;margin:.7rem 0}
 
 /* ─── Code block widget ────────── */
 .code-block{border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--border-md);margin:.7rem 0}
 .code-header{display:flex;align-items:center;justify-content:space-between;padding:5px 12px;background:rgba(0,0,0,.45)}
-.code-lang{color:#c4b5fd;font-size:11.5px;font-weight:600;font-family:monospace}
+.code-lang{color:#d9f76e;font-size:11.5px;font-weight:600;font-family:monospace}
 .copy-code-btn{background:none;border:none;color:var(--text-2);font-size:11px;cursor:pointer;padding:2px 7px;border-radius:4px;transition:all .2s;display:flex;align-items:center;gap:4px;font-family:var(--font)}
 .copy-code-btn:hover{background:rgba(255,255,255,.08);color:var(--text-1)}
 .hljs{background:#0d0d0f!important;padding:12px 14px!important;font-size:13px!important}
@@ -99,21 +104,27 @@ input, textarea { font-family: var(--font); outline: none; }
 /* ─── Gradient text util ─────── */
 .g-text{background:var(--accent);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 
+/* Landing-style serif display (hero headings) */
+.serif-display{font-family:'Instrument Serif',Georgia,'Times New Roman',serif;font-weight:400;letter-spacing:-.01em}
+
 /* ─── Light Mode ────────────────── */
 html.light-mode {
-  --bg-base:    #f8f9fa;
+  --bg-base:    #f7f8f2;
   --bg-panel:   #ffffff;
-  --bg-card:    #f1f3f4;
-  --bg-hover:   #e8eaed;
-  --bg-active:  #dde1e7;
-  --bg-input:   #f1f3f4;
-  --border:     rgba(0,0,0,0.08);
-  --border-md:  rgba(0,0,0,0.14);
-  --text-1: #202124;
-  --text-2: #5f6368;
-  --text-3: #9aa0a6;
-  --blue:   #1a73e8;
-  --purple: #7c3aed;
+  --bg-card:    #eff1e6;
+  --bg-hover:   #e6e9d8;
+  --bg-active:  #dce0ca;
+  --bg-input:   #eff1e6;
+  --border:     rgba(20,24,10,0.08);
+  --border-md:  rgba(20,24,10,0.14);
+  --text-1: #191b12;
+  --text-2: #5c614f;
+  --text-3: #94988a;
+  --blue:   #2977f5;
+  --purple: #5c7212;
+  --cyan:   #0e7f90;
+  --accent-solid: #b8e62e;
+  --on-accent: #14180a;
 }
 html.light-mode body {
   background: var(--bg-base);
@@ -130,14 +141,14 @@ html.light-mode .prose h1,
 html.light-mode .prose h2,
 html.light-mode .prose h3 { color: #1a1a2e; }
 html.light-mode .prose strong { color: #1a1a2e; }
-html.light-mode .prose blockquote { border-left-color: #6d28d9; color: #5f6368; }
+html.light-mode .prose blockquote { border-left-color: #9db829; color: #5f6368; }
 html.light-mode .prose th { background: #f1f3f4; }
-html.light-mode .prose code:not(pre code) { background: rgba(109,40,217,.1); color: #6d28d9; }
+html.light-mode .prose code:not(pre code) { background: rgba(198,244,50,.1); color: #9db829; }
 
 /* Code blocks in light mode */
 html.light-mode .code-block { border-color: rgba(0,0,0,.12); }
 html.light-mode .code-header { background: rgba(0,0,0,.06); }
-html.light-mode .code-lang { color: #6d28d9; }
+html.light-mode .code-lang { color: #9db829; }
 html.light-mode .copy-code-btn,
 html.light-mode .download-code-btn { color: #5f6368; }
 html.light-mode .copy-code-btn:hover,
@@ -187,13 +198,13 @@ html.light-mode .model-pill { background: #f1f3f4; border-color: rgba(0,0,0,.1);
 /* Input area light mode */
 html.light-mode .input-area { background: #f8f9fa; }
 html.light-mode .input-box { background: #ffffff; border-color: rgba(0,0,0,.12); }
-html.light-mode .input-box.focused { border-color: #6d28d9; box-shadow: 0 0 0 3px rgba(109,40,217,.12); }
+html.light-mode .input-box.focused { border-color: #9db829; box-shadow: 0 0 0 3px rgba(198,244,50,.12); }
 html.light-mode .chat-textarea { color: #202124; }
 html.light-mode .chat-textarea::placeholder { color: #9aa0a6; }
 html.light-mode .tool-btn { background: #f1f3f4; border-color: rgba(0,0,0,.1); color: #5f6368; }
 html.light-mode .tool-btn:hover { background: #e8eaed; color: #202124; }
 html.light-mode .input-disclaimer { color: #9aa0a6; }
-html.light-mode .trial-strip { background: linear-gradient(90deg,rgba(249,115,22,.1),rgba(168,85,247,.08)); border-bottom-color: rgba(249,115,22,.15); }
+html.light-mode .trial-strip { background: linear-gradient(90deg,rgba(249,115,22,.1),rgba(231,90,197,.08)); border-bottom-color: rgba(249,115,22,.15); }
 
 /* Message area light */
 html.light-mode .msg-area { background: #f8f9fa; }
@@ -205,7 +216,7 @@ html.light-mode .main-col { background: #f8f9fa; }
 html.light-mode .right-panel { background: #ffffff; border-left-color: rgba(0,0,0,.1); }
 html.light-mode .rp-header { border-bottom-color: rgba(0,0,0,.08); }
 html.light-mode .rp-chat-row:hover { background: #f1f3f4; }
-html.light-mode .rp-chat-row.active { background: rgba(109,40,217,.08); }
+html.light-mode .rp-chat-row.active { background: rgba(198,244,50,.08); }
 html.light-mode .search-box { background: #f1f3f4; border-color: rgba(0,0,0,.1); }
 
 /* Modal backgrounds in light mode */
@@ -216,7 +227,7 @@ html.light-mode .profile-modal { background: #ffffff; border-color: rgba(0,0,0,.
 html.light-mode .sm-nav { background: #f8f9fa; border-right-color: rgba(0,0,0,.1); }
 html.light-mode .sm-nav-btn { color: #5f6368; }
 html.light-mode .sm-nav-btn:hover { background: #f1f3f4; color: #202124; }
-html.light-mode .sm-nav-btn.active { background: rgba(109,40,217,.1); color: #6d28d9; }
+html.light-mode .sm-nav-btn.active { background: rgba(198,244,50,.1); color: #9db829; }
 html.light-mode .sm-select,
 html.light-mode .sm-input { background: #f8f9fa; border-color: rgba(0,0,0,.12); color: #202124; }
 html.light-mode .toggle { background: #e8eaed; border-color: rgba(0,0,0,.12); }
@@ -239,7 +250,7 @@ html.light-mode .pinned-section { background: #ffffff; border-color: rgba(0,0,0,
 html.light-mode .pinned-card { background: #f8f9fa; border-color: rgba(0,0,0,.08); }
 html.light-mode .pc-title { color: #202124; }
 html.light-mode .chip { background: #ffffff; border-color: rgba(0,0,0,.1); color: #5f6368; }
-html.light-mode .chip:hover { background: rgba(109,40,217,.08); color: #202124; }
+html.light-mode .chip:hover { background: rgba(198,244,50,.08); color: #202124; }
 html.light-mode .scroll-fab { background: #ffffff; border-color: rgba(0,0,0,.1); color: #5f6368; }
 html.light-mode .copy-toast { background: #ffffff; border-color: rgba(0,0,0,.1); color: #202124; }
 
@@ -263,8 +274,8 @@ html.light-mode .ob-root,
 
 /* Light mode for auth pages - text overrides */
 html.light-mode .msg-row.user .bubble.user {
-  background: rgba(109,40,217,.08);
-  border-color: rgba(109,40,217,.2);
+  background: rgba(198,244,50,.08);
+  border-color: rgba(198,244,50,.2);
 }
 
 /* Smooth theme transition */
