@@ -531,16 +531,6 @@ html.kb-open .chat-ta { max-height: 110px !important; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   ONBOARDING
-═══════════════════════════════════════════════════════════════ */
-@media (max-width: 600px) {
-  .ob-card { padding: 1.5rem 1rem !important; margin: 0 .5rem !important; }
-  .ob-progress { padding: 0 .5rem !important; }
-  .option-grid, .starter-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
-  .option-card, .starter-card { padding: .8rem !important; }
-}
-
-/* ═══════════════════════════════════════════════════════════════
    ADMIN DASHBOARD
    ───────────────────────────────────────────────────────────────
    ≤960px: sidebar becomes a fixed bottom navigation bar; tables
