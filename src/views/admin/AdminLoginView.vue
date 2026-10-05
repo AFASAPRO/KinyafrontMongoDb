@@ -12,8 +12,8 @@
           <img src="/logo.png" alt="" class="al-mark-img" />
           <span class="al-mark-badge"><i class="fas fa-shield-halved"></i></span>
         </div>
-        <h1 class="al-title">Admin Portal</h1>
-        <p class="al-subtitle">Sign in to the KinyaBot management console</p>
+        <h1 class="al-title">Superadmin</h1>
+        <p class="al-subtitle">Sign in to the KinyaBot control center</p>
       </div>
 
       <form class="al-form" @submit.prevent="handleLogin" novalidate>
@@ -76,7 +76,7 @@
 
       <p class="al-hint">
         <i class="fas fa-shield-halved"></i>
-        Installing opens the KinyaBot Admin app straight to this sign-in page.
+        Installing opens the KinyaBot Superadmin app straight to this sign-in page.
       </p>
 
       <router-link to="/" class="al-back">
@@ -92,15 +92,15 @@
           <button class="al-modal-close" @click="installModal = false" aria-label="Close">
             <i class="fas fa-xmark"></i>
           </button>
-          <img src="/admin-icon-192.png" alt="KinyaBot Admin" class="al-modal-icon" />
-          <h3>{{ installDone ? 'Admin App Installed' : 'Install KinyaBot Admin' }}</h3>
+          <img src="/admin-icon-192.png" alt="KinyaBot Superadmin" class="al-modal-icon" />
+          <h3>{{ installDone ? 'Admin App Installed' : 'Install KinyaBot Superadmin' }}</h3>
 
           <p v-if="installDone" class="al-modal-lead">
-            KinyaBot Admin was added to your device. Open it from your home screen —
+            KinyaBot Superadmin was added to your device. Open it from your home screen —
             it starts right here on the sign-in page.
           </p>
           <template v-else>
-            <p v-if="isIOS" class="al-modal-lead">Add KinyaBot Admin to your iPhone / iPad home screen:</p>
+            <p v-if="isIOS" class="al-modal-lead">Add KinyaBot Superadmin to your iPhone / iPad home screen:</p>
             <p v-else class="al-modal-lead">Your browser doesn't support one-tap install. Add it from the browser menu:</p>
             <ol class="al-modal-steps">
               <li><i class="fas fa-up-right-from-square"></i> Tap <strong>Share</strong> (iOS) or open the <strong>⋮ menu</strong> (Android)</li>

@@ -117,7 +117,10 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': { target: 'http://localhost:5000', changeOrigin: true, secure: false }
+      '/api': { target: 'http://localhost:5000', changeOrigin: true, secure: false },
+      // Socket.IO (Superadmin realtime) — ws:true so the dev server
+      // proxies websocket upgrades to the backend as well.
+      '/socket.io': { target: 'http://localhost:5000', changeOrigin: true, ws: true, secure: false }
     }
   },
   build: {

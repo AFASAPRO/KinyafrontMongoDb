@@ -70,6 +70,49 @@ self.addEventListener('message', (event) => {
   if (event.data === 'SKIP_WAITING') self.skipWaiting()
 })
 
+/* ── WEB PUSH (Superadmin alerts) ──────────────────────────────
+   Payload: { title, body, tag, url, priority, ts }
+   `url` is a real deep link into the Superadmin console — clicking
+   the notification opens that exact page (AI Control, Security,
+   Moderation, …). */
+self.addEventListener('push', (event) => {
+  let payload = {}
+  try { payload = event.data ? event.data.json() : {} } catch { payload = { body: event.data?.text() || '' } }
+  const title = payload.title || 'KinyaBot'
+  const options = {
+    body: payload.body || '',
+    tag: payload.tag || 'kinyabot',
+    renotify: !!payload.tag,
+    requireInteraction: payload.priority === 'critical',
+    icon: '/chat/admin-icon-192.png',
+    badge: '/chat/admin-icon-192.png',
+    data: { url: payload.url || '/admin/dashboard' },
+    vibrate: payload.priority === 'critical' ? [300, 120, 300] : [120],
+  }
+  event.waitUntil(self.registration.showNotification(title, options))
+})
+
+/* Deep link: focus an existing console window if there is one,
+   otherwise open the target route directly. */
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const target = event.notification.data?.url || '/admin/dashboard'
+  const fullUrl = new URL(target, self.location.origin).href
+  event.waitUntil((async () => {
+    const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    for (const client of clientList) {
+      // A console window is any client under the /chat/ scope showing /admin
+      if (client.url.includes('/admin')) {
+        await client.focus()
+        // Navigate the focused console to the deep-link target
+        client.postMessage({ type: 'kb_deep_link', url: target })
+        return
+      }
+    }
+    await self.clients.openWindow(fullUrl)
+  })())
+})
+
 function isNeverCache(url) {
   return NEVER_CACHE.some((re) => re.test(url.pathname))
 }

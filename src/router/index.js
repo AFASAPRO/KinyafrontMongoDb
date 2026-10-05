@@ -45,8 +45,34 @@ const routes = [
   { path: '/onboarding',      component: () => import('../views/OnboardingView.vue'),       meta: { requiresAuth: true } },
   { path: '/forgot-password', component: () => import('../views/ForgotPasswordView.vue'),   meta: { guestOnly: true } },
   { path: '/reset-password',  component: () => import('../views/ResetPasswordView.vue'),    meta: { guestOnly: true } },
+
+  /* ═══ SUPERADMIN CONSOLE (single administrative role: superadmin) ═══
+     Routed app shell — every page lives under /admin/… so push
+     notifications can deep-link straight to the right view.        */
   { path: '/admin',           component: () => import('../views/admin/AdminLoginView.vue'), meta: { adminGuest: true } },
-  { path: '/admin/dashboard', component: () => import('../views/admin/AdminDashboard.vue'), meta: { requiresAdmin: true } },
+  {
+    path: '/admin',
+    component: () => import('../admin/AdminLayout.vue'),
+    meta: { requiresAdmin: true },
+    children: [
+      { path: '', redirect: { name: 'admin-dashboard' } },
+      { path: 'dashboard',     name: 'admin-dashboard', component: () => import('../admin/views/DashboardView.vue') },
+      { path: 'analytics',     name: 'admin-analytics', component: () => import('../admin/views/AnalyticsView.vue') },
+      { path: 'users',         name: 'admin-users',     component: () => import('../admin/views/UsersView.vue') },
+      { path: 'chats',         name: 'admin-chats',     component: () => import('../admin/views/ChatsView.vue') },
+      { path: 'knowledge',     name: 'admin-knowledge', component: () => import('../admin/views/KnowledgeView.vue') },
+      { path: 'files',         name: 'admin-files',     component: () => import('../admin/views/FilesView.vue') },
+      { path: 'moderation',    name: 'admin-moderation',component: () => import('../admin/views/ModerationView.vue') },
+      { path: 'notifications', name: 'admin-alerts',    component: () => import('../admin/views/NotificationsView.vue') },
+      { path: 'ai',            name: 'admin-ai',        component: () => import('../admin/views/AIControlView.vue') },
+      { path: 'ai-testing',    name: 'admin-ai-test',   component: () => import('../admin/views/AITestingView.vue') },
+      { path: 'health',        name: 'admin-health',    component: () => import('../admin/views/HealthView.vue') },
+      { path: 'usage',         name: 'admin-usage',     component: () => import('../admin/views/UsageView.vue') },
+      { path: 'security',      name: 'admin-security',  component: () => import('../admin/views/SecurityView.vue') },
+      { path: 'audit',         name: 'admin-audit',     component: () => import('../admin/views/AuditView.vue') },
+      { path: 'settings',      name: 'admin-settings',  component: () => import('../admin/views/SettingsView.vue') },
+    ]
+  },
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 

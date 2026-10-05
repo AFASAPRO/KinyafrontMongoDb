@@ -1,18 +1,24 @@
 {
   "id": "kinyabot-admin-app",
-  "name": "KinyaBot Admin",
-  "short_name": "KB Admin",
-  "description": "KinyaBot Admin Console — manage users, conversations, AI usage and system settings.",
+  "name": "KinyaBot Superadmin",
+  "short_name": "KB Superadmin",
+  "description": "KinyaBot Superadmin control center — realtime platform management from desktop and mobile.",
   "start_url": "/chat/admin?source=pwa",
   "scope": "/chat/",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "portrait-primary",
   "theme_color": "#4f46e5",
   "background_color": "#05050d",
   "lang": "en",
   "dir": "ltr",
-  "categories": ["productivity", "developer"],
+  "categories": [
+    "productivity",
+    "developer"
+  ],
   "icons": [
     {
       "src": "/chat/admin-icon-192.png",
