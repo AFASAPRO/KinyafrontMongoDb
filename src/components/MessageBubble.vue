@@ -12,7 +12,7 @@
     <div class="bot-avatar"><img src="/logo.png" alt="KinyaBot" /></div>
     <div class="error-wrap">
       <div class="error-bubble">
-        <i class="fas fa-triangle-exclamation"></i>
+        <AnimatedIcon icon="fas fa-triangle-exclamation" animation="shake" :active="true" />
         <span>{{ message.content }}</span>
       </div>
       <div class="error-actions">
@@ -26,7 +26,7 @@
   <!-- System message -->
   <div v-else-if="message._system" class="msg-row system-msg">
     <div class="system-bubble">
-      <i class="fas fa-circle-info"></i>
+      <AnimatedIcon icon="fas fa-circle-info" animation="fade-in" />
       <span>{{ message.content }}</span>
     </div>
   </div>
@@ -56,7 +56,7 @@
           v-html="rendered"></div>
         <!-- Thinking indicator while the first tokens arrive -->
         <div v-if="message._streaming && !message.content" class="thinking">
-          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <AnimatedIcon icon="fas fa-sparkles" animation="thinking" :active="message._streaming && !message.content" />
           <span class="thinking-label">KinyaBot is thinking…</span>
         </div>
         <!-- Streaming cursor -->
@@ -65,12 +65,12 @@
 
       <!-- Cancelled marker -->
       <div v-if="message._status === 'cancelled' && message.role === 'assistant'" class="cancelled-note">
-        <i class="fas fa-ban"></i> Generation stopped
+        <AnimatedIcon icon="fas fa-ban" animation="fade-in" /> Generation stopped
       </div>
 
       <!-- Source references — only when the backend actually knows them -->
       <div v-if="message.sources?.length" class="sources-line">
-        <i class="fas fa-file-shield"></i>
+        <AnimatedIcon icon="fas fa-file-shield" />
         <span>Source: {{ message.sources.join(', ') }}</span>
       </div>
 
@@ -78,12 +78,12 @@
       <div class="actions" :class="[message.role, { 'always-on': message._status === 'failed' || ttsActive }]">
         <!-- Copy -->
         <button class="act-btn" :class="{success: copied}" @click="handleCopy" :title="copied?'Copied!':'Copy message'" :aria-label="copied?'Copied':'Copy message'">
-          <i :class="copied ? 'fas fa-check' : 'fas fa-copy'"></i>
+          <AnimatedIcon :icon="copied ? 'fas fa-check' : 'fas fa-copy'" :animation="copied ? 'draw-check' : 'subtle-hover'" :active="copied" />
         </button>
 
         <!-- Retry for failed user sends -->
         <button v-if="message.role==='user' && message._status === 'failed'" class="act-btn retry-act" @click="$emit('retry', message.id)" title="Retry send" aria-label="Retry send">
-          <i class="fas fa-rotate-right"></i>
+          <AnimatedIcon icon="fas fa-rotate-right" animation="subtle-hover" />
         </button>
 
         <!-- AI-only actions -->
@@ -97,33 +97,33 @@
             :title="listenTitle"
             :aria-label="listenTitle"
           >
-            <i v-if="ttsState === 'loading'" class="fas fa-spinner fa-spin"></i>
-            <i v-else-if="ttsState === 'playing'" class="fas fa-pause"></i>
-            <i v-else class="fas fa-volume-high"></i>
+            <AnimatedIcon v-if="ttsState === 'loading'" icon="fas fa-spinner" animation="spin" :active="true" />
+            <AnimatedIcon v-else-if="ttsState === 'playing'" icon="fas fa-pause" animation="subtle-hover" />
+            <AnimatedIcon v-else icon="fas fa-volume-high" animation="subtle-hover" />
           </button>
           <!-- Stop audio while playing -->
           <button v-if="ttsState === 'playing'" class="act-btn" @click="stopListen" title="Stop audio" aria-label="Stop audio">
-            <i class="fas fa-stop"></i>
+            <AnimatedIcon icon="fas fa-stop" animation="press" />
           </button>
           <!-- Regenerate (last assistant message only) -->
-          <button v-if="isLast" class="act-btn" :class="{spin: regenBusy}" @click="$emit('regenerate')" title="Regenerate response" aria-label="Regenerate response">
-            <i class="fas fa-rotate-right"></i>
+          <button v-if="isLast" class="act-btn" @click="$emit('regenerate')" title="Regenerate response" aria-label="Regenerate response" :aria-busy="regenBusy">
+            <AnimatedIcon icon="fas fa-rotate-right" animation="regenerate" :active="regenBusy" />
           </button>
           <!-- Like -->
-          <button class="act-btn" :class="{liked: liked===true}" @click="handleLike(true)" title="Helpful">
-            <i :class="liked===true ? 'fas fa-thumbs-up' : 'far fa-thumbs-up'"></i>
+          <button class="act-btn" :class="{liked: liked===true}" @click="handleLike(true)" title="Helpful" aria-label="Helpful" :aria-pressed="liked===true">
+            <AnimatedIcon :icon="liked===true ? 'fas fa-thumbs-up' : 'far fa-thumbs-up'" animation="press" />
           </button>
           <!-- Unlike -->
-          <button class="act-btn" :class="{disliked: liked===false}" @click="handleLike(false)" title="Not helpful">
-            <i :class="liked===false ? 'fas fa-thumbs-down' : 'far fa-thumbs-down'"></i>
+          <button class="act-btn" :class="{disliked: liked===false}" @click="handleLike(false)" title="Not helpful" aria-label="Not helpful" :aria-pressed="liked===false">
+            <AnimatedIcon :icon="liked===false ? 'fas fa-thumbs-down' : 'far fa-thumbs-down'" animation="press" />
           </button>
           <!-- Share -->
-          <button class="act-btn" @click="handleShare" title="Share">
-            <i class="fas fa-share-nodes"></i>
+          <button class="act-btn" @click="handleShare" title="Share" aria-label="Share response">
+            <AnimatedIcon icon="fas fa-share-nodes" animation="subtle-hover" />
           </button>
           <!-- Download code (if has code block) -->
-          <button v-if="hasCode" class="act-btn" @click="downloadCode" title="Download code">
-            <i class="fas fa-download"></i>
+          <button v-if="hasCode" class="act-btn" @click="downloadCode" title="Download code" aria-label="Download code">
+            <AnimatedIcon icon="fas fa-download" animation="subtle-hover" />
           </button>
         </template>
 
@@ -142,7 +142,7 @@
 
       <!-- Feedback text after like/dislike -->
       <transition name="fade">
-        <div v-if="feedbackMsg" class="feedback-msg">{{ feedbackMsg }}</div>
+        <div v-if="feedbackMsg" class="feedback-msg" aria-live="polite">{{ feedbackMsg }}</div>
       </transition>
     </div>
 
@@ -179,6 +179,7 @@
 import { ref, computed, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import api from '../api'
+import AnimatedIcon from './AnimatedIcon.vue'
 import MessageAttachment from './MessageAttachment.vue'
 import { register as registerAudio, unregister as unregisterAudio } from '../utils/audio'
 import { renderMarkdown } from '../utils/markdown'
@@ -195,6 +196,8 @@ const userInitial = computed(() => auth.user?.username?.[0]?.toUpperCase() || 'U
 
 const liked = ref(null) // true=liked, false=disliked, null=neutral
 const copied = ref(false)
+let copyTimer = null
+let feedbackTimer = null
 const confirmDelete = ref(false)
 const feedbackMsg = ref('')
 const lightboxImg = ref(null)
@@ -354,30 +357,53 @@ function forceIdle() { if (ttsState.value !== 'idle') ttsState.value = 'idle' }
 onBeforeUnmount(() => {
   if (audioEl) { unregisterAudio(audioEl); audioEl.pause(); audioEl = null }
   clearTimeout(ttsErrorTimer)
+  clearTimeout(copyTimer)
+  clearTimeout(feedbackTimer)
 })
 
 async function handleCopy() {
   const text = props.message.content || ''
-  await navigator.clipboard.writeText(text).catch(() => {})
-  copied.value = true
-  setTimeout(() => { copied.value = false }, 2000)
-  emit('copy')
+  try {
+    await navigator.clipboard.writeText(text)
+    feedbackMsg.value = ''
+    clearTimeout(feedbackTimer)
+    copied.value = true
+    clearTimeout(copyTimer)
+    copyTimer = setTimeout(() => { copied.value = false }, 2000)
+    emit('copy')
+  } catch {
+    copied.value = false
+    showFeedback('Could not copy this response. Check clipboard permissions and try again.', 5000)
+  }
+}
+
+function showFeedback(message, duration) {
+  feedbackMsg.value = message
+  clearTimeout(feedbackTimer)
+  feedbackTimer = setTimeout(() => { feedbackMsg.value = '' }, duration)
 }
 
 function handleLike(val) {
-  if (liked.value === val) { liked.value = null; feedbackMsg.value = ''; return }
+  if (liked.value === val) { liked.value = null; feedbackMsg.value = ''; clearTimeout(feedbackTimer); return }
   liked.value = val
-  feedbackMsg.value = val ? 'Thanks for the feedback!' : 'We\'ll improve this response.'
-  setTimeout(() => { feedbackMsg.value = '' }, 3000)
+  showFeedback(val ? 'Marked as helpful.' : 'Marked as not helpful.', 3000)
 }
 
 async function handleShare() {
   const text = `KinyaBot AI Response:\n\n${props.message.content}`
   if (navigator.share) {
-    await navigator.share({ title:'KinyaBot AI', text }).catch(() => {})
+    try {
+      await navigator.share({ title:'KinyaBot AI', text })
+    } catch (err) {
+      if (err?.name !== 'AbortError') showFeedback('Could not share this response. Please try again.', 5000)
+    }
   } else {
-    await navigator.clipboard.writeText(text).catch(() => {})
-    alert('Response copied to clipboard for sharing!')
+    try {
+      await navigator.clipboard.writeText(text)
+      alert('Response copied to clipboard for sharing!')
+    } catch {
+      showFeedback('Could not copy this response for sharing. Check clipboard permissions and try again.', 5000)
+    }
   }
 }
 
@@ -442,8 +468,6 @@ function doDelete() {
 /* Thinking indicator */
 .thinking { display:flex; align-items:center; gap:5px; padding:6px 0; }
 .thinking-label { font-size:12.5px; color:var(--text-3); margin-left:4px; font-style:italic; }
-.thinking .dot { width:6px; height:6px; border-radius:50%; background:var(--text-3); animation:blink 1.3s infinite both; }
-.thinking .dot:nth-child(2){animation-delay:.2s}.thinking .dot:nth-child(3){animation-delay:.4s}
 
 /* Cancelled marker */
 .cancelled-note { display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-3); margin-top:3px; }
@@ -462,8 +486,6 @@ function doDelete() {
 /* TTS */
 .tts-error { font-size:11.5px; color:var(--error); margin-top:3px; }
 .act-btn.active { color:var(--brand-text) !important; background:rgba(99,102,241,.14); }
-.act-btn.spin i { animation:spin 1s linear infinite; }
-@keyframes spin { to { transform:rotate(360deg); } }
 .actions.always-on { opacity:1; }
   
 /* System message */

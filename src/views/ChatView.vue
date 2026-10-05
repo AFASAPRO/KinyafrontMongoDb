@@ -39,19 +39,19 @@
           </button>
           <div class="m-hd-right">
             <button v-if="isGuest" class="m-signin" @click="goAuth('login')">Sign in</button>
-            <button class="m-circle" @click="showSettings=true" aria-label="Settings"><i class="fas fa-gear"></i></button>
+            <button class="m-circle" @click="showSettings=true" aria-label="Settings"><AnimatedIcon icon="fas fa-gear" animation="subtle-hover" /></button>
           </div>
         </template>
         <!-- Conversation: back · title + status · new chat -->
         <template v-else>
-          <button class="m-circle" @click="goHome" aria-label="Back to home"><i class="fas fa-arrow-left"></i></button>
+          <button class="m-circle" @click="goHome" aria-label="Back to home"><AnimatedIcon icon="fas fa-arrow-left" animation="subtle-hover" /></button>
           <button class="m-title" @click="mobileSidebarOpen=true" aria-label="Open chat history">
             <b>{{ chatStore.activeChat?.title || 'New Chat' }}</b>
             <span class="m-status" :class="{ busy: chatStore.sending || chatStore.streaming }">
-              <i></i>{{ chatStore.sending || chatStore.streaming ? 'Typing…' : 'Online' }}
+              <AnimatedIcon icon="fas fa-circle" animation="pulse" :active="chatStore.sending || chatStore.streaming" size="5px" />{{ chatStore.sending || chatStore.streaming ? 'Typing…' : 'Online' }}
             </span>
           </button>
-          <button class="m-circle" @click="handleNewChat" aria-label="New chat"><i class="fas fa-pen-to-square"></i></button>
+          <button class="m-circle" @click="handleNewChat" aria-label="New chat"><AnimatedIcon icon="fas fa-pen-to-square" animation="subtle-hover" /></button>
         </template>
       </header>
 
@@ -61,7 +61,7 @@
         <template v-if="!isGuest">
           <div class="topbar-left">
             <button class="mob-menu-btn" type="button" title="Open chat history" aria-label="Open chat history" @click="mobileSidebarOpen=true">
-              <i class="fas fa-bars" aria-hidden="true"></i>
+              <AnimatedIcon icon="fas fa-bars" animation="subtle-hover" />
             </button>
             <div class="chat-title-group">
               <input
@@ -85,7 +85,7 @@
                 @click="startChatRename"
               >
                 <span>{{ chatStore.activeChat?.title || 'New Chat' }}</span>
-                <i class="fas fa-pen" aria-hidden="true"></i>
+                <AnimatedIcon icon="fas fa-pen" animation="subtle-hover" />
               </button>
               <span class="chat-model-label">KinyaBot AI</span>
             </div>
@@ -100,7 +100,7 @@
               @focus="preloadVoiceMode"
               @click="openVoiceMode"
             >
-              <i class="fas fa-microphone-lines" aria-hidden="true"></i>
+              <AnimatedIcon icon="fas fa-microphone-lines" animation="subtle-hover" />
               <span>Voice</span>
             </button>
             <button
@@ -111,7 +111,7 @@
               :disabled="!chatStore.activeChat"
               @click="handleShare"
             >
-              <i class="fas fa-share-nodes" aria-hidden="true"></i>
+              <AnimatedIcon icon="fas fa-share-nodes" animation="subtle-hover" />
             </button>
             <button
               class="topbar-action"
@@ -122,7 +122,7 @@
               :aria-pressed="rightOpen"
               @click="rightOpen=!rightOpen"
             >
-              <i class="fas fa-sliders"></i>
+              <AnimatedIcon icon="fas fa-sliders" animation="subtle-hover" />
             </button>
           </div>
 
@@ -131,7 +131,7 @@
         <template v-else>
           <div class="guest-brand">
             <button class="mob-menu-btn" type="button" title="Open chat history" aria-label="Open chat history" @click="mobileSidebarOpen=true">
-              <i class="fas fa-bars" aria-hidden="true"></i>
+              <AnimatedIcon icon="fas fa-bars" animation="subtle-hover" />
             </button>
             <img src="/logo.png" alt="KinyaBot" class="guest-logo" />
             <span class="guest-name">KinyaBot</span>
@@ -177,6 +177,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useChatStore } from '../stores/chat'
 import { connectSocket } from '../socket'
+import AnimatedIcon from '../components/AnimatedIcon.vue'
 import Sidebar from '../components/Sidebar.vue'
 import ChatWindow from '../components/ChatWindow.vue'
 import RightPanel from '../components/RightPanel.vue'
@@ -515,6 +516,6 @@ onBeforeUnmount(() => {
 .m-title { flex:1; min-width:0; background:none; display:flex; flex-direction:column; align-items:center; gap:1px; color:var(--text-1); }
 .m-title b { max-width:100%; font-size:14.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .m-status { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-2); }
-.m-status i { width:6px; height:6px; border-radius:50%; background:var(--green); }
-.m-status.busy i { background:var(--purple); animation:pulse 1s infinite; }
+.m-status i { width:6px; height:6px; border-radius:50%; color:var(--green); }
+.m-status.busy i { color:var(--purple); }
 </style>

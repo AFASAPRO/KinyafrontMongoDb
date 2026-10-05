@@ -54,7 +54,7 @@
               :aria-pressed="showMemory ? 'true' : 'false'"
               title="What Kinya remembers about you"
             >
-              <i class="fas fa-brain"></i>
+              <AnimatedIcon icon="fas fa-brain" animation="subtle-hover" />
             </button>
             <button
               class="vm-icon-btn"
@@ -63,7 +63,7 @@
               :aria-pressed="live ? 'true' : 'false'"
               title="Hands-free: keep listening after Kinya replies"
             >
-              <i class="fas fa-infinity"></i>
+              <AnimatedIcon icon="fas fa-infinity" animation="subtle-hover" />
             </button>
             <button
               class="vm-icon-btn"
@@ -72,7 +72,7 @@
               :aria-pressed="autoSpeak ? 'true' : 'false'"
               :title="autoSpeak ? 'Spoken answers: on' : 'Spoken answers: off'"
             >
-              <i :class="autoSpeak ? 'fas fa-volume-high' : 'fas fa-volume-xmark'"></i>
+              <AnimatedIcon :icon="autoSpeak ? 'fas fa-volume-high' : 'fas fa-volume-xmark'" animation="subtle-hover" />
             </button>
           </div>
         </header>
@@ -112,8 +112,8 @@
               <button class="vm-turn-act" @click="replay(t.text)" title="Read again">
                 <i class="fas fa-rotate"></i> Read again
               </button>
-              <button class="vm-turn-act" @click="regenerateLast" :class="{ spin: regenBusy }" title="Regenerate response">
-                <i class="fas fa-arrows-rotate"></i> Regenerate
+              <button class="vm-turn-act" @click="regenerateLast" title="Regenerate response" :aria-busy="regenBusy">
+              <AnimatedIcon icon="fas fa-arrows-rotate" animation="regenerate" :active="regenBusy" /> Regenerate
               </button>
             </div>
           </div>
@@ -124,7 +124,7 @@
 
           <div v-if="showSuggestions" class="vm-suggest">
             <button v-for="s in suggestions" :key="s.label" class="vm-suggest-chip" @click="useSuggestion(s)">
-              <i :class="s.icon"></i>{{ s.label }}
+              <AnimatedIcon :icon="s.icon" animation="subtle-hover" />{{ s.label }}
             </button>
           </div>
         </section>
@@ -146,8 +146,8 @@
             :title="orbTitle"
           >
             <span v-if="phase === 'speaking'" class="vm-eq" aria-hidden="true"><i v-for="n in 4" :key="n" :style="`--i:${n}`"></i></span>
-            <i v-else-if="phase === 'thinking' || phase === 'transcribing'" class="fas fa-circle-notch fa-spin"></i>
-            <i v-else :class="phase === 'listening' ? 'fas fa-stop' : 'fas fa-microphone'"></i>
+            <AnimatedIcon v-if="phase === 'thinking' || phase === 'transcribing'" icon="fas fa-circle-notch" animation="spin" :active="true" />
+            <AnimatedIcon v-else :icon="phase === 'listening' ? 'fas fa-stop' : 'fas fa-microphone'" :animation="phase === 'listening' ? 'voice-listening' : 'subtle-hover'" :active="phase === 'listening'" />
           </button>
           <input
             v-model="typed"
@@ -158,7 +158,7 @@
             @keydown.enter="sendTyped"
           />
           <button class="vm-send" @click="sendTyped" :disabled="!typed.trim() || phase === 'thinking'" aria-label="Send">
-            <i class="fas fa-paper-plane"></i>
+            <AnimatedIcon icon="fas fa-paper-plane" animation="send" :trigger="sendTrigger" />
           </button>
         </footer>
       </section>
@@ -193,6 +193,7 @@ import { RiveCharacterController } from '../character/riveController.js'
 import { matchRequestedMove, matchReactionMove, pickAmbientMove } from '../character/moves.js'
 import { matchCommand } from '../character/commands.js'
 import { renderMarkdown, renderPlainText } from '../utils/markdown.js'
+import AnimatedIcon from './AnimatedIcon.vue'
 
 const emit = defineEmits(['close'])
 const chatStore = useChatStore()
@@ -349,6 +350,7 @@ const feed = ref([])
 const error = ref('')
 const busyTts = ref(false)
 const regenBusy = ref(false)
+const sendTrigger = ref(0)
 const autoSpeak = ref(true)
 const live = ref(false)
 const audioLevel = ref(0)
@@ -731,6 +733,7 @@ async function handleCommand(cmd) {
 async function sendTyped() {
   const t = typed.value.trim()
   if (!t || phase.value === 'thinking') return
+  sendTrigger.value += 1
   typed.value = ''
   await handleUserText(t)
 }
@@ -1278,8 +1281,6 @@ onBeforeUnmount(() => {
   padding: 4px 10px; cursor: pointer; transition: color .15s, border-color .15s;
 }
 .vm-turn-act:hover { color: var(--vm-accent); border-color: var(--vm-accent); }
-.vm-turn-act.spin i { animation: spin .8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── Error ─────────────────────────────────────────────────────── */
 .vm-error {

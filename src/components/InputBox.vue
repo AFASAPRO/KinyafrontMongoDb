@@ -3,9 +3,9 @@
     <!-- Client-side error notice (invalid / too-large file, STT failure) -->
     <transition name="fade">
       <div v-if="notice" class="inline-notice" role="alert">
-        <i class="fas fa-triangle-exclamation"></i>
+        <AnimatedIcon icon="fas fa-triangle-exclamation" animation="shake" :trigger="noticeTrigger" />
         <span>{{ notice }}</span>
-        <button class="in-x" @click="notice=''" aria-label="Dismiss notice"><i class="fas fa-xmark"></i></button>
+        <button class="in-x" @click="notice=''" aria-label="Dismiss notice"><AnimatedIcon icon="fas fa-xmark" animation="press" /></button>
       </div>
     </transition>
 
@@ -13,29 +13,26 @@
     <transition name="fade">
       <div v-if="filePreview" class="fp-row">
         <img v-if="filePreview.isImg" :src="filePreview.url" class="fp-thumb" alt="Attachment preview" />
-        <div v-else class="fp-icon"><i :class="filePreview.icon"></i></div>
+        <div v-else class="fp-icon"><AnimatedIcon :icon="filePreview.icon" animation="bounce" :trigger="fileTrigger" /></div>
         <div class="fp-meta">
           <span class="fp-name">{{ filePreview.name }}</span>
           <span class="fp-size">{{ filePreview.size }}</span>
         </div>
-        <button class="fp-x" @click="removeFile" aria-label="Remove attachment" title="Remove attachment"><i class="fas fa-xmark"></i></button>
+        <button class="fp-x" @click="removeFile" aria-label="Remove attachment" title="Remove attachment"><AnimatedIcon icon="fas fa-xmark" animation="press" /></button>
       </div>
     </transition>
 
     <div class="input-box" :class="{ focused, sending: disabled, 'has-text': !!(inputVal.trim() || selectedFile), 'has-suggestions': showSuggestions }">
-      <!-- Voice waveform -->
+      <!-- Voice input status -->
       <transition name="fade">
         <div v-if="isRec || transcribing" class="wave-bar">
           <div class="wave-info">
-            <i :class="transcribing ? 'fas fa-spinner fa-spin' : 'fas fa-microphone'" style="color:var(--accent-cyan)"></i>
+            <AnimatedIcon :icon="transcribing ? 'fas fa-spinner' : 'fas fa-microphone'" :animation="transcribing ? 'spin' : 'voice-listening'" :active="transcribing || isRec" style="color:var(--accent-cyan)" />
             <span v-if="transcribing">Transcribing your recording…</span>
             <template v-else>
               <span>Listening{{ recTime ? ` · ${recTime}` : '' }}</span>
               <span class="wave-hint">Press the mic again to transcribe</span>
             </template>
-          </div>
-          <div class="wave-bars">
-            <div v-for="n in 16" :key="n" class="wb" :style="waveStyle(n)"></div>
           </div>
         </div>
       </transition>
@@ -78,20 +75,20 @@
               :aria-expanded="attachOpen ? 'true' : 'false'"
               title="Attach a file"
             >
-              <i class="fas fa-paperclip"></i>
+              <AnimatedIcon icon="fas fa-paperclip" animation="subtle-hover" />
               <span class="tb-label">Attach</span>
             </button>
             <transition name="pop">
               <div v-if="attachOpen" class="attach-menu" role="menu">
                 <button class="am-item" role="menuitem" @click="pickFile('image')">
-                  <i class="fas fa-image"></i>
+                  <AnimatedIcon icon="fas fa-image" animation="subtle-hover" />
                   <span>
                     <b>Image</b>
                     <small>JPG, PNG, GIF, WebP · up to 4 MB</small>
                   </span>
                 </button>
                 <button class="am-item" role="menuitem" @click="pickFile('document')">
-                  <i class="fas fa-file-lines"></i>
+                  <AnimatedIcon icon="fas fa-file-lines" animation="subtle-hover" />
                   <span>
                     <b>Document</b>
                     <small>PDF, DOCX, TXT, CSV, code · up to 15 MB</small>
@@ -101,8 +98,8 @@
             </transition>
             <input ref="fileRef" type="file" :accept="acceptFor(pickKind)" @change="handleFile" hidden />
           </div>
-          <button class="tb-btn" :class="{on: deepThink}" @click="deepThink=!deepThink" title="Deep Think">
-            <i class="fas fa-brain"></i>
+          <button class="tb-btn" :class="{on: deepThink}" @click="deepThink=!deepThink" title="Deep Think" :aria-pressed="deepThink">
+            <AnimatedIcon icon="fas fa-brain" animation="subtle-hover" />
             <span class="tb-label">Deep Think</span>
           </button>
         </div>
@@ -115,12 +112,12 @@
             :aria-label="isRec ? 'Stop recording and transcribe' : 'Record voice message'"
             :title="isRec ? 'Stop and transcribe' : 'Voice input'"
           >
-            <i v-if="transcribing" class="fas fa-spinner fa-spin"></i>
-            <i v-else :class="isRec ? 'fas fa-stop' : 'fas fa-microphone'"></i>
+            <AnimatedIcon v-if="transcribing" icon="fas fa-spinner" animation="spin" :active="transcribing" />
+            <AnimatedIcon v-else icon="fas fa-microphone" animation="voice-listening" :active="isRec" />
           </button>
           <button class="send-btn" :disabled="disabled || (!inputVal.trim() && !selectedFile)" @click="submit" aria-label="Send message" title="Send (Enter)">
-            <i v-if="disabled" class="fas fa-spinner fa-spin"></i>
-            <i v-else class="fas fa-paper-plane"></i>
+            <AnimatedIcon v-if="disabled" icon="fas fa-spinner" animation="spin" :active="disabled" />
+            <AnimatedIcon v-else icon="fas fa-paper-plane" animation="send" :trigger="sendTrigger" />
           </button>
         </div>
       </div>
@@ -152,6 +149,7 @@
 <script setup>
 import { ref, nextTick, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import api from '../api'
+import AnimatedIcon from './AnimatedIcon.vue'
 
 const props = defineProps({
   disabled: Boolean,
@@ -175,9 +173,11 @@ const filePreview  = ref(null)
 const focused      = ref(false)
 const deepThink    = ref(false)
 const notice       = ref('')
+const noticeTrigger = ref(0)
+const sendTrigger = ref(0)
+const fileTrigger = ref(0)
 const taRef        = ref(null)
 const fileRef      = ref(null)
-const waveH        = ref(Array(16).fill(4))
 const activeSuggestion = ref(0)
 const suggestionsDismissed = ref(false)
 let selectingSuggestion = false
@@ -281,6 +281,7 @@ function handleFile(e) {
     if (f.size > IMAGE_MAX) { showNotice('That image is too large. Maximum size is 4 MB.'); return }
     selectedFile.value = f
     filePreview.value = { name: f.name, size: (f.size / 1024).toFixed(0) + ' KB', isImg: true, url: URL.createObjectURL(f), icon: 'fas fa-image' }
+    fileTrigger.value += 1
     return
   }
 
@@ -288,6 +289,7 @@ function handleFile(e) {
   if (f.size > DOC_MAX) { showNotice('That document is too large. Maximum size is 15 MB.'); return }
   selectedFile.value = f
   filePreview.value = { name: f.name, size: (f.size / 1024).toFixed(0) + ' KB', isImg: false, url: null, icon: 'fas fa-file-lines' }
+  fileTrigger.value += 1
 }
 
 function removeFile() {
@@ -299,6 +301,7 @@ function removeFile() {
 let noticeTimer = null
 function showNotice(msg) {
   notice.value = msg
+  noticeTrigger.value += 1
   clearTimeout(noticeTimer)
   noticeTimer = setTimeout(() => { notice.value = '' }, 6000)
 }
@@ -334,6 +337,7 @@ watch(() => props.injectedFile, (f) => {
     url: isImg ? URL.createObjectURL(f) : null,
     icon: isImg ? 'fas fa-image' : 'fas fa-file-lines'
   }
+  fileTrigger.value += 1
   nextTick(() => { resize(); taRef.value?.focus() })
 })
 
@@ -382,6 +386,7 @@ function dismissSuggestions() {
 function submit() {
   const content = inputVal.value.trim()
   if (!content && !selectedFile.value) return
+  sendTrigger.value += 1
   emit('send', { content, file: selectedFile.value })
   // Guest mode keeps the draft so closing the auth gate returns the
   // user to their message exactly as they typed it.
@@ -400,13 +405,9 @@ const recTime      = ref('')
 let mediaRecorder  = null
 let recChunks      = []
 let recStream      = null
-let waveInterval   = null
 let tickInterval   = null
 let recStart       = 0
 const MAX_REC_MS   = 120000
-
-function startWave() { waveInterval = setInterval(() => { waveH.value = Array(16).fill(0).map(() => Math.random() * 22 + 4) }, 80) }
-function stopWave()  { clearInterval(waveInterval); waveH.value = Array(16).fill(4) }
 
 function fmtTime(ms) {
   const s = Math.floor(ms / 1000)
@@ -459,13 +460,11 @@ async function toggleVoice() {
     recTime.value = fmtTime(ms)
     if (ms >= MAX_REC_MS) stopRecording()
   }, 500)
-  startWave()
 }
 
 function stopRecording() {
   try { mediaRecorder?.state !== 'inactive' && mediaRecorder?.stop() } catch {}
   clearInterval(tickInterval)
-  stopWave()
   isRec.value = false
 }
 
@@ -520,7 +519,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)
   stopRecording()
   cleanupRecording()
-  stopWave()
+  clearTimeout(noticeTimer)
 })
 </script>
 
@@ -595,8 +594,6 @@ onBeforeUnmount(() => {
 .wave-info { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--text-2); flex-wrap:wrap; }
 .wave-info span:first-of-type { color:var(--accent-cyan); font-weight:500; }
 .wave-hint { color:var(--text-3); font-style:italic; }
-.wave-bars { display:flex; align-items:center; gap:2px; height:28px; }
-.wb { width:3px; border-radius:99px; background:linear-gradient(180deg,var(--accent-cyan),var(--accent-violet)); transition:height .08s ease; min-height:3px; }
 
 /* Textarea */
 .chat-ta {
@@ -653,7 +650,7 @@ onBeforeUnmount(() => {
 }
 .tb-ico:hover:not(:disabled) { background:var(--bg-hover); color:var(--text-1); }
 .tb-ico:disabled { opacity:.5; cursor:not-allowed; }
-.tb-ico.rec { color:var(--accent-cyan); background:rgba(242,139,130,.15); animation:pulse 1.1s infinite; }
+.tb-ico.rec { color:var(--accent-cyan); background:rgba(242,139,130,.15); }
 
 .send-btn {
   width:34px; height:34px; border-radius:50%;
@@ -683,7 +680,6 @@ onBeforeUnmount(() => {
 
 @media(max-width:380px) {
   .wave-info  { font-size:11px; }
-  .wave-bars  { height:22px; }
   .attach-menu { left:-100px; min-width:210px; }
 }
 

@@ -1,26 +1,32 @@
 <template>
   <div class="chat-row" :class="{ active, pinned: variant==='model' }" role="button" tabindex="0"
        :title="chat.title" @click="$emit('click')" @keydown.enter.self="$emit('click')">
-    <i v-if="variant==='model'" class="fas fa-thumbtack pin-ico" aria-hidden="true"></i>
+    <AnimatedIcon v-if="variant==='model'" icon="fas fa-thumbtack" class="pin-ico" animation="bounce" :active="pinJustChanged" />
     <span class="chat-row-title">{{ chat.title }}</span>
     <button class="more-btn" :class="{ open: menuOpen }" aria-label="Chat options" aria-haspopup="menu"
             :aria-expanded="menuOpen" @click.stop="menuOpen=!menuOpen">
-      <i class="fas fa-ellipsis"></i>
+      <AnimatedIcon icon="fas fa-ellipsis" animation="subtle-hover" />
     </button>
     <div v-if="menuOpen" class="ctx-menu" role="menu" @click.stop>
       <button role="menuitem" @click="$emit('pin');menuOpen=false">
-        <i class="fas fa-thumbtack"></i> {{ variant==='model' ? 'Unpin' : 'Pin' }}
+        <AnimatedIcon icon="fas fa-thumbtack" animation="subtle-hover" /> {{ variant==='model' ? 'Unpin' : 'Pin' }}
       </button>
-      <button role="menuitem" @click="$emit('rename');menuOpen=false"><i class="fas fa-pen"></i> Rename</button>
-      <button role="menuitem" class="danger" @click="$emit('delete');menuOpen=false"><i class="fas fa-trash"></i> Delete</button>
+      <button role="menuitem" @click="$emit('rename');menuOpen=false"><AnimatedIcon icon="fas fa-pen" animation="subtle-hover" /> Rename</button>
+      <button role="menuitem" class="danger" @click="$emit('delete');menuOpen=false"><AnimatedIcon icon="fas fa-trash" animation="subtle-hover" /> Delete</button>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+import AnimatedIcon from './AnimatedIcon.vue'
 
-defineProps({ chat: Object, active: Boolean, variant: { type: String, default: 'default' } })
+defineProps({
+  chat: Object,
+  active: Boolean,
+  pinJustChanged: { type: Boolean, default: false },
+  variant: { type: String, default: 'default' }
+})
 defineEmits(['click','rename','pin','delete'])
 
 const menuOpen = ref(false)
@@ -37,7 +43,7 @@ onBeforeUnmount(() => document.removeEventListener('click', close))
 .pin-ico { font-size:10.5px; color:var(--text-3); flex-shrink:0; transform:rotate(35deg); }
 .chat-row-title { flex:1; min-width:0; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .more-btn { width:30px; height:30px; display:grid; place-items:center; flex-shrink:0; background:none; border:none; border-radius:var(--r-sm); color:var(--text-3); font-size:13px; cursor:pointer; opacity:0; transition:opacity var(--t-fast), background var(--t-fast), color var(--t-fast); }
-.chat-row:hover .more-btn, .chat-row.active .more-btn, .more-btn.open, .more-btn:focus-visible { opacity:1; }
+.chat-row:hover .more-btn, .chat-row:focus-within .more-btn, .chat-row.active .more-btn, .more-btn.open, .more-btn:focus-visible { opacity:1; }
 .more-btn:hover, .more-btn.open { background:var(--bg-active); color:var(--text-1); }
 @media (hover: none) { .more-btn { opacity:1; } }
 

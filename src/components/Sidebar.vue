@@ -6,12 +6,12 @@
       <span class="sb-brand">KinyaBot</span>
       <div class="sb-actions">
         <button class="icon-btn" @click="toggleSearch" title="Search chats (Ctrl+/)" aria-label="Search chats">
-          <i class="fas fa-magnifying-glass"></i>
+          <AnimatedIcon icon="fas fa-magnifying-glass" animation="subtle-hover" />
         </button>
         <button class="icon-btn sidebar-toggle" @click="handleSidebarControl"
           :title="mobileOpen ? 'Close sidebar' : collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
           :aria-label="mobileOpen ? 'Close sidebar' : collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-          <i :class="mobileOpen ? 'fas fa-xmark' : collapsed ? 'fas fa-angles-right' : 'fas fa-angles-left'"></i>
+          <AnimatedIcon :icon="mobileOpen ? 'fas fa-xmark' : 'fas fa-angles-left'" class="sidebar-toggle-icon" animation="expand-collapse" :active="collapsed && !mobileOpen" />
         </button>
       </div>
     </div>
@@ -20,7 +20,7 @@
     <transition name="fade">
       <div v-if="searchOpen" class="sb-search">
         <div class="search-row">
-          <i class="fas fa-magnifying-glass"></i>
+          <AnimatedIcon icon="fas fa-magnifying-glass" animation="subtle-hover" />
           <input ref="searchRef" v-model="searchQ" type="text" placeholder="Search chats…"
             @input="doSearch" @keydown.esc="closeSearch" />
           <button v-if="searchQ" @click="clearSearch" aria-label="Clear search"><i class="fas fa-xmark"></i></button>
@@ -44,23 +44,23 @@
       <!-- ── Primary navigation ── -->
       <nav class="nav" aria-label="Primary">
         <button class="nav-item" title="New chat" aria-label="New chat" @click="newChat">
-          <span class="nav-ico new"><i class="fas fa-plus"></i></span>
+          <span class="nav-ico new"><AnimatedIcon icon="fas fa-plus" animation="press" /></span>
           <span class="nav-label">New chat</span>
         </button>
         <button class="nav-item" title="Create Image" aria-label="Create Image" @click="openCanvas">
-          <span class="nav-ico"><i class="fas fa-image"></i></span>
+          <span class="nav-ico"><AnimatedIcon icon="fas fa-image" animation="subtle-hover" /></span>
           <span class="nav-label">Create Image</span>
         </button>
         <button class="nav-item" title="Canvas" aria-label="Canvas" @click="openCanvas">
-          <span class="nav-ico"><i class="fas fa-pen-to-square"></i></span>
+          <span class="nav-ico"><AnimatedIcon icon="fas fa-pen-to-square" animation="subtle-hover" /></span>
           <span class="nav-label">Canvas</span>
         </button>
         <button class="nav-item" title="Guided Learning" aria-label="Guided Learning" @click="openGuided">
-          <span class="nav-ico"><i class="fas fa-graduation-cap"></i></span>
+          <span class="nav-ico"><AnimatedIcon icon="fas fa-graduation-cap" animation="subtle-hover" /></span>
           <span class="nav-label">Guided Learning</span>
         </button>
         <button class="nav-item" title="Customize" aria-label="Customize" @click="showSettings=true">
-          <span class="nav-ico"><i class="fas fa-sliders"></i></span>
+          <span class="nav-ico"><AnimatedIcon icon="fas fa-sliders" animation="subtle-hover" /></span>
           <span class="nav-label">Customize</span>
         </button>
       </nav>
@@ -69,15 +69,15 @@
       <section class="group">
         <button class="section-title" :aria-expanded="pinnedOpen" @click="pinnedOpen=!pinnedOpen">
           <span>Pinned</span>
-          <i class="fas fa-chevron-down chev" :class="{ closed: !pinnedOpen }"></i>
+          <AnimatedIcon icon="fas fa-chevron-down" class="chev" animation="expand-collapse" :active="!pinnedOpen" />
         </button>
         <div v-show="pinnedOpen" class="group-body">
           <template v-if="chatStore.pinnedChats.length">
             <SidebarChatItem
               v-for="chat in chatStore.pinnedChats" :key="chat.id"
-              :chat="chat" :active="chatStore.activeChat?.id===chat.id" variant="model"
+              :chat="chat" :active="chatStore.activeChat?.id===chat.id" variant="model" :pin-just-changed="pinAnimatingIds.has(chat.id)"
               @click="$emit('load-chat',chat.id)"
-              @rename="startRename(chat)" @pin="chatStore.pinChat(chat.id,0)" @delete="startDelete(chat)"
+              @rename="startRename(chat)" @pin="togglePin(chat)" @delete="startDelete(chat)"
             />
           </template>
           <p v-else class="empty">No pinned chats</p>
@@ -88,15 +88,15 @@
       <section class="group">
         <button class="section-title" :aria-expanded="chatsOpen" @click="chatsOpen=!chatsOpen">
           <span>Chats</span>
-          <i class="fas fa-chevron-down chev" :class="{ closed: !chatsOpen }"></i>
+          <AnimatedIcon icon="fas fa-chevron-down" class="chev" animation="expand-collapse" :active="!chatsOpen" />
         </button>
         <div v-show="chatsOpen" class="group-body">
           <template v-if="chatStore.recentChats.length">
             <SidebarChatItem
               v-for="chat in visibleRecent" :key="chat.id"
-              :chat="chat" :active="chatStore.activeChat?.id===chat.id"
+              :chat="chat" :active="chatStore.activeChat?.id===chat.id" :pin-just-changed="pinAnimatingIds.has(chat.id)"
               @click="$emit('load-chat',chat.id)"
-              @rename="startRename(chat)" @pin="chatStore.pinChat(chat.id,1)" @delete="startDelete(chat)"
+              @rename="startRename(chat)" @pin="togglePin(chat)" @delete="startDelete(chat)"
             />
             <button v-if="chatStore.recentChats.length > RECENT_LIMIT" class="view-all" @click="showAllChats=!showAllChats">
               {{ showAllChats ? 'Show less' : 'View all' }}
@@ -272,6 +272,7 @@ import { useChatStore } from '../stores/chat'
 import api from '../api'
 import { disconnectSocket } from '../socket'
 import { usePwaInstall } from '../composables/usePwaInstall'
+import AnimatedIcon from './AnimatedIcon.vue'
 import SidebarChatItem from './SidebarChatItem.vue'
 import SettingsModal from './SettingsModal.vue'
 import HelpModal from './HelpModal.vue'
@@ -331,8 +332,28 @@ const RECENT_LIMIT = 10
 const pinnedOpen = ref(true)
 const chatsOpen = ref(true)
 const showAllChats = ref(false)
+const pinAnimatingIds = ref(new Set())
+const pinAnimationTimers = new Map()
 const visibleRecent = computed(() =>
   showAllChats.value ? chatStore.recentChats : chatStore.recentChats.slice(0, RECENT_LIMIT))
+
+async function togglePin(chat) {
+  const nextPinned = chat.is_pinned ? 0 : 1
+  try {
+    await chatStore.pinChat(chat.id, nextPinned)
+    await nextTick()
+    pinAnimatingIds.value = new Set(pinAnimatingIds.value).add(chat.id)
+    clearTimeout(pinAnimationTimers.get(chat.id))
+    pinAnimationTimers.set(chat.id, setTimeout(() => {
+      const next = new Set(pinAnimatingIds.value)
+      next.delete(chat.id)
+      pinAnimatingIds.value = next
+      pinAnimationTimers.delete(chat.id)
+    }, 520))
+  } catch (error) {
+    console.error('[Sidebar] Could not update pinned chat:', error)
+  }
+}
 
 function newChat() { emit('close-mobile'); emit('new-chat') }
 function handleSidebarControl() {
@@ -443,6 +464,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeydown)
   document.removeEventListener('click', onDocClick)
+  pinAnimationTimers.forEach(clearTimeout)
 })
 </script>
 

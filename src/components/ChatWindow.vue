@@ -20,7 +20,7 @@
         title="Voice mode"
         aria-label="Enable voice mode"
       >
-        <i class="fas fa-microphone-lines"></i>
+        <AnimatedIcon icon="fas fa-microphone-lines" animation="subtle-hover" />
         <span class="vp-label">Voice</span>
       </button>
     </div>
@@ -51,7 +51,7 @@
           <div v-for="(row, ri) in marqueeRows" :key="ri" class="m-chip-row" :class="`r${ri}`">
             <div class="m-chip-track" :class="`dir${ri}`">
               <button v-for="(c,ci) in row" :key="ri+'-'+ci" class="m-chip" type="button" @click="useChip(c.prompt)">
-                <span class="ic"><i :class="c.icon"></i></span>
+                <span class="ic"><AnimatedIcon :icon="c.icon" animation="subtle-hover" /></span>
                 <span>{{ c.lead }} <b>{{ c.accent }}</b></span>
               </button>
             </div>
@@ -79,7 +79,7 @@
       <transition name="fade">
         <div v-if="isPhone && showFollowups" class="m-follow">
           <button v-for="f in followups" :key="f" @click="handleSend({ content: f, file: null })">
-            <i class="fas fa-wand-magic-sparkles"></i>{{ f }}
+            <AnimatedIcon icon="fas fa-wand-magic-sparkles" animation="subtle-hover" />{{ f }}
           </button>
         </div>
       </transition>
@@ -87,7 +87,7 @@
       <!-- Stop generation -->
       <transition name="fade">
         <button v-if="chatStore.streaming" class="stop-btn" @click="chatStore.stopGeneration()" aria-label="Stop generating" title="Stop generating">
-          <i class="fas fa-stop"></i> Stop generating
+          <AnimatedIcon icon="fas fa-stop" animation="press" /> Stop generating
         </button>
       </transition>
     </div>
@@ -123,14 +123,14 @@
 
         <div class="wh-cards">
           <button type="button" class="wh-card" @click="useChip('Tell me a fun fact I probably do not know and explain it simply')">
-            <span class="whc-ic"><i class="fas fa-magnifying-glass"></i></span>
+            <span class="whc-ic"><AnimatedIcon icon="fas fa-magnifying-glass" animation="subtle-hover" /></span>
             <span class="whc-body">
               <b>Ask anything</b>
               <small>Get fast, accurate answers — in English, Kinyarwanda, French and more.</small>
             </span>
           </button>
           <button type="button" class="wh-card alt" @click="useChip('Help me plan and write a project brief — ask me for the details step by step')">
-            <span class="whc-ic"><i class="fas fa-robot"></i></span>
+            <span class="whc-ic"><AnimatedIcon icon="fas fa-robot" animation="subtle-hover" /></span>
             <span class="whc-body">
               <b>Get work done with KinyaBot</b>
               <em>NEW</em>
@@ -142,15 +142,15 @@
         <!-- Pinned cards (authenticated users) -->
         <div v-if="!guest && chatStore.pinnedChats.length" class="pinned-section">
           <div class="pinned-header">
-            <i class="fas fa-thumbtack" style="color:var(--text-2)"></i>
+            <AnimatedIcon icon="fas fa-thumbtack" animation="subtle-hover" style="color:var(--text-2)" />
             <span>Pinned Chats</span>
             <i class="fas fa-chevron-down" style="font-size:11px;color:var(--text-3);margin-left:4px"></i>
-            <button class="sm-icon-btn" style="margin-left:auto"><i class="fas fa-ellipsis"></i></button>
+            <button class="sm-icon-btn" style="margin-left:auto" aria-label="Pinned chat options"><AnimatedIcon icon="fas fa-ellipsis" animation="subtle-hover" /></button>
           </div>
           <div class="pinned-cards">
             <div v-for="chat in chatStore.pinnedChats.slice(0,3)" :key="chat.id"
               class="pinned-card" @click="chatStore.loadChat(chat.id)">
-              <div class="pc-icon"><i class="fas fa-file-lines"></i></div>
+              <div class="pc-icon"><AnimatedIcon icon="fas fa-file-lines" animation="subtle-hover" /></div>
               <div class="pc-info">
                 <div class="pc-title">{{ chat.title }}</div>
                 <div class="pc-sub">{{ (chat.last_message || 'No messages yet').slice(0,50) }}</div>
@@ -168,21 +168,21 @@
     <!-- Scroll FAB -->
     <transition name="fade">
       <button v-if="showScrollBtn" class="scroll-fab" @click="scrollBottom">
-        <i class="fas fa-arrow-down"></i>
+        <AnimatedIcon icon="fas fa-arrow-down" animation="subtle-hover" />
       </button>
     </transition>
 
     <!-- Copy toast -->
     <transition name="fade">
       <div v-if="copyToast" class="copy-toast">
-        <i class="fas fa-check"></i> Copied to clipboard
+        <AnimatedIcon icon="fas fa-check" animation="success" :active="copyToast" /> Copied to clipboard
       </div>
     </transition>
 
     <!-- Restored-draft hint (message preserved across sign-in) -->
     <transition name="fade">
       <div v-if="restoredDraft" class="restored-hint">
-        <i class="fas fa-circle-info"></i>
+        <AnimatedIcon icon="fas fa-circle-info" animation="slide-in" />
         <span>Your message is ready below — press Send to chat with KinyaBot.</span>
         <button class="rh-x" @click="$emit('draft-consumed')"><i class="fas fa-xmark"></i></button>
       </div>
@@ -209,6 +209,7 @@ import { getSocket } from '../socket'
 import api from '../api'
 import MessageBubble from './MessageBubble.vue'
 import InputBox from './InputBox.vue'
+import AnimatedIcon from './AnimatedIcon.vue'
 // Lazy-loaded: Voice Mode pulls in three.js + the 3D character, so it
 // should only be downloaded when the person actually opens it.
 const VoiceMode = defineAsyncComponent(() => import('./VoiceMode.vue'))
