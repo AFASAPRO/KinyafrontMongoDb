@@ -1,66 +1,48 @@
 <template>
-  <aside class="right-panel" aria-label="Conversation details">
+  <aside class="right-panel" :class="{ 'artifact-preview-mode': artifactFiles.length, 'artifact-expanded': expandedPreview }" aria-label="Conversation details">
     <!-- ── Header ── -->
-    <header class="rp-top">
-      <h2 class="rp-heading">{{ artifactFiles.length ? 'Generated files' : 'Details' }}</h2>
+    <header v-if="artifactFiles.length" class="archive-preview-top">
+      <span class="archive-preview-top-title">{{ archiveTitle }} · {{ archiveType }}</span>
+      <div class="archive-preview-actions">
+        <button class="rp-icon" type="button" title="Download file" aria-label="Download generated file" @click="downloadProject">
+          <i :class="downloadingArchive ? 'fas fa-spinner fa-spin' : 'fas fa-download'"></i>
+        </button>
+        <button class="rp-icon" type="button" :title="expandedPreview ? 'Exit full screen' : 'Expand preview'" :aria-label="expandedPreview ? 'Exit full screen preview' : 'Expand preview'" @click="expandedPreview = !expandedPreview">
+          <i :class="expandedPreview ? 'fas fa-compress' : 'fas fa-up-right-and-down-left-from-center'"></i>
+        </button>
+        <button class="rp-icon" type="button" @click="$emit('close')" title="Close preview" aria-label="Close preview">
+          <i class="fas fa-xmark"></i>
+        </button>
+      </div>
+    </header>
+    <header v-else class="rp-top">
+      <h2 class="rp-heading">Details</h2>
       <button class="rp-icon" @click="$emit('close')" title="Close panel" aria-label="Close details panel">
         <i class="fas fa-xmark"></i>
       </button>
     </header>
 
+    <main v-if="artifactFiles.length" class="archive-preview-body">
+      <div class="archive-preview-empty">
+        <svg class="archive-file-outline" viewBox="0 0 76 94" fill="none" aria-hidden="true">
+          <path d="M9 2.5h43L73.5 24v66.5H9z" />
+          <path d="M52 3v22h21" />
+        </svg>
+        <h2>{{ archiveTitle }}</h2>
+        <span>{{ archiveType }}</span>
+        <p>No preview available</p>
+        <p v-if="artifactDownloadError" class="archive-preview-error" role="alert">{{ artifactDownloadError }}</p>
+      </div>
+    </main>
+
     <!-- ── Empty state (no open chat) ── -->
-    <div v-if="!chat" class="rp-empty-state">
+    <div v-else-if="!chat" class="rp-empty-state">
       <span class="rp-empty-ico"><i class="fas fa-layer-group"></i></span>
       <strong>No chat open</strong>
       <p>Open or start a conversation to see its code, files and settings here.</p>
     </div>
 
     <div v-else class="rp-scroll">
-      <!-- Generated files are surfaced first when a coding response completes. -->
-      <section v-if="artifactFiles.length" class="rp-sec generated-sec">
-        <button class="rp-sec-head" :aria-expanded="open.generated" @click="toggle('generated')">
-          <i class="fas fa-file-code"></i><span>Generated files</span>
-          <em class="rp-count">{{ artifactFiles.length }}</em>
-          <i class="fas fa-chevron-down chev" :class="{ closed: !open.generated }"></i>
-        </button>
-        <div v-show="open.generated" class="rp-sec-body">
-          <div v-if="artifactFiles.length > 1" class="project-download-card">
-            <span class="file-ico"><i class="fas fa-box-archive"></i></span>
-            <span class="file-info">
-              <span class="file-name">{{ chat.title || 'KinyaBot project' }}</span>
-              <small>ZIP · {{ artifactFiles.length }} files</small>
-            </span>
-            <button class="rp-icon sm" type="button" title="Download project ZIP" aria-label="Download project ZIP" @click="downloadProject">
-              <i class="fas fa-download"></i>
-            </button>
-          </div>
-          <p v-if="artifactDownloadError" class="artifact-download-error" role="alert">{{ artifactDownloadError }}</p>
-          <div class="artifact-tabs" role="tablist" aria-label="Generated files">
-            <button
-              v-for="file in artifactFiles"
-              :key="file.key"
-              type="button"
-              role="tab"
-              :aria-selected="selectedArtifact?.key === file.key"
-              :class="{ active: selectedArtifact?.key === file.key }"
-              @click="selectedArtifactKey = file.key"
-            >
-              <i class="fas fa-file-code"></i>{{ file.name }}
-            </button>
-          </div>
-          <div v-if="selectedArtifact" class="artifact-preview">
-            <header class="artifact-preview-head">
-              <span class="artifact-preview-name" :title="selectedArtifact.name">{{ selectedArtifact.name }}</span>
-              <span class="lang-chip">{{ selectedArtifact.language }}</span>
-              <button class="rp-icon sm" type="button" title="Download file" :aria-label="`Download ${selectedArtifact.name}`" @click="downloadSelectedFile">
-                <i class="fas fa-download"></i>
-              </button>
-            </header>
-            <pre><code>{{ selectedArtifact.code }}</code></pre>
-          </div>
-        </div>
-      </section>
-
       <!-- ══ 1. Chat header ══ -->
       <section class="rp-card rp-chat">
         <div class="rp-title-row">
@@ -214,15 +196,22 @@ const artifactFiles = computed(() => {
   }
   return []
 })
-const selectedArtifactKey = ref('')
-const selectedArtifact = computed(() =>
-  artifactFiles.value.find(file => file.key === selectedArtifactKey.value) || artifactFiles.value[0] || null
-)
 const artifactDownloadError = ref('')
+const downloadingArchive = ref(false)
+const expandedPreview = ref(false)
+const archiveType = computed(() => artifactFiles.value.length > 1
+  ? 'ZIP'
+  : (artifactFiles.value[0]?.name.split('.').pop() || 'File').toUpperCase()
+)
+const archiveTitle = computed(() => {
+  if (artifactFiles.value.length === 1) return artifactFiles.value[0].name
+  const title = String(chat.value?.title || 'KinyaBot generated file').trim()
+  return /\.zip$/i.test(title) ? title : `${title}.zip`
+})
 
 /* ── Collapsible sections (remembered) ── */
 const open = reactive((() => {
-  const d = { generated: true, code: true, files: true, settings: true, usage: true }
+  const d = { code: true, files: true, settings: true, usage: true }
   try { return { ...d, ...JSON.parse(localStorage.getItem('kb_rp_open') || '{}') } } catch { return d }
 })())
 function toggle(k) {
@@ -230,9 +219,9 @@ function toggle(k) {
   try { localStorage.setItem('kb_rp_open', JSON.stringify({ ...open })) } catch {}
 }
 watch(artifactFiles, files => {
-  open.generated = files.length > 0
-  selectedArtifactKey.value = files[0]?.key || ''
   artifactDownloadError.value = ''
+  downloadingArchive.value = false
+  if (!files.length) expandedPreview.value = false
 }, { immediate: true })
 
 /* ── 1. Rename / export / share ── */
@@ -326,21 +315,15 @@ function downloadCode(b) {
 }
 
 async function downloadProject() {
+  if (downloadingArchive.value) return
+  downloadingArchive.value = true
   artifactDownloadError.value = ''
   try {
     await downloadCodeFiles(artifactFiles.value, chat.value?.title || 'kinyabot-project')
   } catch {
-    artifactDownloadError.value = 'The project ZIP could not be prepared. Please try again.'
-  }
-}
-
-async function downloadSelectedFile() {
-  if (!selectedArtifact.value) return
-  artifactDownloadError.value = ''
-  try {
-    await downloadCodeFiles([selectedArtifact.value])
-  } catch {
-    artifactDownloadError.value = 'The file could not be downloaded. Please try again.'
+    artifactDownloadError.value = 'The generated file could not be prepared. Please try again.'
+  } finally {
+    downloadingArchive.value = false
   }
 }
 
@@ -502,20 +485,21 @@ const fmt = (n) => (n || 0) >= 1000 ? `${((n || 0) / 1000).toFixed(1)}k` : Strin
 .code-preview:hover .jump i { transform: translateX(2px); }
 
 /* Generated file delivery */
-.generated-sec { border-top: none; }
-.project-download-card { display:flex; align-items:center; gap:8px; padding:7px; border:1px solid var(--border-md); border-radius:var(--r); background:var(--bg-card); }
-.project-download-card .file-info { cursor:default; }
-.artifact-download-error { color:var(--error); font-size:12px; line-height:1.4; }
-.artifact-tabs { display:flex; flex-direction:column; gap:3px; max-height:132px; overflow:auto; }
-.artifact-tabs button { display:flex; align-items:center; gap:8px; min-width:0; padding:7px 8px; border:0; border-radius:var(--r-sm); background:transparent; color:var(--text-2); text-align:left; font-size:12px; cursor:pointer; }
-.artifact-tabs button i { color:var(--icon); }
-.artifact-tabs button:hover,.artifact-tabs button.active { background:var(--bg-hover); color:var(--text-1); }
-.artifact-tabs button.active i { color:var(--brand-text); }
-.artifact-tabs button { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.artifact-preview { overflow:hidden; border:1px solid var(--border); border-radius:var(--r); background:var(--code-bg); }
-.artifact-preview-head { display:flex; align-items:center; gap:6px; min-height:38px; padding:4px 6px 4px 10px; border-bottom:1px solid var(--border-subtle); }
-.artifact-preview-name { flex:1; min-width:0; overflow:hidden; color:var(--text-1); font-size:11.5px; text-overflow:ellipsis; white-space:nowrap; }
-.artifact-preview pre { max-height:280px; overflow:auto; margin:0; padding:10px; color:var(--code-text); font-family:var(--font-mono); font-size:11px; line-height:1.5; tab-size:2; white-space:pre; }
+.artifact-preview-mode { background:#202020; border-left-color:#343434; color:#e7e5e4; }
+.archive-preview-top { display:flex; align-items:center; justify-content:space-between; gap:8px; height:48px; min-height:48px; padding:0 8px; border-bottom:1px solid #383838; color:#d2d0ca; }
+.archive-preview-top-title { min-width:0; overflow:hidden; font-size:14px; text-overflow:ellipsis; white-space:nowrap; }
+.archive-preview-actions { display:flex; align-items:center; flex-shrink:0; gap:1px; }
+.artifact-preview-mode .archive-preview-actions .rp-icon { color:#e7e5e4; }
+.artifact-preview-mode .archive-preview-actions .rp-icon:hover { background:#353535; color:#fff; }
+.archive-preview-body { display:grid; flex:1; min-height:0; place-items:center; overflow:auto; padding:32px 18px; background:#202020; }
+.archive-preview-empty { display:flex; flex-direction:column; align-items:center; max-width:100%; text-align:center; }
+.archive-file-outline { width:76px; height:100px; margin-bottom:60px; overflow:visible; }
+.archive-file-outline path { stroke:#e7e5e4; stroke-width:2.6; stroke-linejoin:round; stroke-linecap:round; }
+.archive-preview-empty h2 { max-width:100%; margin:0 0 5px; color:#e7e5e4; font-size:19px; font-weight:600; line-height:1.35; overflow-wrap:anywhere; }
+.archive-preview-empty > span { color:#b9b7b0; font-size:15px; }
+.archive-preview-empty > p { margin:26px 0 0; color:#b9b7b0; font-size:16px; }
+.archive-preview-empty > p.archive-preview-error { margin-top:12px; color:#fca5a5; font-size:12px; }
+.artifact-expanded { position:fixed!important; inset:0!important; z-index:120!important; width:100vw!important; min-width:0!important; height:100dvh!important; border-left:0!important; }
 
 /* Files */
 .thumb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }

@@ -67,6 +67,7 @@
           :key="msg.id"
           :message="msg"
           :artifact-name="chatStore.activeChat?.title || 'kinyabot-project'"
+          :is-coding-task="isCodingTask(msg, i)"
           :is-last="isLastAssistant(msg, i)"
           :regen-busy="chatStore.sending || chatStore.streaming"
           @delete="chatStore.deleteMessage(msg.id)"
@@ -405,6 +406,16 @@ function isLastAssistant(msg, index) {
     if (m.role === 'assistant' && !m._error) return false
   }
   return true
+}
+
+function isCodingTask(message, index) {
+  if (message.role !== 'assistant') return false
+  for (let i = index - 1; i >= 0; i--) {
+    const previous = chatStore.messages[i]
+    if (previous.role !== 'user') continue
+    return /\b(code|coding|program|programming|html|css|javascript|typescript|react|vue|website|web app|frontend|front-end|backend|component|script|software|build an app|create an app)\b/i.test(previous.content || '')
+  }
+  return false
 }
 
 async function handleRetry(failedId) {

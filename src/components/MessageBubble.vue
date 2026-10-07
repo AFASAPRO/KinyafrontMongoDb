@@ -63,14 +63,46 @@
         <span v-else-if="message._streaming" class="stream-cursor"></span>
       </div>
 
-      <div v-if="message._streaming && codeGenerationStarted" class="generated-file-card preparing">
-        <span class="generated-file-icon"><i class="fas fa-spinner fa-spin"></i></span>
-        <span class="generated-file-copy">
-          <strong>Preparing code files</strong>
-          <small>Downloadable files appear when generation finishes</small>
-        </span>
-      </div>
-      <div v-else-if="generatedFiles.length" class="generated-file-card">
+      <section
+        v-if="message.role === 'assistant' && (message._streaming ? isCodingTask : generatedFiles.length > 0)"
+        class="coding-activity"
+        :class="{ complete: !message._streaming }"
+      >
+        <button
+          class="coding-activity-toggle"
+          type="button"
+          :aria-expanded="activityOpen"
+          @click="activityOpen = !activityOpen"
+        >
+          <span class="coding-activity-status">
+            <i :class="message._streaming ? 'fas fa-spinner fa-spin' : 'fas fa-check'"></i>
+          </span>
+          <span class="coding-activity-title">
+            <strong>{{ message._streaming ? 'Working on your code' : `Created ${generatedFiles.length} ${generatedFiles.length === 1 ? 'file' : 'files'}` }}</strong>
+            <small>{{ message._streaming ? 'Generating the requested code' : 'Downloadable files are ready' }}</small>
+          </span>
+          <i class="fas fa-chevron-down coding-activity-chevron" :class="{ open: activityOpen }"></i>
+        </button>
+        <div v-if="activityOpen" class="coding-activity-details">
+          <div v-if="message._streaming" class="coding-activity-row">
+            <i class="fas fa-code"></i>
+            <span>Generating project files</span>
+            <span class="activity-state">In progress</span>
+          </div>
+          <div v-for="file in generatedFiles" :key="file.key" class="coding-activity-row">
+            <i class="fas fa-file-code"></i>
+            <span>{{ file.name }}</span>
+            <span class="activity-state">{{ message._streaming ? 'Ready' : 'Created' }}</span>
+          </div>
+          <div v-if="message._streaming" class="coding-activity-row">
+            <i class="fas fa-box-archive"></i>
+            <span>Preparing downloadable files</span>
+            <span class="activity-state pending">After generation</span>
+          </div>
+        </div>
+      </section>
+
+      <div v-if="generatedFiles.length" class="generated-file-card">
         <button class="generated-file-info" type="button" @click="$emit('open-artifact')" :aria-label="`Open ${generatedTitle}`">
           <span class="generated-file-icon"><i :class="generatedFiles.length > 1 ? 'fas fa-box-archive' : 'fas fa-file-code'"></i></span>
           <span class="generated-file-copy">
@@ -208,6 +240,7 @@ const props = defineProps({
   message: Object,
   isLast: { type: Boolean, default: false },       // last assistant message → regenerate
   regenBusy: { type: Boolean, default: false },
+  isCodingTask: { type: Boolean, default: false },
   artifactName: { type: String, default: 'kinyabot-project' }
 })
 const emit = defineEmits(['delete', 'copy', 'retry', 'regenerate', 'open-artifact'])
@@ -224,6 +257,7 @@ const feedbackMsg = ref('')
 const lightboxImg = ref(null)
 const downloadingFiles = ref(false)
 const artifactError = ref('')
+const activityOpen = ref(true)
 
 // Emoji reaction system - adds contextual emoji to AI responses
 function addEmojiReactions(text) {
@@ -302,7 +336,6 @@ const rendered = computed(() => {
   return renderMarkdown(enhanced)
 })
 
-const codeGenerationStarted = computed(() => /```/.test(props.message.content || ''))
 const generatedFiles = computed(() => {
   if (props.message.role !== 'assistant' || props.message._streaming || props.message._error || props.message._status === 'cancelled') return []
   return extractCodeFiles(props.message.content, props.message.id)
@@ -518,6 +551,27 @@ function doDelete() {
 .generated-file-download:hover:not(:disabled) { background:var(--bg-active); }
 .generated-file-download:disabled { opacity:.65; cursor:wait; }
 .artifact-error { margin-top:4px; color:var(--error); font-size:12px; }
+.coding-activity {
+  width:min(100%, 560px); margin-top:8px; overflow:hidden;
+  border:1px solid var(--border-md); border-radius:12px; background:var(--bg-card);
+}
+.coding-activity-toggle {
+  display:flex; align-items:center; gap:10px; width:100%; min-height:58px; padding:9px 12px;
+  background:transparent; border:0; color:var(--text-1); text-align:left; cursor:pointer;
+}
+.coding-activity-status { display:grid; place-items:center; width:26px; height:26px; border-radius:50%; background:var(--brand-soft); color:var(--brand-text); font-size:12px; }
+.coding-activity.complete .coding-activity-status { background:rgba(34,197,94,.12); color:var(--success); }
+.coding-activity-title { display:flex; flex:1; flex-direction:column; gap:2px; min-width:0; }
+.coding-activity-title strong { font-size:13px; font-weight:600; }
+.coding-activity-title small { color:var(--text-3); font-size:11.5px; }
+.coding-activity-chevron { color:var(--text-3); font-size:11px; transition:transform .18s ease; }
+.coding-activity-chevron.open { transform:rotate(180deg); }
+.coding-activity-details { padding:3px 12px 10px 22px; border-top:1px solid var(--border-subtle); }
+.coding-activity-row { display:flex; align-items:center; gap:9px; min-height:34px; color:var(--text-2); font-size:12px; }
+.coding-activity-row > i { width:14px; color:var(--text-3); font-size:11px; }
+.coding-activity-row > span:first-of-type { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.activity-state { color:var(--success); font-size:10.5px; white-space:nowrap; }
+.activity-state.pending { color:var(--text-3); }
 
 /* Thinking indicator */
 .thinking { display:flex; align-items:center; gap:5px; padding:6px 0; }
