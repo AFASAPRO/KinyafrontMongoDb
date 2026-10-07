@@ -57,6 +57,37 @@
       </SectionCard>
     </div>
 
+    <!-- ═══ SUBSCRIPTIONS (§23) — real plan data; 0 when empty ═══ -->
+    <div class="sub-strip">
+      <StatCard label="Free users" :value="ov?.subscription?.plans?.free" icon="fas fa-feather" :loading="loading" sub="plan distribution" />
+      <StatCard label="Plus users" :value="ov?.subscription?.plans?.plus" icon="fas fa-bolt" :loading="loading" />
+      <StatCard label="Pro users" :value="ov?.subscription?.plans?.pro" icon="fas fa-gem" :loading="loading" />
+      <StatCard label="Pending requests" :value="ov?.subscription?.requests?.pending" icon="fas fa-hourglass-half" :loading="loading" sub="awaiting review" />
+      <StatCard label="Chats today" :value="ov?.subscription?.today?.chats_used" icon="fas fa-comments" :loading="loading" sub="all plans" />
+      <StatCard label="Near limit today" :value="ov?.subscription?.today?.near_limit" icon="fas fa-gauge-high" :loading="loading" sub="≥80% of daily chats" />
+      <StatCard label="Reached limit today" :value="ov?.subscription?.today?.reached_limit" icon="fas fa-triangle-exclamation" :loading="loading" sub="blocked until tomorrow" />
+      <StatCard label="Approved requests" :value="ov?.subscription?.requests?.approved" icon="fas fa-circle-check" :loading="loading" sub="all time" />
+    </div>
+
+    <div class="charts">
+      <SectionCard title="Plan distribution" subtitle="Users per plan · live from UserPlan records">
+        <DonutChart
+          :items="planItems"
+          :center-value="fmtNum(ov?.users?.total ?? null)"
+          center-label="users"
+          :colors="['#64748b', '#22d3ee', '#8b5cf6']"
+        />
+      </SectionCard>
+      <SectionCard title="Upgrade requests" subtitle="All-time status of every submitted request">
+        <DonutChart
+          :items="requestItems"
+          :center-value="fmtNum(reqTotal ?? null)"
+          center-label="requests"
+          :colors="['#f59e0b', '#22c55e', '#ef4444']"
+        />
+      </SectionCard>
+    </div>
+
     <!-- Activity + recent users -->
     <div class="bottom-grid">
       <SectionCard title="Live activity" :padded="false">
@@ -193,6 +224,19 @@ const aiReqPoints = computed(() => (ov.value?.series?.ai || []).map(p => ({ labe
 const aiErrPoints = computed(() => (ov.value?.series?.ai || []).map(p => ({ label: p.date, y: p.errors })))
 const modelItems = computed(() => (ov.value?.ai?.by_model || []).map(m => ({ label: m.model, value: m.count })))
 
+/* Subscription charts (§23) — real values only, zeros when empty */
+const planItems = computed(() => [
+  { label: 'Free', value: ov.value?.subscription?.plans?.free || 0 },
+  { label: 'Plus', value: ov.value?.subscription?.plans?.plus || 0 },
+  { label: 'Pro', value: ov.value?.subscription?.plans?.pro || 0 },
+])
+const requestItems = computed(() => [
+  { label: 'Pending', value: ov.value?.subscription?.requests?.pending || 0 },
+  { label: 'Approved', value: ov.value?.subscription?.requests?.approved || 0 },
+  { label: 'Rejected', value: ov.value?.subscription?.requests?.rejected || 0 },
+])
+const reqTotal = computed(() => requestItems.value.reduce((s, i) => s + i.value, 0))
+
 function prettyDate(d) {
   if (!d) return ''
   if (d.includes('T')) return d.slice(11, 13) + ':00'
@@ -232,8 +276,9 @@ function setRange(r) { range.value = r; loadOverview() }
 .ss-skel { width:88px; height:24px; border-radius:99px; background:linear-gradient(90deg, var(--surface-secondary) 25%, var(--surface-elevated) 50%, var(--surface-secondary) 75%); background-size:200% 100%; animation:sh 1.4s infinite; }
 @keyframes sh { 0% { background-position:200% 0 } 100% { background-position:-200% 0 } }
 .kpis { display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; }
-@media (max-width:1100px) { .kpis { grid-template-columns:repeat(2, 1fr); } }
-@media (max-width:520px) { .kpis { grid-template-columns:1fr 1fr; } }
+.sub-strip { display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; }
+@media (max-width:1100px) { .kpis { grid-template-columns:repeat(2, 1fr); } .sub-strip { grid-template-columns:repeat(2, 1fr); } }
+@media (max-width:520px) { .kpis { grid-template-columns:1fr 1fr; } .sub-strip { grid-template-columns:1fr 1fr; } }
 .charts { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 @media (max-width:980px) { .charts { grid-template-columns:1fr; } }
 .bottom-grid { display:grid; grid-template-columns:1.2fr 1fr; gap:16px; }

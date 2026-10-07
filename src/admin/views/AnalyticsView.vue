@@ -77,6 +77,27 @@
         </div>
       </SectionCard>
     </div>
+
+    <!-- Plans (§24) — real upgrade funnel + consumption by plan -->
+    <SectionCard title="Plans & upgrades" subtitle="Real subscription funnel derived from PlanRequest + UsageDaily records">
+      <div class="mini-kpis">
+        <div class="mk"><span class="mk-v">{{ fmtNum(d?.plans?.requests?.total) }}</span><span class="mk-l">Requests · {{ rangeLabel }}</span></div>
+        <div class="mk"><span class="mk-v">{{ fmtNum(d?.plans?.requests?.approved) }}</span><span class="mk-l">Approved</span></div>
+        <div class="mk"><span class="mk-v">{{ fmtNum(d?.plans?.requests?.rejected) }}</span><span class="mk-l">Rejected</span></div>
+        <div class="mk"><span class="mk-v">{{ d?.plans?.requests?.approval_rate ?? '0' }}%</span><span class="mk-l">Approval rate</span></div>
+        <div class="mk"><span class="mk-v">{{ d?.plans?.requests?.rejection_rate ?? '0' }}%</span><span class="mk-l">Rejection rate</span></div>
+      </div>
+      <div class="two-col">
+        <div>
+          <p class="sub-title">Upgrades by conversion</p>
+          <HBarList :items="(d?.plans?.conversions || []).map(c => ({ label: c.label, value: c.count }))" color="#8b5cf6" />
+        </div>
+        <div>
+          <p class="sub-title">Daily chat consumption by plan (7 days)</p>
+          <HBarList :items="(d?.plans?.consumption_by_plan || []).map(c => ({ label: (c.plan || 'free').toUpperCase(), value: c.chats_used }))" color="#22d3ee" />
+        </div>
+      </div>
+    </SectionCard>
   </div>
 </template>
 
@@ -140,4 +161,5 @@ function xLabels(series) {
 .mk-l { font-size:11px; color:var(--text-3); }
 .two-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 @media (max-width:980px) { .two-col { grid-template-columns:1fr; } }
+.sub-title { margin:0 0 10px; font-size:12px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:.08em; }
 </style>

@@ -152,13 +152,13 @@
         @toggle-sidebar="mobileSidebarOpen=!mobileSidebarOpen"
         @auth-required="handleAuthRequired"
         @draft-consumed="onDraftConsumed"
-        @artifact-ready="handleArtifactReady"
+        @artifact-ready="rightOpen=true"
       />
     </div>
 
     <template v-if="!isGuest">
       <transition name="slide-r">
-        <RightPanel ref="rightPanel" v-if="rightOpen" @load-chat="handleLoadChat" @close="rightOpen=false" />
+        <RightPanel v-if="rightOpen" @load-chat="handleLoadChat" @close="rightOpen=false" />
       </transition>
     </template>
     <SettingsModal v-if="showSettings" @close="showSettings=false" />
@@ -168,6 +168,20 @@
       v-if="showAuthGate"
       @close="showAuthGate=false"
     />
+
+    <!-- ── Daily limit reached → upgrade experience (§7) ── -->
+    <LimitReachedModal
+      :open="!!chatStore.limitReachedInfo"
+      :usage="chatStore.limitReachedInfo?.usage || null"
+      :plans="plansCatalog"
+      @close="chatStore.limitReachedInfo=null"
+    />
+
+    <!-- ── Realtime user notifications (§22) ── -->
+    <UserToasts v-if="!isGuest" />
+
+    <!-- ── Upgrade approved celebration (§40) ── -->
+    <UpgradeCelebration />
   </div>
 </template>
 
@@ -184,10 +198,16 @@ import ChatWindow from '../components/ChatWindow.vue'
 import RightPanel from '../components/RightPanel.vue'
 import AuthGateModal from '../components/AuthGateModal.vue'
 import SettingsModal from '../components/SettingsModal.vue'
+import LimitReachedModal from '../components/plans/LimitReachedModal.vue'
+import UserToasts from '../components/plans/UserToasts.vue'
+import UpgradeCelebration from '../components/plans/UpgradeCelebration.vue'
 import { useIsMobile } from '../composables/useIsMobile'
+import { useSubscriptionStore } from '../stores/subscription'
 
 const auth = useAuthStore()
 const chatStore = useChatStore()
+const subStore = useSubscriptionStore()
+const plansCatalog = computed(() => subStore.plansCatalog)
 const route = useRoute()
 const router = useRouter()
 
@@ -195,7 +215,6 @@ const mobileSidebarOpen = ref(false)
 const sidebarCollapsed = ref(localStorage.getItem('kb_sidebar_collapsed') === '1')
 const showSettings = ref(false)
 const chatWindow = ref(null)
-const rightPanel = ref(null)
 const chatScrolled = ref(false)
 const renamingChat = ref(false)
 const chatTitleDraft = ref('')
@@ -256,11 +275,6 @@ function preloadVoiceMode() {
   chatWindow.value?.preloadVoiceMode()
 }
 
-function handleArtifactReady() {
-  rightOpen.value = true
-  nextTick(() => rightPanel.value?.revealArtifact())
-}
-
 // ── Guest mode ────────────────────────────────────────────────
 // Guests see the full chat interface but cannot reach the AI until
 // they sign in — enforced here AND by the backend's authGuard.
@@ -287,6 +301,10 @@ const isLightMode = sharedIsLightMode
 onMounted(async () => {
   if (!isGuest.value) {
     await initAuthenticatedSession()
+    // Plan state + plans catalog for the limit modal / celebration (cached, cheap)
+    subStore.fetch()
+    subStore.fetchPlans()
+    subStore.setupSocketListeners()
   }
 
   window.addEventListener('keydown', handleGlobalKeys)
@@ -316,6 +334,8 @@ watch(isGuest, async (guest, wasGuest) => {
   if (!guest && wasGuest) {
     showAuthGate.value = false
     await initAuthenticatedSession()
+    subStore.fetchPlans()
+    subStore.setupSocketListeners()
     restorePendingDraft()
   }
 })

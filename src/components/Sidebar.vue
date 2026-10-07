@@ -111,14 +111,29 @@
     <!-- ── Footer: plan / usage + account ── -->
     <div class="sb-footer">
       <template v-if="!guest">
-        <div class="usage" :title="`${usage.today} used today`">
-          <div class="usage-text">
-            <span>{{ usage.remaining }} of {{ usage.daily_limit }} messages left today</span>
-            <span class="usage-pct">{{ usageRing }}%</span>
+        <!-- Plan display (§5): plan name + usage progress + upgrade action -->
+        <div class="plan-block" role="group" :aria-label="`${sub.planName} plan usage`">
+          <div class="plan-block-top">
+            <PlanBadge :plan="sub.plan" size="sm" />
+            <span class="plan-usage-count" :class="sub.usageState">
+              {{ sub.usage.used }} / {{ sub.usage.limit }}
+            </span>
           </div>
-          <div class="usage-bar" role="progressbar" :aria-valuenow="usageRing" aria-valuemin="0" aria-valuemax="100">
-            <i :style="{ width: usageRing + '%' }"></i>
-          </div>
+          <UsageIndicator
+            compact
+            :used="sub.usage.used"
+            :limit="sub.usage.limit"
+            :plan-name="sub.planName"
+            :show-note="false"
+          />
+          <button v-if="!sub.isPro" class="upgrade-btn" @click="goUpgrade" title="View plans">
+            <i class="fas fa-bolt"></i>
+            <span class="nav-label">Upgrade</span>
+          </button>
+          <button v-else class="upgrade-btn pro" @click="goPlans" title="Pro plan">
+            <i class="fas fa-gem"></i>
+            <span class="nav-label">Pro</span>
+          </button>
         </div>
       </template>
       <div v-else class="upgrade-row">
@@ -151,6 +166,7 @@
             </template>
 
             <button class="menu-item" role="menuitem" @click="openSettings"><i class="fas fa-gear"></i><span>All settings</span></button>
+            <button v-if="!guest" class="menu-item" role="menuitem" @click="goPlans"><i class="fas fa-gem"></i><span>Plans &amp; Usage</span></button>
             <div class="menu-sep"></div>
 
             <button class="menu-item" role="menuitem" :aria-expanded="appearanceOpen" @click="appearanceOpen=!appearanceOpen">
@@ -269,6 +285,7 @@ import { ref, nextTick, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useChatStore } from '../stores/chat'
+import { useSubscriptionStore } from '../stores/subscription'
 import api from '../api'
 import { disconnectSocket } from '../socket'
 import { usePwaInstall } from '../composables/usePwaInstall'
@@ -277,6 +294,8 @@ import SidebarChatItem from './SidebarChatItem.vue'
 import SettingsModal from './SettingsModal.vue'
 import HelpModal from './HelpModal.vue'
 import InstallHint from './InstallHint.vue'
+import PlanBadge from './plans/PlanBadge.vue'
+import UsageIndicator from './plans/UsageIndicator.vue'
 import { setThemeMode, themeMode } from '../theme'
 
 const props = defineProps({ mobileOpen: Boolean, collapsed: Boolean, guest: Boolean })
@@ -285,6 +304,7 @@ const emit = defineEmits(['close-mobile','toggle-collapse','new-chat','load-chat
 const router = useRouter()
 const auth = useAuthStore()
 const chatStore = useChatStore()
+const sub = useSubscriptionStore()
 
 /* Guests get the SAME sidebar — account-gated actions open the auth gate. */
 function requireAuth() {
@@ -292,23 +312,33 @@ function requireAuth() {
   emit('authrequired')
 }
 
-/* Real daily usage for the credits bar (authed users only). */
-const usage = ref({ today: 0, daily_limit: 50, remaining: 50 })
-const usageRing = computed(() => {
-  const limit = usage.value.daily_limit || 50
-  return Math.min(100, Math.round((usage.value.today / limit) * 100))
-})
-async function fetchUsage() {
-  try {
-    const { data } = await api.get('/usage')
-    usage.value = { today: data.today || 0, daily_limit: data.daily_limit || 50, remaining: Math.max(0, data.remaining ?? 50) }
-  } catch {}
-}
+/* Plan + daily usage — backend truth via the subscription store (§19).
+   Refreshed after each send and live via Socket.IO usage_updated. */
+const usageRing = computed(() => sub.usage.percent || 0)
+async function fetchUsage() { sub.refreshUsage() }
 watch(() => chatStore.sending, (busy, was) => { if (was && !busy) fetchUsage() })
+watch(() => auth.isLoggedIn, (loggedIn, was) => {
+  if (loggedIn && !was) {
+    sub.reset()
+    sub.fetch()
+    sub.setupSocketListeners()
+  }
+})
 
 function goAuth(mode) {
   emit('close-mobile')
   router.push(`/${mode}?redirect=/`)
+}
+
+function goPlans() {
+  menuOpen.value = false
+  emit('close-mobile')
+  router.push('/plans')
+}
+function goUpgrade() {
+  menuOpen.value = false
+  emit('close-mobile')
+  router.push('/plans')
 }
 
 const searchOpen = ref(false)
@@ -375,10 +405,7 @@ const userName = computed(() => auth.user?.username || 'Account')
 const userEmail = computed(() => auth.user?.email || '')
 const avatarUrl = computed(() => auth.user?.avatar_url || '')
 const userInitial = computed(() => (userName.value[0] || 'K').toUpperCase())
-const planLabel = computed(() => {
-  const p = auth.user?.plan || 'free'
-  return p.charAt(0).toUpperCase() + p.slice(1) + ' plan'
-})
+const planLabel = computed(() => `${sub.planName} plan`)
 function openSettings() { menuOpen.value = false; showSettings.value = true }
 function openHelp() { menuOpen.value = false; showHelp.value = true }
 function onDocClick(e) {
@@ -438,6 +465,7 @@ async function handleLogout() {
   }
   disconnectSocket()
   chatStore.resetChatState()
+  sub.reset()
   auth.logout()
   // Chat-first: after logout the user lands back on the chat
   // interface in guest mode (Sign In / Sign Up become visible).
@@ -460,6 +488,11 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   document.addEventListener('click', onDocClick)
   fetchUsage()
+  if (!props.guest) {
+    // Load plan state + live usage events (plan updates arrive realtime)
+    sub.fetch()
+    sub.setupSocketListeners()
+  }
 })
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeydown)
@@ -511,7 +544,7 @@ onBeforeUnmount(() => {
   .sidebar.collapsed .sb-search,
   .sidebar.collapsed .group,
   .sidebar.collapsed .nav-label,
-  .sidebar.collapsed .usage,
+  .sidebar.collapsed .plan-block,
   .sidebar.collapsed .upgrade-row,
   .sidebar.collapsed .account-id,
   .sidebar.collapsed .account-chev { display:none; }
@@ -568,6 +601,29 @@ onBeforeUnmount(() => {
 
 /* Footer */
 .sb-footer { flex-shrink:0; border-top:1px solid var(--border-subtle); padding:10px; display:flex; flex-direction:column; gap:8px; }
+/* ── Plan block (§5): badge + usage + upgrade — quiet, not a billing page ── */
+.plan-block {
+  display:flex; flex-direction:column; gap:8px;
+  margin:2px 4px 0; padding:10px 11px;
+  background:var(--surface-secondary); border:1px solid var(--border);
+  border-radius:14px;
+}
+.plan-block-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.plan-usage-count { font-size:11.5px; color:var(--text-2); font-variant-numeric:tabular-nums; font-weight:600; }
+.plan-usage-count.warning { color:var(--warning); }
+.plan-usage-count.limit { color:var(--error); }
+.upgrade-btn {
+  display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  width:100%; padding:7px 10px; border-radius:10px;
+  background:var(--brand-soft); border:1px solid transparent;
+  color:var(--brand-text); font-size:12px; font-weight:700;
+  cursor:pointer; transition:background var(--t-fast), filter var(--t-fast);
+}
+.upgrade-btn:hover { background:var(--brand-soft); filter:brightness(1.15); }
+.upgrade-btn i { font-size:10px; }
+.upgrade-btn.pro { background:rgba(139,92,246,.12); color:#c4b5fd; }
+.light-mode .upgrade-btn.pro { color:#6d28d9; }
+
 .usage { padding:2px 4px 0; }
 .usage-text { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--text-3); }
 .usage-pct { color:var(--text-2); font-variant-numeric:tabular-nums; }

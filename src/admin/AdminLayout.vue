@@ -144,6 +144,7 @@ const nav = computed(() => [
   ]},
   { label: 'PLATFORM', items: [
     { path: '/admin/users', icon: 'fas fa-users', label: 'Users' },
+    { path: '/admin/plan-requests', icon: 'fas fa-layer-group', label: 'Plan Requests', badge: pendingPlanRequests.value || null },
     { path: '/admin/chats', icon: 'fas fa-comments', label: 'Chats' },
     { path: '/admin/knowledge', icon: 'fas fa-book', label: 'Knowledge Base' },
     { path: '/admin/files', icon: 'fas fa-folder-open', label: 'Files' },
@@ -176,6 +177,7 @@ const PAGE_META = {
   '/admin/dashboard': ['Dashboard', 'What is happening in KinyaBot right now?'],
   '/admin/analytics': ['Analytics', 'How is KinyaBot performing over time?'],
   '/admin/users': ['Users', 'Manage the people using KinyaBot'],
+  '/admin/plan-requests': ['Plan Requests', 'Review Free / Plus / Pro upgrade requests'],
   '/admin/chats': ['Chats', 'Conversations across the platform'],
   '/admin/knowledge': ['Knowledge Base', 'Sources the AI can draw from (RAG)'],
   '/admin/files': ['Files', 'Uploads stored on the platform'],
@@ -193,9 +195,10 @@ const PAGE_META = {
 const pageTitle = computed(() => PAGE_META[route.path]?.[0] || 'KinyaBot Superadmin')
 const pageSubtitle = computed(() => PAGE_META[route.path]?.[1] || '')
 
-/* Unread alerts + pending flags — kept fresh via realtime + poll. */
+/* Unread alerts + pending flags + pending plan requests — kept fresh via realtime + poll. */
 const unread = ref(0)
 const pendingFlags = ref(0)
+const pendingPlanRequests = ref(0)
 
 async function loadBadges() {
   try {
@@ -205,6 +208,10 @@ async function loadBadges() {
   try {
     const { data } = await api.get('/admin/moderation', { params: { status: 'pending', limit: 5 } })
     pendingFlags.value = data.counts?.pending || 0
+  } catch {}
+  try {
+    const { data } = await api.get('/admin/plan-requests', { params: { status: 'pending', limit: 5 } })
+    pendingPlanRequests.value = data.counts?.pending || 0
   } catch {}
 }
 
@@ -249,7 +256,7 @@ onMounted(() => {
   connectAdminSocket()
   offNotif = onAdminEvent('admin_notification_new', () => { unread.value++; loadBadges() })
   offActivity = onAdminEvent('admin_activity', (e) => {
-    if (e?.action === 'content_flagged') loadBadges()
+    if (e?.action === 'content_flagged' || e?.action === 'PLAN_UPGRADE_REQUESTED' || e?.action === 'plan_changed') loadBadges()
   })
   // Deep links from push notifications (service worker → focused console)
   if ('serviceWorker' in navigator) {

@@ -45,6 +45,9 @@ export const useChatStore = defineStore('chat', () => {
   let activeAbort = null
   // Last payload per failed/temp message (for Retry)
   const retryPayloads = ref(new Map())
+  // Structured daily-limit payload from the backend (§7) — the chat
+  // UI turns this into the upgrade modal, not a generic error.
+  const limitReachedInfo = ref(null)
 
   const pinnedChats = computed(() => chats.value.filter(c => c.is_pinned))
   const recentChats = computed(() => chats.value.filter(c => !c.is_pinned))
@@ -203,7 +206,7 @@ export const useChatStore = defineStore('chat', () => {
         if (eventType === 'user_message') onUserMessage?.(data)
         else if (eventType === 'chunk') onChunk?.(data.text || '')
         else if (eventType === 'done') onDone?.(data)
-        else if (eventType === 'error') onError?.(data.message || 'AI error')
+        else if (eventType === 'error') onError?.(data.message || 'AI error', data)
       }
     }
   }
@@ -263,7 +266,19 @@ export const useChatStore = defineStore('chat', () => {
 
       if (!response.ok) {
         let msg = 'Request failed'
-        try { msg = (await response.json()).error || msg } catch {}
+        let payload = null
+        try {
+          payload = await response.json()
+          msg = payload?.error || msg
+        } catch {}
+        // Structured daily-limit response → upgrade experience (§7)
+        if (payload?.code === 'DAILY_LIMIT_REACHED') {
+          limitReachedInfo.value = payload
+          const e = new Error(msg)
+          e.code = 'DAILY_LIMIT_REACHED'
+          e.usage = payload.usage
+          throw e
+        }
         throw new Error(msg)
       }
 
@@ -292,7 +307,14 @@ export const useChatStore = defineStore('chat', () => {
           finalAiMsg = data.aiMessage
           if (data.userMessage) realUserMsg = data.userMessage
         },
-        onError: (message) => { streamError = new Error(message) }
+        onError: (message, data) => {
+          streamError = new Error(message)
+          if (data?.code === 'DAILY_LIMIT_REACHED') {
+            limitReachedInfo.value = data
+            streamError.code = 'DAILY_LIMIT_REACHED'
+            streamError.usage = data.usage
+          }
+        }
       })
 
       if (streamError) throw streamError
@@ -457,6 +479,7 @@ export const useChatStore = defineStore('chat', () => {
     stats.value = { total_chats: 0, total_messages: 0, total_tokens: 0 }
     pendingChatId.value = null
     seenMessageIds.value = new Set()
+    limitReachedInfo.value = null
     loading.value = false
     sending.value = false
     streaming.value = false
@@ -464,7 +487,7 @@ export const useChatStore = defineStore('chat', () => {
 
   return {
     chats, activeChat, messages, loading, sending, streaming, searchResults, stats, pendingChatId,
-    pinnedChats, recentChats, chatPrefs,
+    pinnedChats, recentChats, chatPrefs, limitReachedInfo,
     fetchChats, fetchStats, createChat, loadChat, renameChat, pinChat,
     deleteChat, deleteAllChats, getPrefs, setPrefs, sendMessage, regenerate, retry, stopGeneration,
     deleteMessage, searchMessages, clearSearch,

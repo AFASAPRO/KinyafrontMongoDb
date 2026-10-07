@@ -413,10 +413,7 @@ function isCodingTask(message, index) {
   for (let i = index - 1; i >= 0; i--) {
     const previous = chatStore.messages[i]
     if (previous.role !== 'user') continue
-    const request = previous.content || ''
-    const asksToBuild = /\b(create|build|make|write|generate|develop|implement|code)\b/i.test(request)
-    const namesSoftware = /\b(code|coding|program|programming|html|css|javascript|typescript|react|vue|website|web app|frontend|front-end|backend|component|script|software|app|application|page|landing page)\b/i.test(request)
-    return asksToBuild && namesSoftware
+    return /\b(code|coding|program|programming|html|css|javascript|typescript|react|vue|website|web app|frontend|front-end|backend|component|script|software|build an app|create an app)\b/i.test(previous.content || '')
   }
   return false
 }

@@ -46,6 +46,13 @@ const routes = [
   { path: '/forgot-password', component: () => import('../views/ForgotPasswordView.vue'),   meta: { guestOnly: true } },
   { path: '/reset-password',  component: () => import('../views/ResetPasswordView.vue'),    meta: { guestOnly: true } },
 
+  /* ═══ PLANS & SUBSCRIPTION (user-facing) ═══
+     /plans            : Plans & Usage page — current plan, live usage,
+                         comparison, upgrade options, request history
+     /plans/request    : upgrade request form (?plan=plus|pro preselected) */
+  { path: '/plans',         component: () => import('../views/SubscriptionView.vue'),    meta: { requiresAuth: true } },
+  { path: '/plans/request', component: () => import('../views/UpgradeRequestView.vue'),  meta: { requiresAuth: true } },
+
   /* ═══ SUPERADMIN CONSOLE (single administrative role: superadmin) ═══
      Routed app shell — every page lives under /admin/… so push
      notifications can deep-link straight to the right view.        */
@@ -59,6 +66,7 @@ const routes = [
       { path: 'dashboard',     name: 'admin-dashboard', component: () => import('../admin/views/DashboardView.vue') },
       { path: 'analytics',     name: 'admin-analytics', component: () => import('../admin/views/AnalyticsView.vue') },
       { path: 'users',         name: 'admin-users',     component: () => import('../admin/views/UsersView.vue') },
+      { path: 'plan-requests', name: 'admin-plan-requests', component: () => import('../admin/views/PlanRequestsView.vue') },
       { path: 'chats',         name: 'admin-chats',     component: () => import('../admin/views/ChatsView.vue') },
       { path: 'knowledge',     name: 'admin-knowledge', component: () => import('../admin/views/KnowledgeView.vue') },
       { path: 'files',         name: 'admin-files',     component: () => import('../admin/views/FilesView.vue') },
