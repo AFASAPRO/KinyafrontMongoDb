@@ -1,9 +1,41 @@
 <template>
-  <aside class="right-panel" :class="{ 'artifact-preview-mode': artifactFiles.length, 'artifact-expanded': expandedPreview }" aria-label="Conversation details">
+  <aside
+    class="right-panel"
+    :class="{ 'artifact-preview-mode': artifactFiles.length, 'artifact-expanded': expandedPreview, collapsed }"
+    :style="{ '--right-panel-width': `${panelWidth}px` }"
+    aria-label="Conversation details"
+    @pointermove="resizePanel"
+    @pointerup="stopResize"
+    @pointercancel="stopResize"
+  >
+    <div
+      v-if="!collapsed && !expandedPreview"
+      class="rp-resize-handle"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize sidebar"
+      :aria-valuenow="panelWidth"
+      :aria-valuemin="MIN_PANEL_WIDTH"
+      :aria-valuemax="MAX_PANEL_WIDTH"
+      tabindex="0"
+      title="Drag to resize"
+      @keydown="resizePanelWithKeyboard"
+      @pointerdown="startResize"
+    ></div>
+    <div v-if="collapsed" class="rp-collapsed">
+      <button class="rp-icon rp-restore" type="button" aria-label="Expand sidebar" title="Expand sidebar" @click="setCollapsed(false)">
+        <i class="fas fa-angles-left"></i>
+      </button>
+      <span class="rp-collapsed-label">{{ artifactFiles.length ? 'Files' : 'Details' }}</span>
+    </div>
+    <template v-else>
     <!-- ── Header ── -->
     <header v-if="artifactFiles.length" class="archive-preview-top">
       <span class="archive-preview-top-title">{{ archiveTitle }} · {{ archiveType }}</span>
       <div class="archive-preview-actions">
+        <button class="rp-icon" type="button" title="Collapse sidebar" aria-label="Collapse sidebar" @click="setCollapsed(true)">
+          <i class="fas fa-angles-right"></i>
+        </button>
         <button class="rp-icon" type="button" title="Download file" aria-label="Download generated file" @click="downloadProject">
           <i :class="downloadingArchive ? 'fas fa-spinner fa-spin' : 'fas fa-download'"></i>
         </button>
@@ -17,9 +49,14 @@
     </header>
     <header v-else class="rp-top">
       <h2 class="rp-heading">Details</h2>
-      <button class="rp-icon" @click="$emit('close')" title="Close panel" aria-label="Close details panel">
-        <i class="fas fa-xmark"></i>
-      </button>
+      <div class="rp-header-actions">
+        <button class="rp-icon" type="button" title="Collapse sidebar" aria-label="Collapse sidebar" @click="setCollapsed(true)">
+          <i class="fas fa-angles-right"></i>
+        </button>
+        <button class="rp-icon" type="button" @click="$emit('close')" title="Close panel" aria-label="Close details panel">
+          <i class="fas fa-xmark"></i>
+        </button>
+      </div>
     </header>
 
     <main v-if="artifactFiles.length" class="archive-preview-body">
@@ -171,6 +208,7 @@
         </div>
       </section>
     </div>
+    </template>
   </aside>
 </template>
 
@@ -199,6 +237,65 @@ const artifactFiles = computed(() => {
 const artifactDownloadError = ref('')
 const downloadingArchive = ref(false)
 const expandedPreview = ref(false)
+const MIN_PANEL_WIDTH = 260
+const MAX_PANEL_WIDTH = 720
+const DEFAULT_PANEL_WIDTH = 304
+const panelWidth = ref(loadPanelWidth())
+const collapsed = ref(loadCollapsedState())
+let resizePointerId = null
+let resizeStartX = 0
+let resizeStartWidth = panelWidth.value
+
+function loadPanelWidth() {
+  try {
+    const width = Number(localStorage.getItem('kb_right_panel_width'))
+    return Number.isFinite(width) && width >= MIN_PANEL_WIDTH && width <= MAX_PANEL_WIDTH
+      ? width
+      : DEFAULT_PANEL_WIDTH
+  } catch {
+    return DEFAULT_PANEL_WIDTH
+  }
+}
+
+function loadCollapsedState() {
+  try { return localStorage.getItem('kb_right_panel_collapsed') === '1' } catch { return false }
+}
+
+function setCollapsed(value) {
+  collapsed.value = value
+  try { localStorage.setItem('kb_right_panel_collapsed', value ? '1' : '0') } catch {}
+}
+
+function startResize(event) {
+  if (event.button !== 0 || window.innerWidth <= 900) return
+  resizePointerId = event.pointerId
+  resizeStartX = event.clientX
+  resizeStartWidth = panelWidth.value
+  event.currentTarget.setPointerCapture(event.pointerId)
+  document.body.classList.add('rp-resizing')
+  event.preventDefault()
+}
+
+function resizePanel(event) {
+  if (resizePointerId !== event.pointerId) return
+  const width = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, resizeStartWidth + resizeStartX - event.clientX))
+  panelWidth.value = width
+}
+
+function stopResize(event) {
+  if (resizePointerId === null || (event && event.pointerId !== resizePointerId)) return
+  resizePointerId = null
+  document.body.classList.remove('rp-resizing')
+  try { localStorage.setItem('kb_right_panel_width', String(panelWidth.value)) } catch {}
+}
+
+function resizePanelWithKeyboard(event) {
+  if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return
+  event.preventDefault()
+  const direction = event.key === 'ArrowLeft' ? 1 : -1
+  panelWidth.value = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, panelWidth.value + direction * (event.shiftKey ? 40 : 12)))
+  try { localStorage.setItem('kb_right_panel_width', String(panelWidth.value)) } catch {}
+}
 const archiveType = computed(() => artifactFiles.value.length > 1
   ? 'ZIP'
   : (artifactFiles.value[0]?.name.split('.').pop() || 'File').toUpperCase()
@@ -406,24 +503,41 @@ const fmt = (n) => (n || 0) >= 1000 ? `${((n || 0) / 1000).toFixed(1)}k` : Strin
 
 <style scoped>
 .right-panel {
-  width: var(--right-w); min-width: var(--right-w);
-  height: 100vh; height: 100dvh;
-  background: var(--surface-sidebar);
-  border-left: 1px solid var(--border-subtle);
-  display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
+  position:relative;
+  width:var(--right-panel-width, var(--right-w)); min-width:var(--right-panel-width, var(--right-w));
+  margin:8px 8px 8px 0;
+  height:calc(100dvh - 16px);
+  background:var(--bg-panel);
+  border:1px solid var(--border);
+  border-radius:18px;
+  box-shadow:0 8px 28px rgba(0,0,0,.12);
+  display:flex; flex-direction:column; overflow:hidden; flex-shrink:0;
   color: var(--text-2);
+  transition:width .2s ease,min-width .2s ease,background .2s ease,border-radius .2s ease;
 }
 @media (min-width: 901px) { .right-panel { --right-w: 304px; } }
+.right-panel.collapsed { width:48px; min-width:48px; }
 @media (max-width: 900px) {
   .right-panel {
     position: fixed; right: 0; top: 0; bottom: 0;
-    width: min(330px, 90vw); min-width: 0; z-index: 80;
+    width: min(380px, 92vw); min-width: 0; max-width:92vw; z-index: 80;
+    height:100dvh; margin:0; border-radius:18px 0 0 18px;
     box-shadow: var(--shadow-md);
     padding-bottom: env(safe-area-inset-bottom);
   }
+  .right-panel.collapsed { width:48px; min-width:48px; max-width:48px; border-radius:16px 0 0 16px; }
+  .rp-resize-handle { display:none; }
 }
 
 .rp-top { display: flex; align-items: center; justify-content: space-between; padding: 14px 14px 8px 18px; flex-shrink: 0; }
+.rp-header-actions { display:flex; align-items:center; }
+.rp-resize-handle { position:absolute; z-index:3; top:0; bottom:0; left:-4px; width:8px; cursor:col-resize; touch-action:none; }
+.rp-resize-handle::after { position:absolute; top:50%; left:3px; width:2px; height:38px; border-radius:4px; background:var(--brand); opacity:0; content:""; transform:translateY(-50%); transition:opacity .15s; }
+.rp-resize-handle:hover::after { opacity:.8; }
+.rp-collapsed { display:flex; flex-direction:column; align-items:center; gap:12px; height:100%; padding:9px 5px; }
+.rp-restore { color:var(--brand-text); }
+.rp-collapsed-label { color:var(--text-3); font-size:10px; writing-mode:vertical-rl; transform:rotate(180deg); }
+.rp-resizing,.rp-resizing * { cursor:col-resize!important; user-select:none!important; }
 .rp-heading { font-size: 15px; font-weight: 600; color: var(--text-1); letter-spacing: -.01em; }
 .rp-icon { width: 32px; height: 32px; display: grid; place-items: center; border-radius: var(--r-sm); background: none; border: none; color: var(--icon); font-size: 14px; cursor: pointer; transition: background var(--t-fast), color var(--t-fast); }
 .rp-icon:hover { background: var(--bg-hover); color: var(--icon-hover); }
@@ -485,19 +599,19 @@ const fmt = (n) => (n || 0) >= 1000 ? `${((n || 0) / 1000).toFixed(1)}k` : Strin
 .code-preview:hover .jump i { transform: translateX(2px); }
 
 /* Generated file delivery */
-.artifact-preview-mode { background:#202020; border-left-color:#343434; color:#e7e5e4; }
-.archive-preview-top { display:flex; align-items:center; justify-content:space-between; gap:8px; height:48px; min-height:48px; padding:0 8px; border-bottom:1px solid #383838; color:#d2d0ca; }
+.artifact-preview-mode { background:var(--bg-panel); border-color:var(--brand-ring); color:var(--text-1); }
+.archive-preview-top { display:flex; align-items:center; justify-content:space-between; gap:8px; height:48px; min-height:48px; padding:0 8px; border-bottom:1px solid var(--border); background:var(--bg-card); color:var(--text-2); }
 .archive-preview-top-title { min-width:0; overflow:hidden; font-size:14px; text-overflow:ellipsis; white-space:nowrap; }
 .archive-preview-actions { display:flex; align-items:center; flex-shrink:0; gap:1px; }
-.artifact-preview-mode .archive-preview-actions .rp-icon { color:#e7e5e4; }
-.artifact-preview-mode .archive-preview-actions .rp-icon:hover { background:#353535; color:#fff; }
-.archive-preview-body { display:grid; flex:1; min-height:0; place-items:center; overflow:auto; padding:32px 18px; background:#202020; }
-.archive-preview-empty { display:flex; flex-direction:column; align-items:center; max-width:100%; text-align:center; }
-.archive-file-outline { width:76px; height:100px; margin-bottom:60px; overflow:visible; }
-.archive-file-outline path { stroke:#e7e5e4; stroke-width:2.6; stroke-linejoin:round; stroke-linecap:round; }
-.archive-preview-empty h2 { max-width:100%; margin:0 0 5px; color:#e7e5e4; font-size:19px; font-weight:600; line-height:1.35; overflow-wrap:anywhere; }
-.archive-preview-empty > span { color:#b9b7b0; font-size:15px; }
-.archive-preview-empty > p { margin:26px 0 0; color:#b9b7b0; font-size:16px; }
+.artifact-preview-mode .archive-preview-actions .rp-icon { color:var(--text-2); }
+.artifact-preview-mode .archive-preview-actions .rp-icon:hover { background:var(--brand-soft); color:var(--brand-text); }
+.archive-preview-body { display:grid; flex:1; min-height:0; place-items:center; overflow:auto; padding:32px 18px; background:radial-gradient(ellipse at 50% 42%,var(--brand-soft),transparent 66%),var(--bg-panel); }
+.archive-preview-empty { display:flex; flex-direction:column; align-items:center; max-width:100%; padding:28px 24px 34px; border:1px solid var(--border); border-radius:22px; background:color-mix(in srgb,var(--bg-card) 88%,transparent); box-shadow:0 18px 60px rgba(0,0,0,.12); text-align:center; }
+.archive-file-outline { width:70px; height:86px; margin-bottom:36px; padding:8px; border:1px solid var(--brand-ring); border-radius:16px; background:var(--brand-soft); overflow:visible; }
+.archive-file-outline path { stroke:var(--brand-text); stroke-width:2.6; stroke-linejoin:round; stroke-linecap:round; }
+.archive-preview-empty h2 { max-width:100%; margin:0 0 5px; color:var(--text-1); font-size:19px; font-weight:600; line-height:1.35; overflow-wrap:anywhere; }
+.archive-preview-empty > span { color:var(--brand-text); font-size:14px; font-weight:600; letter-spacing:.04em; }
+.archive-preview-empty > p { margin:22px 0 0; color:var(--text-3); font-size:14px; }
 .archive-preview-empty > p.archive-preview-error { margin-top:12px; color:#fca5a5; font-size:12px; }
 .artifact-expanded { position:fixed!important; inset:0!important; z-index:120!important; width:100vw!important; min-width:0!important; height:100dvh!important; border-left:0!important; }
 
