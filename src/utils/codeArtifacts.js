@@ -15,7 +15,7 @@ const DEFAULT_NAMES = {
   python: 'main.py', py: 'main.py', json: 'data.json', markdown: 'README.md', md: 'README.md'
 }
 
-const FENCE_PATTERN = /```([^\s`]*)([^\n]*)\n([\s\S]*?)```/g
+const FENCE_PATTERN = /```([^\s`]*)([^\n]*)\n([\s\S]*?)(```|$)/g
 const FILE_EXTENSIONS = Object.values(EXT_BY_LANG).join('|')
 
 function cleanPath(path, fallbackName) {
@@ -54,7 +54,7 @@ function uniquePath(path, used) {
   return unique
 }
 
-export function extractCodeFiles(content, messageId = 'generated') {
+export function extractCodeFiles(content, messageId = 'generated', { allowIncomplete = false } = {}) {
   const files = []
   const usedPaths = new Set()
   const text = String(content || '')
@@ -65,6 +65,7 @@ export function extractCodeFiles(content, messageId = 'generated') {
     const language = (match[1] || 'text').toLowerCase()
     const code = match[3].replace(/\n$/, '')
     if (!code.trim()) continue
+    if (!allowIncomplete && !match[4]) continue
 
     const extension = EXT_BY_LANG[language] || 'txt'
     const defaultName = DEFAULT_NAMES[language] || `code.${extension}`
@@ -87,7 +88,6 @@ export function extractCodeFiles(content, messageId = 'generated') {
 export function withoutCodeFences(content) {
   return String(content || '')
     .replace(FENCE_PATTERN, '')
-    .replace(/```[\s\S]*$/, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 }

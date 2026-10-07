@@ -86,13 +86,18 @@
         <div v-if="activityOpen" class="coding-activity-details">
           <div v-if="message._streaming" class="coding-activity-row">
             <i class="fas fa-code"></i>
-            <span>Generating project files</span>
-            <span class="activity-state">In progress</span>
+            <span>{{ streamingCodeFiles.length ? 'Writing project files' : 'Planning project files' }}</span>
+            <span class="activity-state">{{ streamingCodeFiles.length ? `${streamingCodeFiles.length} detected` : 'In progress' }}</span>
+          </div>
+          <div v-for="file in streamingCodeFiles" :key="file.key" class="coding-activity-row">
+            <i class="fas fa-file-code"></i>
+            <span>{{ file.name }}</span>
+            <span class="activity-state">Writing</span>
           </div>
           <div v-for="file in generatedFiles" :key="file.key" class="coding-activity-row">
             <i class="fas fa-file-code"></i>
             <span>{{ file.name }}</span>
-            <span class="activity-state">{{ message._streaming ? 'Ready' : 'Created' }}</span>
+            <span class="activity-state">Created</span>
           </div>
           <div v-if="message._streaming" class="coding-activity-row">
             <i class="fas fa-box-archive"></i>
@@ -340,6 +345,10 @@ const generatedFiles = computed(() => {
   if (props.message.role !== 'assistant' || props.message._streaming || props.message._error || props.message._status === 'cancelled') return []
   return extractCodeFiles(props.message.content, props.message.id)
 })
+const streamingCodeFiles = computed(() => props.message._streaming
+  ? extractCodeFiles(props.message.content, props.message.id, { allowIncomplete: true })
+  : []
+)
 const generatedTitle = computed(() => generatedFiles.value.length > 1
   ? 'KinyaBot project files'
   : generatedFiles.value[0]?.name || 'Generated file'

@@ -266,6 +266,13 @@ function setCollapsed(value) {
   try { localStorage.setItem('kb_right_panel_collapsed', value ? '1' : '0') } catch {}
 }
 
+function revealArtifact() {
+  setCollapsed(false)
+  expandedPreview.value = false
+}
+
+defineExpose({ revealArtifact })
+
 function startResize(event) {
   if (event.button !== 0 || window.innerWidth <= 900) return
   resizePointerId = event.pointerId

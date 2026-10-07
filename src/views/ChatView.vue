@@ -152,13 +152,13 @@
         @toggle-sidebar="mobileSidebarOpen=!mobileSidebarOpen"
         @auth-required="handleAuthRequired"
         @draft-consumed="onDraftConsumed"
-        @artifact-ready="rightOpen=true"
+        @artifact-ready="handleArtifactReady"
       />
     </div>
 
     <template v-if="!isGuest">
       <transition name="slide-r">
-        <RightPanel v-if="rightOpen" @load-chat="handleLoadChat" @close="rightOpen=false" />
+        <RightPanel ref="rightPanel" v-if="rightOpen" @load-chat="handleLoadChat" @close="rightOpen=false" />
       </transition>
     </template>
     <SettingsModal v-if="showSettings" @close="showSettings=false" />
@@ -195,6 +195,7 @@ const mobileSidebarOpen = ref(false)
 const sidebarCollapsed = ref(localStorage.getItem('kb_sidebar_collapsed') === '1')
 const showSettings = ref(false)
 const chatWindow = ref(null)
+const rightPanel = ref(null)
 const chatScrolled = ref(false)
 const renamingChat = ref(false)
 const chatTitleDraft = ref('')
@@ -253,6 +254,11 @@ function openVoiceMode() {
 
 function preloadVoiceMode() {
   chatWindow.value?.preloadVoiceMode()
+}
+
+function handleArtifactReady() {
+  rightOpen.value = true
+  nextTick(() => rightPanel.value?.revealArtifact())
 }
 
 // ── Guest mode ────────────────────────────────────────────────
