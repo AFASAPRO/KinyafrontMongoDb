@@ -2,7 +2,7 @@
   <aside class="right-panel" aria-label="Conversation details">
     <!-- ── Header ── -->
     <header class="rp-top">
-      <h2 class="rp-heading">Details</h2>
+      <h2 class="rp-heading">{{ artifactFiles.length ? 'Generated files' : 'Details' }}</h2>
       <button class="rp-icon" @click="$emit('close')" title="Close panel" aria-label="Close details panel">
         <i class="fas fa-xmark"></i>
       </button>
@@ -16,6 +16,51 @@
     </div>
 
     <div v-else class="rp-scroll">
+      <!-- Generated files are surfaced first when a coding response completes. -->
+      <section v-if="artifactFiles.length" class="rp-sec generated-sec">
+        <button class="rp-sec-head" :aria-expanded="open.generated" @click="toggle('generated')">
+          <i class="fas fa-file-code"></i><span>Generated files</span>
+          <em class="rp-count">{{ artifactFiles.length }}</em>
+          <i class="fas fa-chevron-down chev" :class="{ closed: !open.generated }"></i>
+        </button>
+        <div v-show="open.generated" class="rp-sec-body">
+          <div v-if="artifactFiles.length > 1" class="project-download-card">
+            <span class="file-ico"><i class="fas fa-box-archive"></i></span>
+            <span class="file-info">
+              <span class="file-name">{{ chat.title || 'KinyaBot project' }}</span>
+              <small>ZIP · {{ artifactFiles.length }} files</small>
+            </span>
+            <button class="rp-icon sm" type="button" title="Download project ZIP" aria-label="Download project ZIP" @click="downloadProject">
+              <i class="fas fa-download"></i>
+            </button>
+          </div>
+          <p v-if="artifactDownloadError" class="artifact-download-error" role="alert">{{ artifactDownloadError }}</p>
+          <div class="artifact-tabs" role="tablist" aria-label="Generated files">
+            <button
+              v-for="file in artifactFiles"
+              :key="file.key"
+              type="button"
+              role="tab"
+              :aria-selected="selectedArtifact?.key === file.key"
+              :class="{ active: selectedArtifact?.key === file.key }"
+              @click="selectedArtifactKey = file.key"
+            >
+              <i class="fas fa-file-code"></i>{{ file.name }}
+            </button>
+          </div>
+          <div v-if="selectedArtifact" class="artifact-preview">
+            <header class="artifact-preview-head">
+              <span class="artifact-preview-name" :title="selectedArtifact.name">{{ selectedArtifact.name }}</span>
+              <span class="lang-chip">{{ selectedArtifact.language }}</span>
+              <button class="rp-icon sm" type="button" title="Download file" :aria-label="`Download ${selectedArtifact.name}`" @click="downloadSelectedFile">
+                <i class="fas fa-download"></i>
+              </button>
+            </header>
+            <pre><code>{{ selectedArtifact.code }}</code></pre>
+          </div>
+        </div>
+      </section>
+
       <!-- ══ 1. Chat header ══ -->
       <section class="rp-card rp-chat">
         <div class="rp-title-row">
@@ -44,7 +89,7 @@
           <i class="fas fa-chevron-down chev" :class="{ closed: !open.code }"></i>
         </button>
         <div v-show="open.code" class="rp-sec-body">
-          <ul v-if="codeBlocks.length" class="rp-list">
+          <ul v-if="codeBlocks.length && !artifactFiles.length" class="rp-list">
             <li v-for="b in codeBlocks" :key="b.key" class="code-item">
               <div class="code-top">
                 <span class="lang-chip">{{ b.lang }}</span>
@@ -62,7 +107,7 @@
               </button>
             </li>
           </ul>
-          <p v-else class="rp-hint"><i class="fas fa-terminal"></i>Code from this chat will be collected here.</p>
+          <p v-else-if="!artifactFiles.length" class="rp-hint"><i class="fas fa-terminal"></i>Code from this chat will be collected here.</p>
         </div>
       </section>
 
@@ -152,6 +197,7 @@ import { ref, reactive, computed, watch, nextTick, onMounted } from 'vue'
 import { useChatStore } from '../stores/chat'
 import api from '../api'
 import { loadAttachmentUrl, downloadAttachment } from '../utils/attachments'
+import { downloadCodeFiles, extractCodeFiles } from '../utils/codeArtifacts'
 
 const emit = defineEmits(['load-chat', 'close'])
 const chatStore = useChatStore()
@@ -159,16 +205,35 @@ const chatStore = useChatStore()
 const chat = computed(() => chatStore.activeChat)
 const realMessages = computed(() => chatStore.messages.filter(m => !m._typing))
 const messageCount = computed(() => realMessages.value.filter(m => m.role === 'user' || m.role === 'assistant').length)
+const artifactFiles = computed(() => {
+  for (let i = realMessages.value.length - 1; i >= 0; i--) {
+    const message = realMessages.value[i]
+    if (message.role !== 'assistant' || message._streaming || message._error || message._status === 'cancelled') continue
+    const files = extractCodeFiles(message.content, message.id)
+    if (files.length) return files
+  }
+  return []
+})
+const selectedArtifactKey = ref('')
+const selectedArtifact = computed(() =>
+  artifactFiles.value.find(file => file.key === selectedArtifactKey.value) || artifactFiles.value[0] || null
+)
+const artifactDownloadError = ref('')
 
 /* ── Collapsible sections (remembered) ── */
 const open = reactive((() => {
-  const d = { code: true, files: true, settings: true, usage: true }
+  const d = { generated: true, code: true, files: true, settings: true, usage: true }
   try { return { ...d, ...JSON.parse(localStorage.getItem('kb_rp_open') || '{}') } } catch { return d }
 })())
 function toggle(k) {
   open[k] = !open[k]
   try { localStorage.setItem('kb_rp_open', JSON.stringify({ ...open })) } catch {}
 }
+watch(artifactFiles, files => {
+  open.generated = files.length > 0
+  selectedArtifactKey.value = files[0]?.key || ''
+  artifactDownloadError.value = ''
+}, { immediate: true })
 
 /* ── 1. Rename / export / share ── */
 const renaming = ref(false)
@@ -258,6 +323,25 @@ function downloadCode(b) {
   a.download = `kinyabot-snippet.${EXT[b.lang] || 'txt'}`
   a.click()
   setTimeout(() => URL.revokeObjectURL(a.href), 2000)
+}
+
+async function downloadProject() {
+  artifactDownloadError.value = ''
+  try {
+    await downloadCodeFiles(artifactFiles.value, chat.value?.title || 'kinyabot-project')
+  } catch {
+    artifactDownloadError.value = 'The project ZIP could not be prepared. Please try again.'
+  }
+}
+
+async function downloadSelectedFile() {
+  if (!selectedArtifact.value) return
+  artifactDownloadError.value = ''
+  try {
+    await downloadCodeFiles([selectedArtifact.value])
+  } catch {
+    artifactDownloadError.value = 'The file could not be downloaded. Please try again.'
+  }
 }
 
 function jumpTo(id) {
@@ -416,6 +500,22 @@ const fmt = (n) => (n || 0) >= 1000 ? `${((n || 0) / 1000).toFixed(1)}k` : Strin
 .jump i { font-size: 10px; transition: transform var(--t-fast); }
 .code-preview:hover .jump { color: var(--brand-text); }
 .code-preview:hover .jump i { transform: translateX(2px); }
+
+/* Generated file delivery */
+.generated-sec { border-top: none; }
+.project-download-card { display:flex; align-items:center; gap:8px; padding:7px; border:1px solid var(--border-md); border-radius:var(--r); background:var(--bg-card); }
+.project-download-card .file-info { cursor:default; }
+.artifact-download-error { color:var(--error); font-size:12px; line-height:1.4; }
+.artifact-tabs { display:flex; flex-direction:column; gap:3px; max-height:132px; overflow:auto; }
+.artifact-tabs button { display:flex; align-items:center; gap:8px; min-width:0; padding:7px 8px; border:0; border-radius:var(--r-sm); background:transparent; color:var(--text-2); text-align:left; font-size:12px; cursor:pointer; }
+.artifact-tabs button i { color:var(--icon); }
+.artifact-tabs button:hover,.artifact-tabs button.active { background:var(--bg-hover); color:var(--text-1); }
+.artifact-tabs button.active i { color:var(--brand-text); }
+.artifact-tabs button { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.artifact-preview { overflow:hidden; border:1px solid var(--border); border-radius:var(--r); background:var(--code-bg); }
+.artifact-preview-head { display:flex; align-items:center; gap:6px; min-height:38px; padding:4px 6px 4px 10px; border-bottom:1px solid var(--border-subtle); }
+.artifact-preview-name { flex:1; min-width:0; overflow:hidden; color:var(--text-1); font-size:11.5px; text-overflow:ellipsis; white-space:nowrap; }
+.artifact-preview pre { max-height:280px; overflow:auto; margin:0; padding:10px; color:var(--code-text); font-family:var(--font-mono); font-size:11px; line-height:1.5; tab-size:2; white-space:pre; }
 
 /* Files */
 .thumb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }

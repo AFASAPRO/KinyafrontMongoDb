@@ -152,6 +152,7 @@
         @toggle-sidebar="mobileSidebarOpen=!mobileSidebarOpen"
         @auth-required="handleAuthRequired"
         @draft-consumed="onDraftConsumed"
+        @artifact-ready="rightOpen=true"
       />
     </div>
 

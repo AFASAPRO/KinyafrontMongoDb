@@ -66,12 +66,14 @@
           v-for="(msg, i) in chatStore.messages"
           :key="msg.id"
           :message="msg"
+          :artifact-name="chatStore.activeChat?.title || 'kinyabot-project'"
           :is-last="isLastAssistant(msg, i)"
           :regen-busy="chatStore.sending || chatStore.streaming"
           @delete="chatStore.deleteMessage(msg.id)"
           @copy="handleCopy(msg.content)"
           @retry="handleRetry"
           @regenerate="handleRegenerate"
+          @open-artifact="emit('artifact-ready')"
         />
       </transition-group>
 
@@ -116,6 +118,7 @@
           @send="handleSend"
           :disabled="chatStore.sending"
           :preserve-on-send="guest"
+          :suggestions-enabled="!hasMessages"
           :injected-text="composerInject"
           :injected-file="restoredFile"
           @focus="scrollBottom"
@@ -193,6 +196,7 @@
       @send="handleSend"
       :disabled="chatStore.sending"
       :preserve-on-send="guest"
+      :suggestions-enabled="!hasMessages"
       :injected-text="composerInject"
       :injected-file="restoredFile"
       @focus="scrollBottom"
@@ -210,6 +214,7 @@ import api from '../api'
 import MessageBubble from './MessageBubble.vue'
 import InputBox from './InputBox.vue'
 import AnimatedIcon from './AnimatedIcon.vue'
+import { extractCodeFiles } from '../utils/codeArtifacts'
 // Lazy-loaded: Voice Mode pulls in three.js + the 3D character, so it
 // should only be downloaded when the person actually opens it.
 const VoiceMode = defineAsyncComponent(() => import('./VoiceMode.vue'))
@@ -233,7 +238,7 @@ const props = defineProps({
   restoredDraft: { type: String, default: null },
   restoredFile: { type: [Object, File], default: null }
 })
-const emit = defineEmits(['toggle-sidebar', 'auth-required', 'draft-consumed', 'scroll-state'])
+const emit = defineEmits(['toggle-sidebar', 'auth-required', 'draft-consumed', 'scroll-state', 'artifact-ready'])
 
 const chatStore = useChatStore()
 const auth = useAuthStore()
@@ -380,8 +385,16 @@ async function handleSend({ content, file }) {
   if (!chatStore.activeChat) await chatStore.createChat()
   try {
     await chatStore.sendMessage(content, file)
+    notifyGeneratedFiles()
   } catch {} // errors are rendered as retryable bubbles
   scrollBottom()
+}
+
+function notifyGeneratedFiles() {
+  const latest = [...chatStore.messages].reverse().find(message =>
+    message.role === 'assistant' && !message._streaming && !message._error
+  )
+  if (latest && extractCodeFiles(latest.content, latest.id).length) emit('artifact-ready')
 }
 
 function isLastAssistant(msg, index) {
@@ -395,12 +408,18 @@ function isLastAssistant(msg, index) {
 }
 
 async function handleRetry(failedId) {
-  try { await chatStore.retry(failedId) } catch {}
+  try {
+    await chatStore.retry(failedId)
+    notifyGeneratedFiles()
+  } catch {}
   scrollBottom()
 }
 
 async function handleRegenerate() {
-  try { await chatStore.regenerate() } catch {}
+  try {
+    await chatStore.regenerate()
+    notifyGeneratedFiles()
+  } catch {}
   scrollBottom()
 }
 

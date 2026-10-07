@@ -63,6 +63,29 @@
         <span v-else-if="message._streaming" class="stream-cursor"></span>
       </div>
 
+      <div v-if="message._streaming && codeGenerationStarted" class="generated-file-card preparing">
+        <span class="generated-file-icon"><i class="fas fa-spinner fa-spin"></i></span>
+        <span class="generated-file-copy">
+          <strong>Preparing code files</strong>
+          <small>Downloadable files appear when generation finishes</small>
+        </span>
+      </div>
+      <div v-else-if="generatedFiles.length" class="generated-file-card">
+        <button class="generated-file-info" type="button" @click="$emit('open-artifact')" :aria-label="`Open ${generatedTitle}`">
+          <span class="generated-file-icon"><i :class="generatedFiles.length > 1 ? 'fas fa-box-archive' : 'fas fa-file-code'"></i></span>
+          <span class="generated-file-copy">
+            <strong>{{ generatedTitle }}</strong>
+            <small>{{ generatedFiles.length > 1 ? `ZIP · ${generatedFiles.length} files` : `${generatedFiles[0].language} source file` }}</small>
+          </span>
+        </button>
+        <button class="generated-file-download" type="button" :disabled="downloadingFiles" @click="downloadGeneratedFiles">
+          <i :class="downloadingFiles ? 'fas fa-spinner fa-spin' : 'fas fa-download'"></i>
+          {{ downloadingFiles ? 'Preparing…' : 'Download' }}
+        </button>
+      </div>
+
+      <div v-if="artifactError" class="artifact-error" role="alert">{{ artifactError }}</div>
+
       <!-- Cancelled marker -->
       <div v-if="message._status === 'cancelled' && message.role === 'assistant'" class="cancelled-note">
         <AnimatedIcon icon="fas fa-ban" animation="fade-in" /> Generation stopped
@@ -120,10 +143,6 @@
           <!-- Share -->
           <button class="act-btn" @click="handleShare" title="Share" aria-label="Share response">
             <AnimatedIcon icon="fas fa-share-nodes" animation="subtle-hover" />
-          </button>
-          <!-- Download code (if has code block) -->
-          <button v-if="hasCode" class="act-btn" @click="downloadCode" title="Download code" aria-label="Download code">
-            <AnimatedIcon icon="fas fa-download" animation="subtle-hover" />
           </button>
         </template>
 
@@ -183,13 +202,15 @@ import AnimatedIcon from './AnimatedIcon.vue'
 import MessageAttachment from './MessageAttachment.vue'
 import { register as registerAudio, unregister as unregisterAudio } from '../utils/audio'
 import { renderMarkdown } from '../utils/markdown'
+import { downloadCodeFiles, extractCodeFiles, withoutCodeFences } from '../utils/codeArtifacts'
 
 const props = defineProps({
   message: Object,
   isLast: { type: Boolean, default: false },       // last assistant message → regenerate
-  regenBusy: { type: Boolean, default: false }
+  regenBusy: { type: Boolean, default: false },
+  artifactName: { type: String, default: 'kinyabot-project' }
 })
-const emit = defineEmits(['delete', 'copy', 'retry', 'regenerate'])
+const emit = defineEmits(['delete', 'copy', 'retry', 'regenerate', 'open-artifact'])
 
 const auth = useAuthStore()
 const userInitial = computed(() => auth.user?.username?.[0]?.toUpperCase() || 'U')
@@ -201,6 +222,8 @@ let feedbackTimer = null
 const confirmDelete = ref(false)
 const feedbackMsg = ref('')
 const lightboxImg = ref(null)
+const downloadingFiles = ref(false)
+const artifactError = ref('')
 
 // Emoji reaction system - adds contextual emoji to AI responses
 function addEmojiReactions(text) {
@@ -275,12 +298,19 @@ const rendered = computed(() => {
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
       .replace(/\n/g,'<br>')
   }
-  const enhanced = addEmojiReactions(props.message.content)
+  const enhanced = addEmojiReactions(withoutCodeFences(props.message.content))
   return renderMarkdown(enhanced)
 })
 
-const hasCode = computed(() => /```[\s\S]*?```/.test(props.message.content || '') || props.message.content?.includes('<code-block'))
-
+const codeGenerationStarted = computed(() => /```/.test(props.message.content || ''))
+const generatedFiles = computed(() => {
+  if (props.message.role !== 'assistant' || props.message._streaming || props.message._error || props.message._status === 'cancelled') return []
+  return extractCodeFiles(props.message.content, props.message.id)
+})
+const generatedTitle = computed(() => generatedFiles.value.length > 1
+  ? 'KinyaBot project files'
+  : generatedFiles.value[0]?.name || 'Generated file'
+)
 const fmtTime = computed(() => {
   if (!props.message.created_at) return ''
   return new Date(props.message.created_at).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })
@@ -407,18 +437,17 @@ async function handleShare() {
   }
 }
 
-function downloadCode() {
-  // Extract first code block from content
-  const match = props.message.content?.match(/```(\w+)?\n?([\s\S]*?)```/)
-  if (!match) return
-  const lang = match[1] || 'txt'
-  const code = match[2]
-  const ext = { javascript:'js', typescript:'ts', python:'py', html:'html', css:'css', java:'java', cpp:'cpp', bash:'sh', json:'json', sql:'sql' }[lang] || 'txt'
-  const blob = new Blob([code], { type: 'text/plain' })
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = `kinyabot-code.${ext}`
-  a.click()
+async function downloadGeneratedFiles() {
+  if (downloadingFiles.value) return
+  downloadingFiles.value = true
+  artifactError.value = ''
+  try {
+    await downloadCodeFiles(generatedFiles.value, props.artifactName)
+  } catch {
+    artifactError.value = 'The generated files could not be prepared. Please try downloading again.'
+  } finally {
+    downloadingFiles.value = false
+  }
 }
 
 function doDelete() {
@@ -464,6 +493,31 @@ function doDelete() {
 /* Attachments stack */
 .attach-previews { display:flex; flex-direction:column; gap:6px; align-items:flex-start; max-width:100%; }
 .bubble-col.user .attach-previews { align-items:flex-end; }
+.generated-file-card {
+  display:flex; align-items:center; gap:10px; width:min(100%, 560px); min-height:72px;
+  margin-top:10px; padding:10px 12px; border:1px solid var(--border-md);
+  border-radius:14px; background:var(--bg-card); box-shadow:0 4px 16px rgba(0,0,0,.08);
+}
+.generated-file-info {
+  display:flex; align-items:center; gap:12px; flex:1; min-width:0; padding:0;
+  color:var(--text-1); text-align:left; background:none; border:0; cursor:pointer;
+}
+.generated-file-icon {
+  display:grid; place-items:center; flex:0 0 42px; height:48px;
+  border:1px solid var(--border); border-radius:10px; background:var(--bg-hover);
+  color:var(--brand-text); font-size:18px;
+}
+.generated-file-copy { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.generated-file-copy strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; font-weight:600; }
+.generated-file-copy small { color:var(--text-3); font-size:11.5px; text-transform:uppercase; }
+.generated-file-download {
+  display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:36px;
+  padding:0 12px; border:0; border-radius:9px; background:var(--bg-hover);
+  color:var(--text-1); font:inherit; font-size:12px; font-weight:600; cursor:pointer;
+}
+.generated-file-download:hover:not(:disabled) { background:var(--bg-active); }
+.generated-file-download:disabled { opacity:.65; cursor:wait; }
+.artifact-error { margin-top:4px; color:var(--error); font-size:12px; }
 
 /* Thinking indicator */
 .thinking { display:flex; align-items:center; gap:5px; padding:6px 0; }
@@ -557,6 +611,7 @@ function doDelete() {
 .lb-close:hover { background:rgba(255,255,255,.2); }
 
 @media(max-width:600px){.bubble-col{max-width:88%}}
+@media(max-width:600px){.generated-file-card{gap:6px;padding:8px}.generated-file-download{padding:0 9px;font-size:11px}}
 
 .ai-name { display:none; }
 

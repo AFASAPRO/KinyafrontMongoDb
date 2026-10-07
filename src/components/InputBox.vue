@@ -163,7 +163,8 @@ const props = defineProps({
   injectedFile: { type: [Object, File], default: null },
   // Centered hero mode (desktop empty state) — tighter chrome,
   // disclaimer hidden, the welcome layout provides spacing.
-  centered: Boolean
+  centered: Boolean,
+  suggestionsEnabled: { type: Boolean, default: true }
 })
 const emit  = defineEmits(['send', 'focus'])
 
@@ -224,7 +225,7 @@ const suggestionCatalog = [
 
 const suggestions = computed(() => {
   const query = inputVal.value.trim().toLocaleLowerCase()
-  if (query.length < 3 || selectedFile.value || props.disabled) return []
+  if (!props.suggestionsEnabled || query.length < 3 || selectedFile.value || props.disabled) return []
   const matches = suggestionCatalog.filter(item => item.toLocaleLowerCase().startsWith(query))
   if (matches.length) return matches.slice(0, 6)
   return [
@@ -237,7 +238,7 @@ const suggestions = computed(() => {
   ].slice(0, 6)
 })
 const showSuggestions = computed(() =>
-  focused.value && !suggestionsDismissed.value && suggestions.value.length > 0
+  props.suggestionsEnabled && focused.value && !suggestionsDismissed.value && suggestions.value.length > 0
 )
 
 watch(inputVal, () => {
