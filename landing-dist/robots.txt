@@ -1,4 +1,4 @@
-# KinyaBot AI – https://kinyabotai.online/
+# KinyaBot AI – https://www.kinyabotai.online/
 # Allow all crawlers to index the marketing landing page
 
 User-agent: *
@@ -10,4 +10,4 @@ Disallow: /chat/admin/
 Disallow: /chat/onboarding
 
 # Sitemap location
-Sitemap: https://kinyabotai.online/sitemap.xml
+Sitemap: https://www.kinyabotai.online/sitemap.xml

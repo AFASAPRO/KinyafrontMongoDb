@@ -2,8 +2,8 @@
 
 ## Production domain
 
-Canonical site: **https://kinyabotai.online** (`www.kinyabotai.online` is also valid; Vercel handles the
-root↔www redirect — the app adds none). Production env: Render `FRONTEND_URL=https://kinyabotai.online`;
+Canonical site: **https://www.kinyabotai.online/** (`kinyabotai.online` redirects to the canonical
+www host; Vercel handles the redirect — the app adds none). Production env: Render `FRONTEND_URL=https://www.kinyabotai.online`;
 Vercel `VITE_API_URL=<Render backend URL>/api`.
 
 ## What runs where

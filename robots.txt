@@ -1,12 +1,13 @@
-# KinyaBot – https://kinyabotai.online/
-# Allow all crawlers to index the full site
+# KinyaBot AI – https://www.kinyabotai.online/
+# Allow all crawlers to index public pages
 
 User-agent: *
 Allow: /
 
-# Block admin area from indexing
-Disallow: /admin
-Disallow: /admin/
+# Block private areas from indexing
+Disallow: /chat/admin
+Disallow: /chat/admin/
+Disallow: /chat/onboarding
 
 # Sitemap location
-Sitemap: https://kinyabotai.online/sitemap.xml
+Sitemap: https://www.kinyabotai.online/sitemap.xml

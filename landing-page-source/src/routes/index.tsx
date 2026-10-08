@@ -16,7 +16,11 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "KinyaBot AI — Work flows. You don't have to." },
       { property: "og:description", content: "Connect your apps, automate the handoffs, and keep every run on the record." },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://www.kinyabotai.online/" },
       { name: "twitter:card", content: "summary_large_image" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://www.kinyabotai.online/" },
     ],
   }),
   component: Home,

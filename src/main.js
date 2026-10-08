@@ -43,6 +43,8 @@ app.mount('#app')
  * prompt, so it runs in the router's afterEach hook.
  */
 const BASE = import.meta.env.BASE_URL // '/chat/' in production, '/' in dev
+const SEO_ORIGIN = 'https://www.kinyabotai.online'
+const indexableAppRoutes = new Set(['/login', '/register', '/forgot-password'])
 const MANIFESTS = {
   admin: `${BASE}admin-manifest.webmanifest`,
   user: `${BASE}site.webmanifest`
@@ -50,6 +52,20 @@ const MANIFESTS = {
 const manifestLink = document.querySelector('link[rel="manifest"]')
 const themeMeta = document.querySelector('meta[name="theme-color"]')
 const appleTouch = document.querySelector('link[rel="apple-touch-icon"]')
+
+function applySeoForPath(path) {
+  const basePath = BASE.endsWith('/') ? BASE : `${BASE}/`
+  const normalizedPath = path === '/' ? '/' : path.replace(/\/+$/, '')
+  const routePath = normalizedPath === '/' ? '' : normalizedPath.replace(/^\/+/, '')
+  const canonicalUrl = new URL(`${basePath}${routePath}`, SEO_ORIGIN).href
+  const canonicalLink = document.querySelector('link[rel="canonical"]')
+  const ogUrl = document.querySelector('meta[property="og:url"]')
+  const robots = document.querySelector('meta[name="robots"]')
+
+  if (canonicalLink) canonicalLink.setAttribute('href', canonicalUrl)
+  if (ogUrl) ogUrl.setAttribute('content', canonicalUrl)
+  if (robots) robots.setAttribute('content', indexableAppRoutes.has(normalizedPath) ? 'index, follow' : 'noindex, nofollow')
+}
 
 function applyManifestForPath(path) {
   if (!manifestLink) return
@@ -64,6 +80,7 @@ function applyManifestForPath(path) {
 }
 applyManifestForPath(window.location.pathname)
 router.afterEach((to) => {
+  applySeoForPath(to.path)
   applyManifestForPath(to.path)
   sessionStorage.removeItem('kb_chunk_reload')
 })
