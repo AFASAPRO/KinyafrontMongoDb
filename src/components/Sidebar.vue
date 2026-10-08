@@ -31,7 +31,7 @@
     <!-- Search results -->
     <div v-if="searchQ && chatStore.searchResults.length" class="sb-scroll">
       <div class="section-title static">Results</div>
-      <button v-for="r in chatStore.searchResults" :key="r.id" class="search-result" @click="goToChat(r.chat_id)">
+      <button v-for="r in chatStore.searchResults" :key="r.id" class="search-result" @click="goToChat({ id: r.chat_id, conversation_id: r.chat_conversation_id })">
         <i class="fas fa-message"></i>
         <div class="sr-info">
           <div class="sr-chat">{{ r.chat_title }}</div>
@@ -75,8 +75,8 @@
           <template v-if="chatStore.pinnedChats.length">
             <SidebarChatItem
               v-for="chat in chatStore.pinnedChats" :key="chat.id"
-              :chat="chat" :active="chatStore.activeChat?.id===chat.id" variant="model" :pin-just-changed="pinAnimatingIds.has(chat.id)"
-              @click="$emit('load-chat',chat.id)"
+              :chat="chat" :active="isActiveChat(chat)" variant="model" :pin-just-changed="pinAnimatingIds.has(chat.id)"
+              @click="$emit('load-chat',chat)"
               @rename="startRename(chat)" @pin="togglePin(chat)" @delete="startDelete(chat)"
             />
           </template>
@@ -92,12 +92,15 @@
         </button>
         <div v-show="chatsOpen" class="group-body">
           <template v-if="chatStore.recentChats.length">
-            <SidebarChatItem
-              v-for="chat in visibleRecent" :key="chat.id"
-              :chat="chat" :active="chatStore.activeChat?.id===chat.id" :pin-just-changed="pinAnimatingIds.has(chat.id)"
-              @click="$emit('load-chat',chat.id)"
-              @rename="startRename(chat)" @pin="togglePin(chat)" @delete="startDelete(chat)"
-            />
+            <template v-for="group in groupedRecent" :key="group.label">
+              <div class="date-label">{{ group.label }}</div>
+              <SidebarChatItem
+                v-for="chat in group.chats" :key="chat.id"
+                :chat="chat" :active="isActiveChat(chat)" :pin-just-changed="pinAnimatingIds.has(chat.id)"
+                @click="$emit('load-chat',chat)"
+                @rename="startRename(chat)" @pin="togglePin(chat)" @delete="startDelete(chat)"
+              />
+            </template>
             <button v-if="chatStore.recentChats.length > RECENT_LIMIT" class="view-all" @click="showAllChats=!showAllChats">
               {{ showAllChats ? 'Show less' : 'View all' }}
             </button>
@@ -359,6 +362,42 @@ const showInstall = computed(() => (canInstall.value || isIOS) && !installed.val
 
 /* ── Sidebar sections ── */
 const RECENT_LIMIT = 10
+
+/* Active highlight matches EITHER identity: the URL carries the
+   public conversation_id while the store keys on the Mongo id. */
+function isActiveChat(chat) {
+  const open = chatStore.activeChat
+  if (!open) return false
+  return open.id === chat.id || (chat.conversation_id && open.conversation_id === chat.conversation_id)
+}
+
+/* Date-grouped history (§27): Today / Yesterday / Previous 7 days / Older */
+function groupLabel(dateStr) {
+  const d = new Date(dateStr)
+  if (Number.isNaN(d.getTime())) return 'Older'
+  const now = new Date()
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const day = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  const diffDays = Math.floor((startOfToday - day) / 86400000)
+  if (diffDays <= 0) return 'Today'
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays < 7) return 'Previous 7 days'
+  return 'Older'
+}
+const groupedRecent = computed(() => {
+  const groups = []
+  const byLabel = new Map()
+  for (const chat of visibleRecent.value) {
+    const label = groupLabel(chat.updated_at || chat.created_at)
+    if (!byLabel.has(label)) {
+      const g = { label, chats: [] }
+      byLabel.set(label, g)
+      groups.push(g)
+    }
+    byLabel.get(label).chats.push(chat)
+  }
+  return groups
+})
 const pinnedOpen = ref(true)
 const chatsOpen = ref(true)
 const showAllChats = ref(false)
@@ -427,7 +466,10 @@ function doSearch() {
   searchTimer = setTimeout(() => chatStore.searchMessages(searchQ.value), 300)
 }
 function clearSearch() { searchQ.value = ''; chatStore.clearSearch() }
-function goToChat(id) { emit('load-chat', id); closeSearch() }
+function goToChat(target) {
+  emit('load-chat', target)
+  closeSearch()
+}
 
 function startRename(chat) { renamingChat.value = chat; renameVal.value = chat.title }
 async function submitRename() {
@@ -449,20 +491,14 @@ function openGuided() {
 
 async function sendCanvasPrompt(prompt) {
   showCanvas.value = false
-  if (!chatStore.activeChat) await chatStore.createChat()
   await chatStore.sendMessage(prompt)
 }
 async function sendLearningPrompt(topic) {
   showGuided.value = false
-  if (!chatStore.activeChat) await chatStore.createChat()
   await chatStore.sendMessage(`I want to learn ${topic}. Please create a structured beginner learning plan with topics, resources, and exercises. Guide me step by step.`)
 }
 
 async function handleLogout() {
-  // Discard any pending empty chat
-  if (chatStore.pendingChatId) {
-    try { await import('../api').then(m => m.default.delete(`/chats/${chatStore.pendingChatId}`)) } catch {}
-  }
   disconnectSocket()
   chatStore.resetChatState()
   sub.reset()

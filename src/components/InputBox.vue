@@ -9,20 +9,29 @@
       </div>
     </transition>
 
-    <!-- Attachment preview -->
+    <!-- Attachment previews (multiple, §9/§13) -->
     <transition name="fade">
-      <div v-if="filePreview" class="fp-row">
-        <img v-if="filePreview.isImg" :src="filePreview.url" class="fp-thumb" alt="Attachment preview" />
-        <div v-else class="fp-icon"><AnimatedIcon :icon="filePreview.icon" animation="bounce" :trigger="fileTrigger" /></div>
-        <div class="fp-meta">
-          <span class="fp-name">{{ filePreview.name }}</span>
-          <span class="fp-size">{{ filePreview.size }}</span>
+      <div v-if="attachments.length" class="att-row" aria-label="Attachments">
+        <div v-for="att in attachments" :key="att.id" class="att-chip" :class="{ 'is-img': att.isImg }" :title="att.error || att.name">
+          <template v-if="att.isImg">
+            <img :src="att.url" class="attc-thumb" :alt="att.name" />
+            <span class="attc-name">{{ att.name }}</span>
+          </template>
+          <template v-else>
+            <span class="attc-ic"><i :class="att.icon"></i></span>
+            <span class="attc-body">
+              <span class="attc-name">{{ att.name }}</span>
+              <small class="attc-size">{{ att.sizeLabel }}<b v-if="att.kindLabel"> · {{ att.kindLabel }}</b></small>
+            </span>
+          </template>
+          <button class="attc-x" @click="removeAttachment(att.id)" :aria-label="`Remove ${att.name}`" title="Remove attachment">
+            <i class="fas fa-xmark"></i>
+          </button>
         </div>
-        <button class="fp-x" @click="removeFile" aria-label="Remove attachment" title="Remove attachment"><AnimatedIcon icon="fas fa-xmark" animation="press" /></button>
       </div>
     </transition>
 
-    <div class="input-box" :class="{ focused, sending: disabled, 'has-text': !!(inputVal.trim() || selectedFile), 'has-suggestions': showSuggestions }">
+    <div class="input-box" :class="{ focused, sending: disabled, 'has-text': !!(inputVal.trim() || attachments.length), 'has-suggestions': showSuggestions }">
       <!-- Voice input status -->
       <transition name="fade">
         <div v-if="isRec || transcribing" class="wave-bar">
@@ -53,6 +62,7 @@
         :aria-activedescendant="showSuggestions ? `prompt-suggestion-${activeSuggestion}` : undefined"
         @focus="onFocus"
         @blur="focused=false"
+        @paste="onPaste"
         @keydown.enter.exact.prevent="handleSuggestionEnter"
         @keydown.enter.shift.exact="() => {}"
         @keydown.down="moveSuggestion(1, $event)"
@@ -96,7 +106,7 @@
                 </button>
               </div>
             </transition>
-            <input ref="fileRef" type="file" :accept="acceptFor(pickKind)" @change="handleFile" hidden />
+            <input ref="fileRef" type="file" :accept="acceptFor(pickKind)" multiple @change="handleFile" hidden />
           </div>
           <button class="tb-btn" :class="{on: deepThink}" @click="deepThink=!deepThink" title="Deep Think" :aria-pressed="deepThink">
             <AnimatedIcon icon="fas fa-brain" animation="subtle-hover" />
@@ -115,7 +125,7 @@
             <AnimatedIcon v-if="transcribing" icon="fas fa-spinner" animation="spin" :active="transcribing" />
             <AnimatedIcon v-else icon="fas fa-microphone" animation="voice-listening" :active="isRec" />
           </button>
-          <button class="send-btn" :disabled="disabled || (!inputVal.trim() && !selectedFile)" @click="submit" aria-label="Send message" title="Send (Enter)">
+          <button class="send-btn" :disabled="disabled || (!inputVal.trim() && !attachments.length)" @click="submit" aria-label="Send message" title="Send (Enter)">
             <AnimatedIcon v-if="disabled" icon="fas fa-spinner" animation="spin" :active="disabled" />
             <AnimatedIcon v-else icon="fas fa-paper-plane" animation="send" :trigger="sendTrigger" />
           </button>
@@ -161,16 +171,18 @@ const props = defineProps({
   // File injected from outside (restored pending attachment — kept
   // in memory across the guest sign-in round-trip)
   injectedFile: { type: [Object, File], default: null },
+  // Files injected from outside as a BATCH (drag & drop, §10) — the
+  // parent hands over File[] and consumes the event afterwards.
+  injectedFiles: { type: Array, default: null },
   // Centered hero mode (desktop empty state) — tighter chrome,
   // disclaimer hidden, the welcome layout provides spacing.
   centered: Boolean,
   suggestionsEnabled: { type: Boolean, default: true }
 })
-const emit  = defineEmits(['send', 'focus'])
+const emit  = defineEmits(['send', 'focus', 'files-consumed'])
 
 const inputVal     = ref('')
-const selectedFile = ref(null)
-const filePreview  = ref(null)
+const attachments  = ref([])   // { id, file, isImg, url, name, sizeLabel, kindLabel, icon, error }
 const focused      = ref(false)
 const deepThink    = ref(false)
 const notice       = ref('')
@@ -225,7 +237,7 @@ const suggestionCatalog = [
 
 const suggestions = computed(() => {
   const query = inputVal.value.trim().toLocaleLowerCase()
-  if (!props.suggestionsEnabled || query.length < 3 || selectedFile.value || props.disabled) return []
+  if (!props.suggestionsEnabled || query.length < 3 || attachments.value.length || props.disabled) return []
   const matches = suggestionCatalog.filter(item => item.toLocaleLowerCase().startsWith(query))
   if (matches.length) return matches.slice(0, 6)
   return [
@@ -271,32 +283,126 @@ const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 const IMAGE_MAX = 4 * 1024 * 1024
 const DOC_MAX   = 15 * 1024 * 1024
 const DOC_EXTS  = /\.(pdf|txt|md|csv|json|docx|py|js|ts|html|css|xml|yaml|yml)$/i
+const MAX_FILES = 4
 
-function handleFile(e) {
-  const f = e.target.files[0]
-  if (!f) return
-  e.target.value = '' // allow re-picking the same file after removal
-
-  if (pickKind.value === 'image' || (f.type || '').startsWith('image/')) {
-    if (!IMAGE_TYPES.includes(f.type)) { showNotice('That image format is not supported. Use JPG, PNG, GIF or WebP.'); return }
-    if (f.size > IMAGE_MAX) { showNotice('That image is too large. Maximum size is 4 MB.'); return }
-    selectedFile.value = f
-    filePreview.value = { name: f.name, size: (f.size / 1024).toFixed(0) + ' KB', isImg: true, url: URL.createObjectURL(f), icon: 'fas fa-image' }
-    fileTrigger.value += 1
-    return
-  }
-
-  if (!DOC_EXTS.test(f.name)) { showNotice('That document type is not supported. Use PDF, DOCX, TXT, CSV, JSON or code files.'); return }
-  if (f.size > DOC_MAX) { showNotice('That document is too large. Maximum size is 15 MB.'); return }
-  selectedFile.value = f
-  filePreview.value = { name: f.name, size: (f.size / 1024).toFixed(0) + ' KB', isImg: false, url: null, icon: 'fas fa-file-lines' }
-  fileTrigger.value += 1
+/* Friendly type labels (§11) — never a raw MIME string. */
+function kindLabelFor(name, mime) {
+  const ext = (name.split('.').pop() || '').toLowerCase()
+  if ((mime || '').startsWith('image/')) return 'Image'
+  if (ext === 'pdf') return 'PDF'
+  if (['doc', 'docx'].includes(ext)) return 'Document'
+  if (['xls', 'xlsx'].includes(ext)) return 'Spreadsheet'
+  if (['ppt', 'pptx'].includes(ext)) return 'Presentation'
+  if (['txt', 'md'].includes(ext)) return 'Text'
+  if (['csv', 'json', 'xml', 'yaml', 'yml'].includes(ext)) return ext.toUpperCase()
+  if (['py', 'js', 'ts', 'html', 'css'].includes(ext)) return 'Code'
+  return 'Document'
 }
 
-function removeFile() {
-  if (filePreview.value?.url?.startsWith('blob:')) URL.revokeObjectURL(filePreview.value.url)
-  selectedFile.value = null; filePreview.value = null
+function sizeLabelFor(bytes) {
+  return bytes > 1024 * 1024 ? (bytes / 1024 / 1024).toFixed(1) + ' MB' : Math.max(1, Math.round(bytes / 1024)) + ' KB'
+}
+
+/* Client-side image downscale (§33): oversized images are the #1
+   cause of vision-model rejections — resize before upload instead of
+   failing at the provider. Returns the (possibly new) File.       */
+function compressImage(file) {
+  return new Promise((resolve) => {
+    if (file.type === 'image/gif') return resolve(file) // animation cannot be re-encoded
+    const needsResize = file.size > 2.5 * 1024 * 1024
+    if (!needsResize || !window.createImageBitmap || !document.createElement) return resolve(file)
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const MAX_DIM = 2560
+      let { width, height } = img
+      if (width <= MAX_DIM && height <= MAX_DIM && file.size <= IMAGE_MAX) return resolve(file)
+      const scale = Math.min(1, MAX_DIM / Math.max(width, height))
+      width = Math.round(width * scale); height = Math.round(height * scale)
+      const canvas = document.createElement('canvas')
+      canvas.width = width; canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return resolve(file)
+      ctx.drawImage(img, 0, 0, width, height)
+      canvas.toBlob((blob) => {
+        if (!blob) return resolve(file)
+        const resized = new File([blob], file.name.replace(/\.(jpe?g|png|webp)$/i, '.jpg'), { type: 'image/jpeg' })
+        resolve(resized.size < file.size ? resized : file)
+      }, 'image/jpeg', 0.86)
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file) }
+    img.src = url
+  })
+}
+
+/* Validate + add files (frontend truth; the backend re-validates
+   everything — §12). Unsupported/too-large files get a friendly
+   inline notice, never a raw error.                              */
+async function addFiles(fileList) {
+  const files = Array.from(fileList || [])
+  if (!files.length) return
+  for (const original of files) {
+    if (attachments.value.length >= MAX_FILES) {
+      showNotice(`You can attach up to ${MAX_FILES} files per message.`)
+      break
+    }
+    const isImg = (original.type || '').startsWith('image/')
+    let f = original
+    if (isImg) {
+      if (!IMAGE_TYPES.includes(original.type)) { showNotice(`"${original.name}" is not a supported image. Use JPG, PNG, GIF or WebP.`); continue }
+      f = await compressImage(original)
+      if (f.size > IMAGE_MAX) { showNotice(`"${original.name}" is too large. Maximum image size is 4 MB.`); continue }
+    } else {
+      const ext = '.' + (original.name.split('.').pop() || '').toLowerCase()
+      if (['.xls', '.xlsx', '.ppt', '.pptx', '.doc'].includes(ext)) {
+        showNotice(`"${original.name}" (${kindLabelFor(original.name, original.type)}) isn't supported yet. Try PDF, DOCX, TXT or CSV.`)
+        continue
+      }
+      if (!DOC_EXTS.test(original.name)) { showNotice(`"${original.name}" is a file type KinyaBot can't read yet. Try images, PDF, DOCX, TXT, CSV, JSON or code files.`); continue }
+      if (f.size > DOC_MAX) { showNotice(`"${original.name}" is too large. Maximum document size is 15 MB.`); continue }
+    }
+    attachments.value = [...attachments.value, {
+      id: `att_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      file: f,
+      isImg,
+      url: isImg ? URL.createObjectURL(f) : null,
+      name: f.name,
+      sizeLabel: sizeLabelFor(f.size),
+      kindLabel: isImg ? null : kindLabelFor(f.name, f.type),
+      icon: isImg ? 'fas fa-image' : (f.name.toLowerCase().endsWith('.pdf') ? 'fas fa-file-pdf' : 'fas fa-file-lines'),
+    }]
+    fileTrigger.value += 1
+  }
+}
+
+function removeAttachment(id) {
+  const att = attachments.value.find(a => a.id === id)
+  if (att?.url?.startsWith('blob:')) URL.revokeObjectURL(att.url)
+  attachments.value = attachments.value.filter(a => a.id !== id)
+}
+
+function clearAttachments() {
+  attachments.value.forEach(a => { if (a.url?.startsWith('blob:')) URL.revokeObjectURL(a.url) })
+  attachments.value = []
   if (fileRef.value) fileRef.value.value = ''
+}
+
+function handleFile(e) {
+  const picked = Array.from(e.target.files || [])
+  if (!picked.length) return
+  e.target.value = '' // allow re-picking the same file after removal
+  addFiles(picked)
+}
+
+/* Paste images/files straight into the composer (modern UX staple) */
+function onPaste(e) {
+ const pasted = Array.from(e.clipboardData?.files || [])
+  if (!pasted.length) return
+  const images = pasted.filter(f => (f.type || '').startsWith('image/'))
+  if (!images.length) return // let text paste flow normally
+  e.preventDefault()
+  addFiles(images)
 }
 
 let noticeTimer = null
@@ -321,24 +427,22 @@ const placeholder = computed(() =>
 watch(() => props.injectedText, (val) => {
   if (!val) return
   inputVal.value = val
-  removeFile()
+  clearAttachments()
   nextTick(() => { resize(); taRef.value?.focus() })
 })
 
-/* External file injection (restored pending attachment after sign-in) */
+/* External single file injection (restored pending attachment after sign-in) */
 watch(() => props.injectedFile, (f) => {
   if (!f) return
-  const isImg = (f.type || '').startsWith('image/')
-  selectedFile.value = f
-  const size = f.size > 1024 * 1024
-    ? (f.size / 1024 / 1024).toFixed(1) + ' MB'
-    : (f.size / 1024).toFixed(0) + ' KB'
-  filePreview.value = {
-    name: f.name, size, isImg,
-    url: isImg ? URL.createObjectURL(f) : null,
-    icon: isImg ? 'fas fa-image' : 'fas fa-file-lines'
-  }
-  fileTrigger.value += 1
+  addFiles([f])
+  nextTick(() => { resize(); taRef.value?.focus() })
+})
+
+/* External batch injection (drag & drop, §10) */
+watch(() => props.injectedFiles, (files) => {
+  if (!files || !files.length) return
+  addFiles(files)
+  emit('files-consumed')
   nextTick(() => { resize(); taRef.value?.focus() })
 })
 
@@ -386,14 +490,15 @@ function dismissSuggestions() {
 
 function submit() {
   const content = inputVal.value.trim()
-  if (!content && !selectedFile.value) return
+  const files = attachments.value.map(a => a.file)
+  if (!content && !files.length) return
   sendTrigger.value += 1
-  emit('send', { content, file: selectedFile.value })
+  emit('send', { content, files })
   // Guest mode keeps the draft so closing the auth gate returns the
   // user to their message exactly as they typed it.
   if (props.preserveOnSend) return
   inputVal.value = ''
-  removeFile()
+  clearAttachments()
   nextTick(() => { if (taRef.value) { taRef.value.style.height = 'auto'; taRef.value.focus() } })
 }
 
@@ -548,15 +653,28 @@ onBeforeUnmount(() => {
 .in-x { background:none; border:none; color:var(--text-3); font-size:13px; cursor:pointer; padding:2px 4px; border-radius:5px; }
 .in-x:hover { color:var(--text-1); background:var(--bg-hover); }
 
-/* Attachment preview */
-.fp-row { display:flex; align-items:center; gap:9px; padding:7px 11px; margin-bottom:5px; background:var(--bg-card); border:1px solid var(--border-md); border-radius:10px; }
-.fp-thumb { width:38px; height:38px; object-fit:cover; border-radius:6px; flex-shrink:0; }
-.fp-icon { width:38px; height:38px; border-radius:6px; background:var(--bg-input); display:flex; align-items:center; justify-content:center; color:var(--text-2); flex-shrink:0; }
-.fp-meta { flex:1; min-width:0; }
-.fp-name { display:block; font-size:12px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-1); }
-.fp-size { font-size:11px; color:var(--text-3); }
-.fp-x { background:none; border:none; color:var(--text-3); font-size:13px; cursor:pointer; padding:4px; border-radius:5px; transition:all .2s; flex-shrink:0; }
-.fp-x:hover { background:var(--bg-hover); color:var(--red); }
+/* Attachment previews (multiple chips, §9/§13) */
+.att-row { display:flex; align-items:stretch; gap:8px; padding:0 2px 8px; flex-wrap:wrap; }
+.att-chip {
+  position:relative; display:flex; align-items:center; gap:8px; max-width:230px;
+  padding:6px 30px 6px 6px; background:var(--bg-card); border:1px solid var(--border-md);
+  border-radius:12px; transition:border-color .15s, transform .15s;
+}
+.att-chip:hover { border-color:var(--brand); }
+.att-chip.is-img { padding:5px 28px 5px 5px; }
+.attc-thumb { width:44px; height:44px; object-fit:cover; border-radius:8px; flex-shrink:0; }
+.attc-ic { width:36px; height:36px; border-radius:8px; background:var(--bg-input); display:flex; align-items:center; justify-content:center; color:var(--brand-text); font-size:14px; flex-shrink:0; }
+.attc-body { display:flex; flex-direction:column; min-width:0; }
+.attc-name { display:block; max-width:150px; font-size:12px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-1); }
+.attc-size { font-size:10.5px; color:var(--text-3); }
+.attc-size b { font-weight:600; }
+.attc-x {
+  position:absolute; top:-6px; right:-6px; width:20px; height:20px;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--bg-active, #333); border:1px solid var(--border-md); border-radius:50%;
+  color:var(--text-2); font-size:10px; cursor:pointer; transition:all .15s;
+}
+.attc-x:hover { background:var(--red, #ef4444); color:#fff; border-color:transparent; }
 
 /* Input box */
 .input-area.centered { padding: 0 0 2px; background: transparent; position: static; }
@@ -707,6 +825,6 @@ onBeforeUnmount(() => {
   .input-box.has-text .tl-right .tb-ico:not(.rec) { display:none; }
   .input-box:not(.has-text) .send-btn { display:none; }
   .send-btn:disabled { opacity:.5; }
-  .fp-row { border-radius:16px; }
+  .att-row { border-radius:16px; }
 }
 </style>

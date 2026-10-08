@@ -1,5 +1,10 @@
 <template>
-  <div class="chat-window">
+  <div class="chat-window"
+    @dragenter="onDragEnter"
+    @dragover="onDragOver"
+    @dragleave="onDragLeave"
+    @drop="onDrop"
+  >
     <div v-if="isPhone && hasMessages" class="chat-topbar">
       <button class="model-pill">
         <i class="fas fa-star" style="color:var(--accent-violet);font-size:11px"></i>
@@ -34,6 +39,17 @@
           <span>{{ activeNotif.message }}</span>
         </div>
         <button class="nb-close" @click.stop="dismissNotif"><i class="fas fa-xmark"></i></button>
+      </div>
+    </transition>
+
+    <!-- Drag & drop overlay (§10) — appears only while dragging files -->
+    <transition name="fade">
+      <div v-if="draggingFiles" class="dropzone" aria-hidden="true">
+        <div class="dz-inner">
+          <i class="fas fa-cloud-arrow-up"></i>
+          <strong>Drop files to attach</strong>
+          <span>Images and documents</span>
+        </div>
       </div>
     </transition>
 
@@ -73,7 +89,9 @@
           @delete="chatStore.deleteMessage(msg.id)"
           @copy="handleCopy(msg.content)"
           @retry="handleRetry"
-          @regenerate="handleRegenerate"
+          @regenerate="handleRegenerate(msg)"
+          @edit-save="handleEditSave(msg, $event)"
+          @version="chatStore.switchVersion(msg.id, $event)"
           @open-artifact="emit('artifact-ready')"
         />
       </transition-group>
@@ -122,6 +140,8 @@
           :suggestions-enabled="!hasMessages"
           :injected-text="composerInject"
           :injected-file="restoredFile"
+          :injected-files="droppedFiles"
+          @files-consumed="droppedFiles=null"
           @focus="scrollBottom"
         />
 
@@ -183,6 +203,14 @@
       </div>
     </transition>
 
+    <!-- Edit error toast (§25) -->
+    <transition name="fade">
+      <div v-if="editError" class="edit-error-toast" role="alert">
+        <i class="fas fa-triangle-exclamation"></i>
+        <span>{{ editError }}</span>
+      </div>
+    </transition>
+
     <!-- Restored-draft hint (message preserved across sign-in) -->
     <transition name="fade">
       <div v-if="restoredDraft" class="restored-hint">
@@ -200,6 +228,8 @@
       :suggestions-enabled="!hasMessages"
       :injected-text="composerInject"
       :injected-file="restoredFile"
+      :injected-files="droppedFiles"
+      @files-consumed="droppedFiles=null"
       @focus="scrollBottom"
     />
   </div>
@@ -293,6 +323,22 @@ const showFollowups = computed(() => {
 watch(showFollowups, (v) => { if (v) scrollBottom() })
 const msgArea = ref(null)
 const showScrollBtn = ref(false)
+// ── Drag & drop (§10) ──
+const dragDepth = ref(0)
+const droppedFiles = ref(null)   // File[] handed to the composer once
+const editError = ref(null)
+const draggingFiles = computed(() => dragDepth.value > 0)
+function dragHasFiles(e) { return Array.from(e.dataTransfer?.types || []).includes('Files') }
+function onDragEnter(e) { if (dragHasFiles(e)) { e.preventDefault(); dragDepth.value++ } }
+function onDragOver(e)  { if (dragHasFiles(e)) e.preventDefault() }
+function onDragLeave()  { if (dragDepth.value > 0) dragDepth.value-- }
+function onDrop(e) {
+  if (!dragHasFiles(e)) return
+  e.preventDefault()
+  dragDepth.value = 0
+  const files = Array.from(e.dataTransfer?.files || [])
+  if (files.length) droppedFiles.value = files
+}
 const copyToast = ref(false)
 const activeNotif = ref(null)
 const dismissedIds = ref(new Set())
@@ -373,21 +419,32 @@ function onVisualViewportChange() {
   }
 }
 
-async function handleSend({ content, file }) {
+async function handleSend({ content, files }) {
   // GUESTS: the AI is never contacted before authentication.
   // The typed message AND the attached file are handed to the auth
   // gate — the file is kept in memory (SPA navigation keeps it alive)
   // so the exact message the guest wrote can be sent after sign-in.
   if (props.guest) {
-    emit('auth-required', { content, file })
+    emit('auth-required', { content, file: files?.[0] || null })
     return
   }
   if (props.restoredDraft || props.restoredFile) emit('draft-consumed')
-  if (!chatStore.activeChat) await chatStore.createChat()
   try {
-    await chatStore.sendMessage(content, file)
+    await chatStore.sendMessage(content, files || [])
     notifyGeneratedFiles()
   } catch {} // errors are rendered as retryable bubbles
+  scrollBottom()
+}
+
+/* Message edit save (§17) — the store patches, supersedes the old
+   branch and regenerates the response. */
+async function handleEditSave(msg, payload) {
+  try {
+    await chatStore.editMessage(msg.id, payload || {})
+  } catch (err) {
+    editError.value = err?.message || 'The message could not be edited.'
+    setTimeout(() => { editError.value = null }, 5000)
+  }
   scrollBottom()
 }
 
@@ -426,9 +483,20 @@ async function handleRetry(failedId) {
   scrollBottom()
 }
 
-async function handleRegenerate() {
+async function handleRegenerate(msg) {
   try {
-    await chatStore.regenerate()
+    // Target the user turn this answer belongs to (mid-thread
+    // regeneration resets the branch, §18/§19).
+    let targetId = null
+    if (msg) {
+      const idx = chatStore.messages.findIndex(m => m.id === msg.id)
+      for (let i = (idx === -1 ? chatStore.messages.length : idx) - 1; i >= 0; i--) {
+        if (chatStore.messages[i].role === 'user' && !chatStore.messages[i]._error) {
+          targetId = chatStore.messages[i].id; break
+        }
+      }
+    }
+    await chatStore.regenerate(targetId)
     notifyGeneratedFiles()
   } catch {}
   scrollBottom()
@@ -467,6 +535,30 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .chat-window { display:flex; flex-direction:column; height:100%; overflow:hidden; background:var(--bg-base); position:relative; }
+
+/* ── Drag & drop overlay (§10) ── */
+.dropzone {
+  position:absolute; inset:10px; z-index:60;
+  display:flex; align-items:center; justify-content:center;
+  background:color-mix(in srgb, var(--bg-base) 78%, transparent);
+  backdrop-filter:blur(3px);
+  border:2px dashed var(--brand);
+  border-radius:18px; pointer-events:none;
+  animation:fadeIn .18s ease both;
+}
+.dz-inner { display:flex; flex-direction:column; align-items:center; gap:8px; color:var(--text-1); text-align:center; padding:28px 40px; border-radius:16px; background:var(--brand-soft, rgba(99,102,241,.12)); }
+.dz-inner i { font-size:34px; color:var(--brand-text); }
+.dz-inner strong { font-size:17px; font-weight:700; }
+.dz-inner span { font-size:12.5px; color:var(--text-2); }
+
+/* Edit error toast */
+.edit-error-toast {
+  position:absolute; left:50%; transform:translateX(-50%); bottom:110px; z-index:70;
+  display:flex; align-items:center; gap:9px; padding:10px 16px;
+  background:var(--bg-card); border:1px solid var(--red, #ef4444); border-radius:12px;
+  color:var(--text-1); font-size:13px; box-shadow:var(--shadow-md);
+  animation:fadeIn .2s ease both;
+}
 
 .chat-topbar { display:flex; align-items:center; gap:10px; padding:8px 16px; flex-shrink:0; }
 .voice-pill {

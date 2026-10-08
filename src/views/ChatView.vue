@@ -143,6 +143,21 @@
         </template>
       </div>
 
+      <!-- Conversation load failure (§24): friendly, dismissible, retryable -->
+      <transition name="fade">
+        <div v-if="chatStore.loadError" class="load-error-panel" role="alert">
+          <div class="le-icon"><AnimatedIcon icon="fas fa-cloud-arrow-down" animation="shake" :active="true" /></div>
+          <div class="le-body">
+            <strong>This conversation could not be loaded</strong>
+            <span>{{ chatStore.loadError }}</span>
+          </div>
+          <div class="le-actions">
+            <button class="le-btn ghost" @click="handleNewChat">New chat</button>
+            <button class="le-btn" @click="retryLoadConversation">Try again</button>
+          </div>
+        </div>
+      </transition>
+
       <ChatWindow
         ref="chatWindow"
         :guest="isGuest"
@@ -225,15 +240,44 @@ watch(() => chatStore.activeChat?.id, () => {
   renamingChat.value = false
 })
 
+/* ═══ URL ↔ CONVERSATION SYNC (§1, §4, §29, §30) ═══
+   The route is authoritative for WHICH conversation is open:
+   • /chat/c/:id   → load it (deep link, refresh, back/forward)
+   • /chat         → the empty home state (no conversation open)
+   The store is authoritative for the conversation's CONTENT, and
+   lazy creation (first message) pushes the new URL without reload. */
+const routeConversationId = computed(() => route.params.conversationId || null)
+
+watch(routeConversationId, (id) => {
+  if (isGuest.value) return
+  if (id) {
+    const open = chatStore.activeChat
+    if (open && (open.conversation_id === id || open.id === id)) return // already open
+    chatStore.loadChat(id)
+  } else if (chatStore.activeChat) {
+    // Navigated back to /chat (New Chat / back button) → clean home state
+    chatStore.startNewChat()
+  }
+})
+
+/* URL creation (store → URL): a conversation that has no URL yet gets
+   one the moment its id arrives — lazy creation at /chat (§3) and the
+   onboarding hand-off. When a conversation id is ALREADY on the URL,
+   the route owns navigation (back/forward/sidebar) and this watcher
+   stays silent — otherwise it would fight the route and break the
+   back button. */
+watch(() => chatStore.activeChat?.conversation_id, (cid) => {
+  if (cid && !routeConversationId.value) router.push(`/c/${cid}`)
+}, { immediate: true })
+
 // Phone layout (≤768px): redesigned header, home screen and composer
 const isPhone = useIsMobile()
 const inChat = computed(() => !!chatStore.activeChat && chatStore.messages.length > 0)
 
-/** Back arrow → return to the home (welcome) screen without losing history. */
+/** Back arrow → return to the home (welcome) screen. The route watcher
+    cleans the conversation state when the URL reaches /chat. */
 function goHome() {
-  if (chatStore.sending || chatStore.streaming) chatStore.stopGeneration()
-  chatStore.activeChat = null
-  chatStore.messages = []
+  router.push('/')
 }
 
 function startChatRename() {
@@ -311,7 +355,9 @@ onMounted(async () => {
   mqMobile.addEventListener('change', onMqChange)
 })
 
-/** Load conversations + socket for a signed-in user (chat history restore). */
+/** Load conversations + socket for a signed-in user (chat history restore).
+    The conversation itself comes from the URL: /chat → empty home state
+    (no eager chat creation, §3); /chat/c/:id → that conversation. */
 async function initAuthenticatedSession() {
   if (auth.token) {
     connectSocket(auth.token)
@@ -319,12 +365,7 @@ async function initAuthenticatedSession() {
   }
 
   await Promise.all([chatStore.fetchChats(), chatStore.fetchStats()])
-  if (route.query.new === '1') {
-    await chatStore.createChat()
-    router.replace({ path: '/', query: {} })
-  } else if (chatStore.chats.length) {
-    await chatStore.loadChat(chatStore.chats[0].id)
-  }
+  if (routeConversationId.value) await chatStore.loadChat(routeConversationId.value)
 }
 
 // Transition guest → member the moment authentication succeeds
@@ -386,29 +427,49 @@ function handleGlobalKeys(e) {
 }
 
 async function handleNewChat() {
-  // Guests have no server chats — reset the local view only.
-  if (isGuest.value) {
-    mobileSidebarOpen.value = false
-    return
-  }
-  await chatStore.createChat()
   mobileSidebarOpen.value = false
+  if (isGuest.value) return
+  // Reset state + URL. The next submitted message creates a brand-new
+  // conversation id (§28).
+  chatStore.startNewChat()
+  if (routeConversationId.value) router.push('/')
 }
 
-async function handleLoadChat(id) {
-  await chatStore.loadChat(id)
+async function handleLoadChat(idOrChat) {
+  const target = typeof idOrChat === 'object' && idOrChat !== null
+    ? (idOrChat.conversation_id || idOrChat.id)
+    : idOrChat
   mobileSidebarOpen.value = false
+  if (!target) return
+  if (routeConversationId.value === target) return
+  await chatStore.loadChat(target)
+  // At /chat (no param) the conversation watcher owns the push; while a
+  // conversation is already on the URL this explicit push switches it —
+  // exactly ONE push per navigation in either case (back button safe).
+  const cid = chatStore.activeChat?.conversation_id
+  if (cid && routeConversationId.value && routeConversationId.value !== cid) {
+    router.push(`/c/${cid}`)
+  }
+}
+
+function retryLoadConversation() {
+  chatStore.clearLoadError()
+  if (routeConversationId.value) chatStore.loadChat(routeConversationId.value)
 }
 
 async function handleShare() {
   const chat = chatStore.activeChat
   if (!chat) return
+  // Conversations now have persistent URLs (§1) — share THAT, not just a title.
+  const url = chat.conversation_id
+    ? `${window.location.origin}/chat/c/${chat.conversation_id}`
+    : window.location.href
   const text = `Check out this KinyaBot conversation: "${chat.title}"`
   if (navigator.share) {
-    await navigator.share({ title: 'KinyaBot AI Chat', text }).catch(() => {})
+    await navigator.share({ title: 'KinyaBot AI Chat', text, url }).catch(() => {})
   } else {
-    await navigator.clipboard.writeText(text).catch(() => {})
-    alert('Chat title copied to clipboard!')
+    await navigator.clipboard.writeText(url).catch(() => {})
+    alert('Conversation link copied to clipboard!')
   }
 }
 
@@ -491,6 +552,26 @@ onBeforeUnmount(() => {
 .auth-btn.ghost:hover { background:var(--bg-hover); color:var(--text-1); }
 .auth-btn.solid { background:var(--accent); border:1px solid transparent; color:#fff; box-shadow:0 2px 10px rgba(99,102,241,.3); }
 .auth-btn.solid:hover { filter:brightness(1.12); transform:translateY(-1px); }
+
+/* ── Conversation load error (§24) ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.load-error-panel {
+  margin:12px 16px 0; padding:14px 16px; flex-shrink:0;
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  background:var(--bg-card); border:1px solid var(--border-md);
+  border-left:3px solid var(--warning, #f59e0b); border-radius:var(--r, 12px);
+  animation:fadeUp .35s ease both;
+}
+.le-icon { width:38px; height:38px; border-radius:50%; background:rgba(245,158,11,.12); display:flex; align-items:center; justify-content:center; color:var(--warning, #f59e0b); font-size:16px; flex-shrink:0; }
+.le-body { flex:1; min-width:180px; display:flex; flex-direction:column; gap:2px; }
+.le-body strong { font-size:14px; color:var(--text-1); }
+.le-body span { font-size:12.5px; color:var(--text-2); line-height:1.45; }
+.le-actions { display:flex; gap:8px; }
+.le-btn { height:34px; padding:0 16px; border-radius:8px; border:1px solid var(--brand); background:var(--brand-soft, rgba(99,102,241,.14)); color:var(--brand-text); font-size:13px; font-weight:600; cursor:pointer; transition:filter .15s, transform .15s; }
+.le-btn:hover { filter:brightness(1.1); }
+.le-btn:active { transform:scale(.97); }
+.le-btn.ghost { background:transparent; border-color:var(--border-md); color:var(--text-2); }
+.le-btn.ghost:hover { background:var(--bg-hover); color:var(--text-1); }
 
 /* ── MOBILE ── */
 @media(max-width:900px) {

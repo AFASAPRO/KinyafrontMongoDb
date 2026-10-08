@@ -472,7 +472,8 @@ async function runFinish() {
     loadStage.value = 1; await tick()
     await chatStore.fetchChats()
     loadStage.value = 2; await tick()
-    await chatStore.createChat()
+    // No eager chat creation — the first message creates the
+    // conversation (lazy, §3) once the chat view mounts.
     loadStage.value = 3; await tick()
     if (form.firstPrompt) chatStore.sendMessage(form.firstPrompt)
     loadStage.value = 4; await tick()

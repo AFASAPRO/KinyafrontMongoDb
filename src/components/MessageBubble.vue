@@ -50,8 +50,47 @@
         />
       </div>
 
+      <!-- Inline edit composer (§17/§22): text + attachment keep/remove/add -->
+      <div v-if="isEditing" class="edit-composer" @keydown.esc.prevent="cancelEdit">
+        <div v-if="editAttachments.length" class="ec-atts">
+          <div v-for="att in editAttachments" :key="att.url" class="ec-att" :class="{ removed: att.removed, 'is-img': att.kind === 'image' }">
+            <img v-if="att.kind === 'image'" :src="att.preview" class="ec-att-thumb" :alt="att.name" />
+            <span v-else class="ec-att-ic"><i :class="att.icon"></i></span>
+            <span class="ec-att-name">{{ att.name }}</span>
+            <button class="ec-att-x" :title="att.removed ? 'Keep attachment' : 'Remove attachment'"
+              :aria-label="att.removed ? 'Keep attachment' : 'Remove attachment'"
+              @click="att.removed = !att.removed">
+              <i :class="att.removed ? 'fas fa-rotate-left' : 'fas fa-xmark'"></i>
+            </button>
+          </div>
+          <label class="ec-att-add" title="Add a file">
+            <i :class="editUploading ? 'fas fa-spinner fa-spin' : 'fas fa-plus'"></i>
+            <input type="file" multiple hidden :accept="EDIT_ACCEPT" @change="onEditFiles" :disabled="editUploading" />
+          </label>
+        </div>
+        <textarea
+          ref="editTaRef"
+          v-model="editDraft"
+          class="ec-textarea"
+          rows="2"
+          :disabled="editBusy"
+          aria-label="Edit your message"
+          @input="resizeEditTa"
+          @keydown.enter.exact.prevent="saveEdit"
+        ></textarea>
+        <div v-if="editNotice" class="ec-notice" role="alert"><i class="fas fa-triangle-exclamation"></i> {{ editNotice }}</div>
+        <div class="ec-hint"><i class="fas fa-circle-info"></i> Sending the edit regenerates the response.</div>
+        <div class="ec-actions">
+          <button class="ec-btn ghost" @click="cancelEdit" :disabled="editBusy">Cancel</button>
+          <button class="ec-btn" @click="saveEdit" :disabled="editBusy || (!editDraft.trim() && !editKeptCount && !editNewFiles.length)">
+            <i v-if="editBusy" class="fas fa-spinner fa-spin"></i>
+            {{ editBusy ? 'Saving…' : 'Save & resend' }}
+          </button>
+        </div>
+      </div>
+
       <!-- Bubble content -->
-      <div class="bubble" :class="[message.role, {streaming: message._streaming, pending: message._pending}]" :id="`msg-${message.id}`">
+      <div v-else class="bubble" :class="[message.role, {streaming: message._streaming, pending: message._pending}]" :id="`msg-${message.id}`">
         <div class="content" :class="{ prose: message.role==='assistant', 'user-text': message.role==='user' }"
           v-html="rendered"></div>
         <!-- Thinking indicator while the first tokens arrive -->
@@ -178,12 +217,33 @@
           </button>
         </template>
 
+        <!-- Edit (user messages, §17) -->
+        <button v-if="canEdit" class="act-btn" @click="startEdit" title="Edit message" aria-label="Edit message">
+          <AnimatedIcon icon="fas fa-pen" animation="subtle-hover" />
+        </button>
+
         <!-- Delete -->
         <button class="act-btn danger" @click="confirmDelete=true" title="Delete" aria-label="Delete message">
           <i class="fas fa-trash-can"></i>
         </button>
 
         <span class="msg-time">{{ fmtTime }}</span>
+      </div>
+
+      <!-- Response versions (§20): ‹ 2/3 › -->
+      <div v-if="versionInfo && versionInfo.count > 1" class="version-nav" role="navigation" aria-label="Response versions">
+        <button class="vn-btn" :disabled="versionInfo.position <= 1" @click="$emit('version', -1)" aria-label="Previous response">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <span class="vn-pos">{{ versionInfo.position }} / {{ versionInfo.count }}</span>
+        <button class="vn-btn" :disabled="versionInfo.position >= versionInfo.count" @click="$emit('version', 1)" aria-label="Next response">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <!-- Edited marker (honest history, §18) -->
+      <div v-if="message.role === 'user' && (message.edit_history?.length || message._edited)" class="edited-marker">
+        <i class="fas fa-pen"></i> edited
       </div>
 
       <!-- TTS honest error -->
@@ -243,7 +303,7 @@ const props = defineProps({
   isCodingTask: { type: Boolean, default: false },
   artifactName: { type: String, default: 'kinyabot-project' }
 })
-const emit = defineEmits(['delete', 'copy', 'retry', 'regenerate', 'open-artifact'])
+const emit = defineEmits(['delete', 'copy', 'retry', 'regenerate', 'edit-save', 'version', 'open-artifact'])
 
 const auth = useAuthStore()
 const userInitial = computed(() => auth.user?.username?.[0]?.toUpperCase() || 'U')
@@ -254,6 +314,123 @@ let copyTimer = null
 let feedbackTimer = null
 const confirmDelete = ref(false)
 const feedbackMsg = ref('')
+
+/* ── Message editing (§17/§22) ──
+   Inline composer replaces the user bubble. Existing attachments can
+   be kept or removed; new files attach through the picker. Saving
+   emits to the parent → store PATCH → branch reset → regeneration. */
+const EDIT_ACCEPT = 'image/jpeg,image/png,image/gif,image/webp,.pdf,.txt,.md,.csv,.json,.docx,.py,.js,.ts,.html,.css,.xml,.yaml,.yml'
+const EDIT_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+const EDIT_IMAGE_MAX = 4 * 1024 * 1024
+const EDIT_DOC_MAX = 15 * 1024 * 1024
+const EDIT_DOC_EXTS = /\.(pdf|txt|md|csv|json|docx|py|js|ts|html|css|xml|yaml|yml)$/i
+const EDIT_MAX_TOTAL = 4
+const isEditing = ref(false)
+const editDraft = ref('')
+const editBusy = ref(false)
+const editAttachments = ref([])   // { url, name, kind, icon, preview, removed }
+const editNewFiles = ref([])      // File[]
+const editTaRef = ref(null)
+const editNotice = ref('')
+const editUploading = ref(false)
+
+const canEdit = computed(() =>
+  props.message.role === 'user' &&
+  !props.message._pending &&
+  props.message._status !== 'failed' &&
+  !props.message._error &&
+  !isEditing.value
+)
+
+const editKeptCount = computed(() => editAttachments.value.filter(a => !a.removed).length)
+
+function startEdit() {
+  if (!canEdit.value) return
+  editDraft.value = props.message.content || ''
+  editNewFiles.value = []
+  editNotice.value = ''
+  editAttachments.value = (props.message.attachments || []).map(a => ({
+    url: a.url,
+    name: a.name || 'attachment',
+    kind: a.kind,
+    icon: a.kind === 'image' ? 'fas fa-image' : (String(a.name || '').toLowerCase().endsWith('.pdf') ? 'fas fa-file-pdf' : 'fas fa-file-lines'),
+    preview: a.kind === 'image' ? a.url : null,
+    removed: false,
+  }))
+  isEditing.value = true
+  setTimeout(() => { editTaRef.value?.focus(); resizeEditTa() }, 30)
+}
+
+function cancelEdit() {
+  isEditing.value = false
+  editDraft.value = ''
+  editNewFiles.value = []
+  editAttachments.value = []
+}
+
+function resizeEditTa() {
+  const el = editTaRef.value; if (!el) return
+  el.style.height = 'auto'
+  el.style.height = Math.min(el.scrollHeight, 180) + 'px'
+}
+
+function onEditFiles(e) {
+  const picked = Array.from(e.target.files || [])
+  e.target.value = ''
+  for (const f of picked) {
+    const isImg = (f.type || '').startsWith('image/')
+    if (isImg) {
+      if (!EDIT_IMAGE_TYPES.includes(f.type)) { editNotice.value = `"${f.name}" is not a supported image. Use JPG, PNG, GIF or WebP.`; continue }
+      if (f.size > EDIT_IMAGE_MAX) { editNotice.value = `"${f.name}" is too large. Maximum image size is 4 MB.`; continue }
+    } else {
+      if (!EDIT_DOC_EXTS.test(f.name)) { editNotice.value = `"${f.name}" is a file type KinyaBot can't read yet.`; continue }
+      if (f.size > EDIT_DOC_MAX) { editNotice.value = `"${f.name}" is too large. Maximum document size is 15 MB.`; continue }
+    }
+    if (editKeptCount.value + editNewFiles.value.length >= EDIT_MAX_TOTAL) {
+      editNotice.value = `You can attach up to ${EDIT_MAX_TOTAL} files per message.`; break
+    }
+    editNewFiles.value = [...editNewFiles.value, f]
+    editAttachments.value = [...editAttachments.value, {
+      url: `__new__${editNewFiles.value.length - 1}__${f.name}`,
+      file: f,
+      name: f.name,
+      kind: isImg ? 'image' : 'document',
+      icon: isImg ? 'fas fa-image' : (f.name.toLowerCase().endsWith('.pdf') ? 'fas fa-file-pdf' : 'fas fa-file-lines'),
+      preview: isImg ? URL.createObjectURL(f) : null,
+      removed: false,
+      isNew: true,
+    }]
+  }
+}
+
+async function saveEdit() {
+  if (editBusy.value) return
+  const content = editDraft.value.trim()
+  const keptUrls = editAttachments.value.filter(a => !a.removed && !a.isNew).map(a => a.url)
+  const newFiles = editAttachments.value.filter(a => !a.removed && a.isNew && a.file).map(a => a.file)
+  const hadKept = editAttachments.value.some(a => !a.isNew)
+  if (!content && !keptUrls.length && !newFiles.length) return
+  editBusy.value = true
+  try {
+    await emit('edit-save', {
+      content,
+      keepAttachments: hadKept ? keptUrls : null,
+      newFiles,
+    })
+    isEditing.value = false
+  } finally {
+    editBusy.value = false
+  }
+}
+
+/* ── Response versions (§20) ── */
+const versionInfo = computed(() => {
+  if (props.message.role !== 'assistant' || props.message._error || props.message._streaming) return null
+  const count = Array.isArray(props.message.versions) ? props.message.versions.length : 0
+  if (count < 2) return null
+  const active = Number.isInteger(props.message.active_version) ? props.message.active_version : count - 1
+  return { count, position: active + 1 }
+})
 const lightboxImg = ref(null)
 const downloadingFiles = ref(false)
 const artifactError = ref('')
@@ -686,13 +863,83 @@ function doDelete() {
   .error-bubble { border-radius:5px 16px 16px 16px; }
 
   .actions { opacity:1; gap:5px; margin-top:6px; padding-left:1px; }
-  .actions.user { display:none; }
   .act-btn { width:30px; height:30px; border-radius:50%; background:var(--bg-card); border:1px solid var(--border); color:var(--purple); font-size:12px; }
   .act-btn:active { transform:scale(.88); }
   .act-btn.danger { color:var(--text-3); }
   .msg-time { display:none; }
   .actions.always-on.user, .actions.user:has(.retry-act) { display:flex; }
+  .version-nav { margin-left:auto; }
 }
+
+/* ── Inline edit composer (§17) ── */
+.ec-notice { display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--red, #ef4444); }
+.edit-composer {
+  display:flex; flex-direction:column; gap:8px;
+  width:100%; max-width:560px; min-width:240px;
+  background:var(--bg-card); border:1px solid var(--brand);
+  border-radius:16px; padding:10px; box-shadow:var(--focus-glow, 0 0 0 3px rgba(99,102,241,.08));
+  animation:fadeIn .18s ease both;
+}
+.ec-atts { display:flex; flex-wrap:wrap; gap:6px; }
+.ec-att {
+  position:relative; display:flex; align-items:center; gap:6px;
+  padding:4px 26px 4px 4px; background:var(--bg-input);
+  border:1px solid var(--border-md); border-radius:10px; max-width:200px;
+}
+.ec-att.removed { opacity:.42; filter:grayscale(.7); }
+.ec-att-thumb { width:32px; height:32px; object-fit:cover; border-radius:6px; }
+.ec-att-ic { width:30px; height:30px; border-radius:6px; background:var(--bg-hover); display:flex; align-items:center; justify-content:center; color:var(--brand-text); font-size:12px; }
+.ec-att-name { font-size:11.5px; color:var(--text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:110px; }
+.ec-att-x {
+  position:absolute; top:-6px; right:-6px; width:18px; height:18px; border-radius:50%;
+  background:var(--bg-active, #333); border:1px solid var(--border-md); color:var(--text-2);
+  font-size:9px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+}
+.ec-att-x:hover { background:var(--red, #ef4444); color:#fff; }
+.ec-att-add {
+  display:flex; align-items:center; justify-content:center; width:32px; height:32px;
+  border-radius:8px; border:1px dashed var(--border-md); color:var(--text-3);
+  cursor:pointer; font-size:12px; transition:all .15s;
+}
+.ec-att-add:hover { border-color:var(--brand); color:var(--brand-text); }
+.ec-textarea {
+  width:100%; min-height:56px; max-height:180px; resize:none;
+  background:var(--bg-input); border:1px solid var(--border-md); border-radius:10px;
+  padding:10px 12px; color:var(--text-1); font-size:14px; line-height:1.45; outline:none;
+  font-family:inherit;
+}
+.ec-textarea:focus { border-color:var(--brand); }
+.ec-hint { display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-3); }
+.ec-actions { display:flex; justify-content:flex-end; gap:8px; }
+.ec-btn {
+  height:32px; padding:0 14px; border-radius:8px; border:1px solid var(--brand);
+  background:var(--brand-soft, rgba(99,102,241,.14)); color:var(--brand-text);
+  font-size:12.5px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+  transition:filter .15s, transform .15s;
+}
+.ec-btn:hover:not(:disabled) { filter:brightness(1.12); }
+.ec-btn:active:not(:disabled) { transform:scale(.97); }
+.ec-btn:disabled { opacity:.5; cursor:default; }
+.ec-btn.ghost { background:transparent; border-color:var(--border-md); color:var(--text-2); }
+.ec-btn.ghost:hover:not(:disabled) { background:var(--bg-hover); color:var(--text-1); }
+
+/* ── Version navigator (§20) ── */
+.version-nav { display:flex; align-items:center; gap:6px; margin-top:2px; }
+.vn-btn {
+  width:22px; height:22px; border-radius:6px; border:none; background:none;
+  color:var(--text-3); font-size:10px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:all .15s;
+}
+.vn-btn:hover:not(:disabled) { background:var(--bg-hover); color:var(--text-1); }
+.vn-btn:disabled { opacity:.35; cursor:default; }
+.vn-pos { font-size:11.5px; color:var(--text-3); font-variant-numeric:tabular-nums; min-width:34px; text-align:center; }
+
+/* ── Edited marker (§18) ── */
+.edited-marker {
+  display:inline-flex; align-items:center; gap:4px; margin-top:3px;
+  font-size:10.5px; color:var(--text-3); opacity:.85;
+}
+.actions.user + .edited-marker { align-self:flex-end; }
 </style>
 
 <style>

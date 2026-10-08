@@ -35,6 +35,17 @@ const routes = [
     component: () => import('../views/ChatView.vue'),
     meta: { requiresAuth: true }
   },
+  /* ═══ CONVERSATION ROUTE (§1) ═══
+     Every conversation has a unique, collision-resistant id (UUID v4)
+     addressed as /chat/c/{conversationId} in production (the SPA is
+     mounted under the /chat/ base — see vite.config.js). Deep links,
+     refresh, back/forward and "open in new tab" all resolve here; the
+     Vercel rewrite /chat/(.*) → /chat/index.html serves the SPA.   */
+  {
+    path: '/c/:conversationId',
+    component: () => import('../views/ChatView.vue'),
+    meta: { requiresAuth: true }
+  },
   // First-run mobile intro (image-1 style "Get Started" screen). Guest-only;
   // reachable by direct link — first-time visitors now meet the marketing
   // landing page at `/` instead.

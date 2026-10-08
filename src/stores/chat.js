@@ -4,7 +4,16 @@ import api from '../api'
 import { getSocket, joinChat, leaveChat } from '../socket'
 
 /**
- * Chat store — SSE streaming with explicit message states.
+ * Chat store — conversation infrastructure (§1-§36).
+ *
+ * Conversations have public UUID ids (`conversation_id`) addressed as
+ * /chat/c/{conversationId}. The URL is the source of truth for WHICH
+ * conversation is open (ChatView syncs route ↔ store); the store owns
+ * WHAT is in it.
+ *
+ * Creation is LAZY (§3): no empty conversations. The first message
+ * creates the conversation server-side; the SSE `conversation` event
+ * hands back its id and the URL updates without a reload.
  *
  * Every message carries a UI status:
  *   sending    → request in flight (user bubble shows pending state)
@@ -12,17 +21,21 @@ import { getSocket, joinChat, leaveChat } from '../socket'
  *   completed  → final saved message
  *   failed     → generation failed (message kept, retry available)
  *   cancelled  → user stopped generation (partial answer kept)
+ *
+ * Assistant messages may carry response versions (§20): versions[]
+ * with active_version — regenerate appends a version instead of
+ * destroying the previous answer.
  */
 export const useChatStore = defineStore('chat', () => {
   const chats         = ref([])
   const activeChat    = ref(null)
   const messages      = ref([])
   const loading       = ref(false)
+  const loadError     = ref(null)   // friendly conversation-load failure (§24)
   const sending       = ref(false)
   const streaming     = ref(false)
   const searchResults = ref([])
   const stats         = ref({ total_chats: 0, total_messages: 0, total_tokens: 0 })
-  const pendingChatId = ref(null)
   // Track IDs already added via streaming to prevent socket duplicates
   const seenMessageIds = ref(new Set())
 
@@ -77,6 +90,22 @@ export const useChatStore = defineStore('chat', () => {
       }
     })
 
+    // Cross-tab sync for edits / version switches (§17/§20)
+    socket.off('message_updated')
+    socket.on('message_updated', ({ chatId, userMessage, aiMessage }) => {
+      if (activeChat.value?.id !== chatId) return
+      const incoming = userMessage || aiMessage
+      if (!incoming?.id) return
+      const idx = messages.value.findIndex(m => m.id === incoming.id)
+      if (idx !== -1) messages.value.splice(idx, 1, { ...incoming, content: stripMeta(incoming.content), _status: 'completed' })
+    })
+
+    socket.off('message_deleted')
+    socket.on('message_deleted', ({ chatId, messageId }) => {
+      if (activeChat.value?.id !== chatId) return
+      messages.value = messages.value.filter(m => m.id !== messageId)
+    })
+
     socket.off('maintenance_mode')
     socket.on('maintenance_mode', ({ active }) => {
       if (active) {
@@ -103,36 +132,51 @@ export const useChatStore = defineStore('chat', () => {
     } catch {}
   }
 
-  async function createChat(title = 'New Chat') {
-    if (pendingChatId.value) {
-      try { await api.delete(`/chats/${pendingChatId.value}`) } catch {}
-      chats.value = chats.value.filter(c => c.id !== pendingChatId.value)
-    }
-    const { data } = await api.post('/chats', { title })
-    pendingChatId.value = data.id
-    activeChat.value = { ...data, message_count: 0 }
-    messages.value = []
-    seenMessageIds.value.clear()
-    joinChat(data.id)
-    return data
-  }
-
+  /* ── Load a conversation (§4/§30) ──────────────────────────────
+     Accepts a public conversation_id (UUID) or a Mongo id — the
+     backend resolves both, always ownership-checked. Failures set a
+     friendly loadError instead of silently showing nothing (§24). */
   async function loadChat(id) {
-    if (pendingChatId.value && pendingChatId.value !== id) {
-      try { await api.delete(`/chats/${pendingChatId.value}`) } catch {}
-      chats.value = chats.value.filter(c => c.id !== pendingChatId.value)
-      pendingChatId.value = null
-    }
+    if (!id) return
+    if (activeChat.value && activeChat.value.id === id) return
     loading.value = true
+    loadError.value = null
     try {
       if (activeChat.value) leaveChat(activeChat.value.id)
-      const { data } = await api.get(`/chats/${id}`)
+      const { data } = await api.get(`/chats/${encodeURIComponent(id)}`)
       activeChat.value = data
       messages.value = (data.messages || []).map(m => ({ ...m, content: stripMeta(m.content), _status: 'completed' }))
       // Seed seen IDs so socket won't duplicate
       seenMessageIds.value = new Set(data.messages?.map(m => m.id) || [])
-      joinChat(id)
-    } catch {} finally { loading.value = false }
+      joinChat(data.id)
+    } catch (err) {
+      activeChat.value = null
+      messages.value = []
+      loadError.value = friendlyLoadError(err)
+    } finally { loading.value = false }
+  }
+
+  function friendlyLoadError(err) {
+    const status = err?.response?.status
+    if (status === 401) return 'Your session has expired. Please sign in again to view this conversation.'
+    if (status === 403 || status === 404)
+      return 'This conversation could not be loaded. It may have been deleted or you may not have permission to access it.'
+    if (status === 0 || err?.code === 'ERR_NETWORK')
+      return "Couldn't connect to KinyaBot. Please check your internet connection and try again."
+    return 'This conversation could not be loaded. Please try again in a moment.'
+  }
+
+  function clearLoadError() { loadError.value = null }
+
+  /** Start a fresh conversation context (New Chat, §28): the URL goes
+      back to /chat and the NEXT message creates a new conversation id. */
+  function startNewChat() {
+    if (sending.value || streaming.value) stopGeneration()
+    if (activeChat.value) leaveChat(activeChat.value.id)
+    activeChat.value = null
+    messages.value = []
+    seenMessageIds.value.clear()
+    loadError.value = null
   }
 
   async function renameChat(id, title) {
@@ -151,19 +195,16 @@ export const useChatStore = defineStore('chat', () => {
 
   async function deleteChat(id) {
     await api.delete(`/chats/${id}`)
-    if (pendingChatId.value === id) pendingChatId.value = null
     chats.value = chats.value.filter(c => c.id !== id)
     if (activeChat.value?.id === id) {
       activeChat.value = null
       messages.value = []
       seenMessageIds.value.clear()
-      if (chats.value.length) await loadChat(chats.value[0].id)
     }
   }
 
   async function deleteAllChats() {
     await api.delete('/chats')
-    pendingChatId.value = null
     chats.value = []
     activeChat.value = null
     messages.value = []
@@ -178,7 +219,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /* Parse the SSE byte stream and dispatch typed events. */
-  async function consumeSSE(response, { onChunk, onDone, onError, onUserMessage }) {
+  async function consumeSSE(response, { onChunk, onDone, onError, onUserMessage, onConversation }) {
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
     let buffer = ''
@@ -203,7 +244,8 @@ export const useChatStore = defineStore('chat', () => {
         let data
         try { data = JSON.parse(dataStr) } catch { continue }
 
-        if (eventType === 'user_message') onUserMessage?.(data)
+        if (eventType === 'conversation') onConversation?.(data)
+        else if (eventType === 'user_message') onUserMessage?.(data)
         else if (eventType === 'chunk') onChunk?.(data.text || '')
         else if (eventType === 'done') onDone?.(data)
         else if (eventType === 'error') onError?.(data.message || 'AI error', data)
@@ -211,42 +253,57 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  /* Core send/regenerate flow. */
-  async function runGeneration({ url, content, file, historySince = null }) {
-    if (!activeChat.value) return
+  /* Core send/regenerate flow.
+     url            — SSE endpoint
+     content, files — user turn payload
+     isNew          — lazy conversation create (backend emits `conversation`)
+     replaceIdx     — index of an existing assistant bubble the stream
+                      replaces (regeneration keeps its position)        */
+  async function runGeneration({ url, content, files = [], isNew = false, replaceIdx = -1 }) {
+    if (!isNew && !activeChat.value) return
     sending.value = true
     streaming.value = false
 
     const tempId   = `temp_${Date.now()}`
     const streamId = `stream_${Date.now()}`
 
-    const tempAttachments = file ? [{
-      kind: (file.type || '').startsWith('image/') ? 'image' : 'document',
-      url: URL.createObjectURL(file),
-      name: file.name,
-      size: file.size,
+    const tempAttachments = (files || []).map(f => ({
+      kind: (f.type || '').startsWith('image/') ? 'image' : 'document',
+      url: URL.createObjectURL(f),
+      name: f.name,
+      size: f.size,
       _local: true
-    }] : []
+    }))
+    const chatCtx = isNew ? null : activeChat.value
 
     // 1. Show user message immediately (above AI response)
     const userBubble = {
       id: tempId,
-      chat_id: activeChat.value.id,
+      chat_id: chatCtx?.id,
       role: 'user',
       content: content || '',
       created_at: new Date().toISOString(),
-      file_url: file ? URL.createObjectURL(file) : null,
+      file_url: tempAttachments[0]?.url || null,
       attachments: tempAttachments,
       message_type: tempAttachments[0]?.kind || 'text',
       _pending: true,
       _status: 'sending'
     }
     messages.value.push(userBubble)
-    // 2. Typing indicator AFTER user message
-    messages.value.push({ id: 'typing', role: 'assistant', _typing: true, content: '' })
+    // 2. Assistant placeholder AFTER the user message — either a new
+    //    streaming bubble or the existing answer being regenerated
+    let streamIdxLocal = -1
+    if (replaceIdx >= 0 && messages.value[replaceIdx]?.role === 'assistant') {
+      messages.value.splice(replaceIdx, 1, { ...messages.value[replaceIdx], content: '', _streaming: true, _status: 'streaming' })
+      streamIdxLocal = replaceIdx
+    } else {
+      messages.value.push({ id: streamId, role: 'assistant', content: '', created_at: new Date().toISOString(), _streaming: true, _status: 'streaming' })
+      streamIdxLocal = messages.value.length - 1
+    }
+    const streamTargetId = messages.value[streamIdxLocal]?.id || streamId
 
     // Keep the payload so a failed send can be retried without retyping
-    retryPayloads.value.set(tempId, { content, file })
+    retryPayloads.value.set(tempId, { content, files })
 
     const abort = new AbortController()
     activeAbort = abort
@@ -255,11 +312,12 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const fd = new FormData()
       if (content) fd.append('content', content)
-      if (file) fd.append('file', file)
+      fd.append('mode', chatCtx?.mode || 'chat')
+      for (const f of (files || [])) fd.append('files', f, f.name)
 
       const response = await fetch(`${API_BASE}${url}`, {
         method: 'POST',
-        headers: { ...authHeader(), ...prefHeaders(activeChat.value.id) },
+        headers: { ...authHeader(), ...(chatCtx ? prefHeaders(chatCtx.id) : {}) },
         body: fd,
         signal: abort.signal
       })
@@ -282,22 +340,33 @@ export const useChatStore = defineStore('chat', () => {
         throw new Error(msg)
       }
 
-      // Replace typing with streaming bubble (keep user message above)
-      messages.value = messages.value.filter(m => m.id !== 'typing')
-      messages.value.push({
-        id: streamId, role: 'assistant', content: '',
-        created_at: new Date().toISOString(), _streaming: true, _status: 'streaming'
-      })
       streaming.value = true
-
       let finalAiMsg = null
       let realUserMsg = null
       let streamError = null
+      let conversationHandled = false
 
       await consumeSSE(response, {
+        onConversation: (data) => {
+          // Lazy create (§3): the conversation now exists — sync state.
+          // ChatView reacts and rewrites the URL without a reload.
+          if (conversationHandled) return
+          conversationHandled = true
+          if (data?.conversationId) {
+            activeChat.value = {
+              id: data.chatId,
+              conversation_id: data.conversationId,
+              title: data.title || 'New Chat',
+              mode: data.mode || 'chat',
+              message_count: 0,
+            }
+            seenMessageIds.value.clear()
+            joinChat(data.chatId)
+          }
+        },
         onUserMessage: (data) => { realUserMsg = data },
         onChunk: (text) => {
-          const idx = messages.value.findIndex(m => m.id === streamId)
+          const idx = messages.value.findIndex(m => m.id === streamTargetId)
           if (idx !== -1) {
             const updated = { ...messages.value[idx], content: messages.value[idx].content + text }
             messages.value.splice(idx, 1, updated)
@@ -322,7 +391,7 @@ export const useChatStore = defineStore('chat', () => {
       // ── Finalize messages (no duplicates) ──────────────────────
       streaming.value = false
 
-      const aiIdx = messages.value.findIndex(m => m.id === streamId)
+      const aiIdx = messages.value.findIndex(m => m.id === streamTargetId)
       if (finalAiMsg) {
         seenMessageIds.value.add(finalAiMsg.id)
         if (aiIdx !== -1) {
@@ -342,14 +411,13 @@ export const useChatStore = defineStore('chat', () => {
       }
       retryPayloads.value.delete(tempId)
 
-      updateSidebarAfterSend(content)
+      updateSidebarAfterSend(content, { isNew })
     } catch (err) {
       streaming.value = false
       const aborted = err?.name === 'AbortError'
 
       // Clean typing indicator; keep streaming bubble as partial if any content
-      messages.value = messages.value.filter(m => m.id !== 'typing')
-      const streamIdx = messages.value.findIndex(m => m.id === streamId)
+      const streamIdx = messages.value.findIndex(m => m.id === streamTargetId)
       const partialContent = streamIdx !== -1 ? messages.value[streamIdx].content : ''
 
       if (aborted) {
@@ -369,7 +437,7 @@ export const useChatStore = defineStore('chat', () => {
         if (streamIdx !== -1) {
           if (partialContent.trim()) {
             messages.value.splice(streamIdx, 1, {
-              ...messages.value[streamIdx], _streaming: false, _error: true,
+              ...messages.value[streamIdx], _streaming: false, _error: false,
               content: messages.value[streamIdx].content, _status: 'failed'
             })
           } else {
@@ -393,42 +461,78 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  function updateSidebarAfterSend(content) {
-    const chatId = activeChat.value.id
-    if (pendingChatId.value === chatId) {
-      pendingChatId.value = null
-      api.get(`/chats/${chatId}`).then(({ data: fresh }) => {
-        const chatData = { ...fresh, message_count: 1, last_message: content }
-        chats.value = [chatData, ...chats.value.filter(c => c.id !== chatId)]
-        if (activeChat.value?.id === chatId) activeChat.value.title = fresh.title
-      }).catch(() => {})
+  function updateSidebarAfterSend(content, { isNew = false } = {}) {
+    const chatId = activeChat.value?.id
+    if (!chatId) return
+    if (isNew) {
+      const chat = {
+        ...(chats.value.find(c => c.id === chatId) || {}),
+        ...activeChat.value,
+        last_message: content || activeChat.value.title,
+        message_count: 2,
+        updated_at: new Date().toISOString(),
+      }
+      chats.value = [chat, ...chats.value.filter(c => c.id !== chatId)]
+      return
+    }
+    const chat = chats.value.find(c => c.id === chatId)
+    if (chat) {
+      chat.last_message = content || chat.last_message
+      chat.updated_at    = new Date().toISOString()
+      chats.value = [chat, ...chats.value.filter(c => c.id !== chat.id)]
+    }
+  }
+
+  /* Send a user turn. With no open conversation the request itself
+     creates one (lazy, §3) and the URL updates to /c/{id}.        */
+  async function sendMessage(content, files = []) {
+    const isNew = !activeChat.value
+    const url = isNew
+      ? '/chats/messages/stream'
+      : `/chats/${activeChat.value.id}/messages/stream`
+    await runGeneration({ url, content, files, isNew })
+  }
+
+  /* Regenerate the response for a specific user turn (§19).
+     messageId omitted → regenerate the LAST user turn's answer.
+     The previous answer survives as a response version (§20).     */
+  async function regenerate(messageId = null) {
+    if (sending.value || streaming.value) return
+    if (!activeChat.value) return
+
+    let userMsg = null
+    let userIdx = -1
+    if (messageId) {
+      userIdx = messages.value.findIndex(m => m.id === messageId)
+      userMsg = userIdx !== -1 ? messages.value[userIdx] : null
     } else {
-      const chat = chats.value.find(c => c.id === chatId)
-      if (chat) {
-        chat.last_message = content
-        chat.updated_at    = new Date().toISOString()
-        if (chat.title === 'New Chat' && content) chat.title = content.slice(0, 55)
-        if (activeChat.value?.title === 'New Chat' && content) activeChat.value.title = chat.title
-        chats.value = [chat, ...chats.value.filter(c => c.id !== chat.id)]
+      for (let i = messages.value.length - 1; i >= 0; i--) {
+        if (messages.value[i].role === 'user' && !messages.value[i]._error) {
+          userMsg = messages.value[i]; userIdx = i; break
+        }
       }
     }
-  }
+    if (!userMsg) return
 
-  async function sendMessage(content, file = null) {
-    await runGeneration({ url: `/chats/${activeChat.value.id}/messages/stream`, content, file })
-  }
-
-  /* Regenerate the last assistant response (§16). */
-  async function regenerate() {
-    if (!activeChat.value || sending.value || streaming.value) return
-    // Remove trailing assistant messages (incl. error bubbles) locally;
-    // the backend does the same against the DB.
-    for (let i = messages.value.length - 1; i >= 0; i--) {
-      const m = messages.value[i]
-      if (m.role === 'user') break
-      messages.value.splice(i, 1)
+    // Everything after a MID-conversation turn belongs to the old branch —
+    // the backend supersedes it; drop it locally so the view stays clean.
+    const laterUserTurn = messages.value.slice(userIdx + 1).some(m => m.role === 'user' && !m._error)
+    let replaceIdx = -1
+    if (laterUserTurn) {
+      messages.value = messages.value.slice(0, userIdx + 1)
+    } else {
+      // Latest answer → stream replaces it in place (version carrier)
+      for (let i = userIdx + 1; i < messages.value.length; i++) {
+        const m = messages.value[i]
+        if (m.role === 'user') break
+        if (m.role === 'assistant' && !m._error) { replaceIdx = i; break }
+      }
     }
-    await runGeneration({ url: `/chats/${activeChat.value.id}/regenerate/stream`, content: '' })
+
+    await runGeneration({
+      url: `/chats/${activeChat.value.id}/messages/${encodeURIComponent(userMsg.id)}/regenerate`,
+      content: '', files: [], replaceIdx,
+    })
   }
 
   /* Retry a failed send (keeps the user's original message, §17). */
@@ -438,12 +542,76 @@ export const useChatStore = defineStore('chat', () => {
     // Drop the failed user bubble + its error bubble, then resend
     const idx = messages.value.findIndex(m => m.id === failedMsgId)
     if (idx === -1) return
-    const { content, file } = payload || { content: messages.value[idx].content, file: null }
+    const { content, files } = payload || { content: messages.value[idx].content, files: [] }
     messages.value.splice(idx, 1)
     // remove error bubble right after (if present)
     const next = messages.value[idx]
     if (next && next._error) messages.value.splice(idx, 1)
-    await runGeneration({ url: `/chats/${activeChat.value.id}/messages/stream`, content, file })
+    await sendMessage(content, files || [])
+  }
+
+  /* Edit a previously sent user message (§17/§18/§22).
+     content          — new text
+     keepAttachments  — urls of existing attachments to keep
+     newFiles         — File objects to add
+     After the PATCH the later branch is superseded server-side AND
+     locally, then a new response is generated.                       */
+  async function editMessage(messageId, { content, keepAttachments = null, newFiles = [] }) {
+    if (!activeChat.value || sending.value || streaming.value) return
+    const idx = messages.value.findIndex(m => m.id === messageId)
+    if (idx === -1) return
+    const original = messages.value[idx]
+
+    let saved = null
+    try {
+      const hasFiles = (newFiles || []).length > 0
+      let data
+      if (hasFiles) {
+        const fd = new FormData()
+        if (content !== null && content !== undefined) fd.append('content', content)
+        if (keepAttachments) fd.append('keep_attachments', JSON.stringify(keepAttachments))
+        for (const f of newFiles) fd.append('files', f, f.name)
+        const res = await api.patch(`/chats/${activeChat.value.id}/messages/${encodeURIComponent(messageId)}`, fd, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        })
+        data = res.data
+      } else {
+        const body = { content: content ?? '' }
+        if (keepAttachments) body.keep_attachments = JSON.stringify(keepAttachments)
+        const res = await api.patch(`/chats/${activeChat.value.id}/messages/${encodeURIComponent(messageId)}`, body)
+        data = res.data
+      }
+      saved = data?.userMessage
+    } catch (err) {
+      const msg = err?.response?.data?.error || 'The message could not be edited. Please try again.'
+      throw new Error(msg)
+    }
+
+    // Replace the message locally, drop the superseded branch
+    if (saved) {
+      messages.value.splice(idx, 1, { ...saved, content: stripMeta(saved.content), _status: 'completed' })
+    }
+    messages.value = messages.value.slice(0, idx + 1)
+
+    // Generate the new response for the edited turn
+    await regenerate(messageId)
+  }
+
+  /* Navigate response versions (§20): delta −1 (older) / +1 (newer).
+     Optimistic local swap; the active choice persists via PATCH.  */
+  function switchVersion(messageId, delta) {
+    const msg = messages.value.find(m => m.id === messageId)
+    if (!msg || !Array.isArray(msg.versions) || msg.versions.length < 2) return
+    const current = Number.isInteger(msg.active_version) ? msg.active_version : msg.versions.length - 1
+    const next = current + delta
+    if (next < 0 || next >= msg.versions.length) return
+    const v = msg.versions[next]
+    msg.active_version = next
+    msg.content = v.content
+    if (v.model) msg.model = v.model
+    const idx = messages.value.findIndex(m => m.id === messageId)
+    if (idx !== -1) messages.value.splice(idx, 1, { ...messages.value[idx] })
+    api.patch(`/messages/${encodeURIComponent(messageId)}`, { version: next }).catch(() => {})
   }
 
   /* Stop the in-flight generation (§16). Partial answer is kept. */
@@ -452,8 +620,17 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   async function deleteMessage(id) {
+    const idx = messages.value.findIndex(m => m.id === id)
+    const msg = idx !== -1 ? messages.value[idx] : null
     await api.delete(`/messages/${id}`)
     messages.value = messages.value.filter(m => m.id !== id)
+    // Deleting a user message also removes its answer from the visible
+    // thread (the backend supersedes it server-side, §21).
+    if (msg?.role === 'user') {
+      while (idx < messages.value.length && messages.value[idx].role === 'assistant') {
+        messages.value.splice(idx, 1)
+      }
+    }
   }
 
   async function searchMessages(q) {
@@ -477,20 +654,20 @@ export const useChatStore = defineStore('chat', () => {
     messages.value = []
     searchResults.value = []
     stats.value = { total_chats: 0, total_messages: 0, total_tokens: 0 }
-    pendingChatId.value = null
     seenMessageIds.value = new Set()
     limitReachedInfo.value = null
+    loadError.value = null
     loading.value = false
     sending.value = false
     streaming.value = false
   }
 
   return {
-    chats, activeChat, messages, loading, sending, streaming, searchResults, stats, pendingChatId,
+    chats, activeChat, messages, loading, loadError, sending, streaming, searchResults, stats,
     pinnedChats, recentChats, chatPrefs, limitReachedInfo,
-    fetchChats, fetchStats, createChat, loadChat, renameChat, pinChat,
-    deleteChat, deleteAllChats, getPrefs, setPrefs, sendMessage, regenerate, retry, stopGeneration,
-    deleteMessage, searchMessages, clearSearch,
+    fetchChats, fetchStats, loadChat, startNewChat, clearLoadError, renameChat, pinChat,
+    deleteChat, deleteAllChats, getPrefs, setPrefs, sendMessage, editMessage, regenerate, switchVersion,
+    retry, stopGeneration, deleteMessage, searchMessages, clearSearch,
     setupSocketListeners, resetChatState
   }
 })

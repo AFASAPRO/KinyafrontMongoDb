@@ -830,7 +830,6 @@ async function submitToAI(text, opts = {}) {
   )
 
   try {
-    if (!chatStore.activeChat) await chatStore.createChat()
     await chatStore.sendMessage(text)
     streamDone = true
     const lastAi = [...chatStore.messages].reverse().find(m => m.role === 'assistant' && !m._error && m.content)
