@@ -86,6 +86,7 @@
           :is-coding-task="isCodingTask(msg, i)"
           :is-last="isLastAssistant(msg, i)"
           :regen-busy="chatStore.sending || chatStore.streaming"
+          :search-activity="msg._streaming ? chatStore.webSearchActivity : null"
           @delete="chatStore.deleteMessage(msg.id)"
           @copy="handleCopy(msg.content)"
           @retry="handleRetry"
@@ -141,6 +142,11 @@
           :injected-text="composerInject"
           :injected-file="restoredFile"
           :injected-files="droppedFiles"
+          :mode="chatStore.composerMode"
+          :can-web-search="canWebSearch"
+          :can-agent="canAgent"
+          @update:mode="chatStore.composerMode = $event"
+          @upgrade="showSearchUpgrade = true"
           @files-consumed="droppedFiles=null"
           @focus="scrollBottom"
         />
@@ -229,9 +235,18 @@
       :injected-text="composerInject"
       :injected-file="restoredFile"
       :injected-files="droppedFiles"
+      :mode="chatStore.composerMode"
+      :can-web-search="canWebSearch"
+      :can-agent="canAgent"
+      @update:mode="chatStore.composerMode = $event"
+      @upgrade="showSearchUpgrade = true"
       @files-consumed="droppedFiles=null"
       @focus="scrollBottom"
     />
+
+    <!-- Web Search upgrade modal (Web Search §28) — free users get the
+         premium upsell INSTEAD of a doomed request. -->
+    <WebSearchUpgradeModal :open="showSearchUpgrade" @close="showSearchUpgrade = false" />
   </div>
 </template>
 
@@ -239,11 +254,13 @@
 import { ref, nextTick, watch, computed, onMounted, onBeforeUnmount, defineAsyncComponent } from 'vue'
 import { useChatStore } from '../stores/chat'
 import { useAuthStore } from '../stores/auth'
+import { useSubscriptionStore } from '../stores/subscription'
 import { useIsMobile } from '../composables/useIsMobile'
 import { getSocket } from '../socket'
 import api from '../api'
 import MessageBubble from './MessageBubble.vue'
 import InputBox from './InputBox.vue'
+import WebSearchUpgradeModal from './WebSearchUpgradeModal.vue'
 import AnimatedIcon from './AnimatedIcon.vue'
 import { extractCodeFiles } from '../utils/codeArtifacts'
 // Lazy-loaded: Voice Mode pulls in three.js + the 3D character, so it
@@ -273,8 +290,15 @@ const emit = defineEmits(['toggle-sidebar', 'auth-required', 'draft-consumed', '
 
 const chatStore = useChatStore()
 const auth = useAuthStore()
+const subscriptionStore = useSubscriptionStore()
 const isPhone = useIsMobile()
 const hasMessages = computed(() => !!chatStore.activeChat && chatStore.messages.length > 0)
+const showSearchUpgrade = ref(false)
+/* Plan entitlements for the composer mode menu (§28/§29). The backend
+   remains the single authority — this only drives the lock icon and
+   which menu entry opens the upgrade modal. */
+const canWebSearch = computed(() => !props.guest && subscriptionStore.features?.webSearch === true)
+const canAgent = computed(() => !props.guest && subscriptionStore.features?.agentAccess === true)
 const firstName = computed(() => {
   const n = (auth.user?.username || '').trim().split(/\s+/)[0]
   return !props.guest && n ? n : ''
@@ -419,7 +443,7 @@ function onVisualViewportChange() {
   }
 }
 
-async function handleSend({ content, files }) {
+async function handleSend({ content, files, mode }) {
   // GUESTS: the AI is never contacted before authentication.
   // The typed message AND the attached file are handed to the auth
   // gate — the file is kept in memory (SPA navigation keeps it alive)
@@ -430,9 +454,13 @@ async function handleSend({ content, files }) {
   }
   if (props.restoredDraft || props.restoredFile) emit('draft-consumed')
   try {
-    await chatStore.sendMessage(content, files || [])
+    await chatStore.sendMessage(content, files || [], { mode })
     notifyGeneratedFiles()
-  } catch {} // errors are rendered as retryable bubbles
+  } catch (err) {
+    // Web Search lock (§2): the backend refused a non-Pro manual search —
+    // open the polished upgrade modal instead of an error bubble.
+    if (err?.code === 'FEATURE_LOCKED' && err?.feature === 'webSearch') showSearchUpgrade.value = true
+  }
   scrollBottom()
 }
 

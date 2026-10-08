@@ -69,6 +69,20 @@
       <StatCard label="Approved requests" :value="ov?.subscription?.requests?.approved" icon="fas fa-circle-check" :loading="loading" sub="all time" />
     </div>
 
+    <!-- ═══ WEB SEARCH HEALTH (§37) — real SearchLog data + provider status ═══ -->
+    <div v-if="ov?.websearch" class="sub-strip ws-strip">
+      <div class="ws-strip-head">
+        <span class="ws-strip-title"><i class="fas fa-globe"></i> WEB SEARCH</span>
+        <StatusDot :status="ov.websearch.provider === 'connected' ? 'ok' : 'unknown'" :text="ov.websearch.provider === 'connected' ? 'LangSearch' : 'Not configured'" />
+      </div>
+      <div class="ws-strip-cards">
+        <StatCard label="Searches today" :value="ov.websearch.searches_today" icon="fas fa-magnifying-glass" :loading="loading" />
+        <StatCard label="Success rate" :display="ov.websearch.success_rate != null ? ov.websearch.success_rate + '%' : '—'" icon="fas fa-circle-check" :loading="loading" />
+        <StatCard label="Avg latency" :display="ov.websearch.avg_latency_ms != null ? fmtMs(ov.websearch.avg_latency_ms) : '—'" icon="fas fa-stopwatch" :loading="loading" />
+        <StatCard label="Feature" :display="ov.websearch.enabled ? 'Enabled' : 'Disabled'" icon="fas fa-toggle-on" :loading="loading" sub="AI Control switch" />
+      </div>
+    </div>
+
     <div class="charts">
       <SectionCard title="Plan distribution" subtitle="Users per plan · live from UserPlan records">
         <DonutChart
@@ -279,6 +293,14 @@ function setRange(r) { range.value = r; loadOverview() }
 .sub-strip { display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; }
 @media (max-width:1100px) { .kpis { grid-template-columns:repeat(2, 1fr); } .sub-strip { grid-template-columns:repeat(2, 1fr); } }
 @media (max-width:520px) { .kpis { grid-template-columns:1fr 1fr; } .sub-strip { grid-template-columns:1fr 1fr; } }
+/* Web Search health strip (§37) */
+.ws-strip { display:flex; flex-direction:column; gap:10px; }
+.ws-strip-head { display:flex; align-items:center; gap:12px; }
+.ws-strip-title { font-size:12px; font-weight:800; letter-spacing:.1em; color:var(--text-2); display:flex; align-items:center; gap:8px; }
+.ws-strip-title i { color:var(--brand-text); font-size:12px; }
+.ws-strip-cards { display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; }
+@media (max-width:1100px) { .ws-strip-cards { grid-template-columns:repeat(2, 1fr); } }
+@media (max-width:520px) { .ws-strip-cards { grid-template-columns:1fr 1fr; } }
 .charts { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 @media (max-width:980px) { .charts { grid-template-columns:1fr; } }
 .bottom-grid { display:grid; grid-template-columns:1.2fr 1fr; gap:16px; }

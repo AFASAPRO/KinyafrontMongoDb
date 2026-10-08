@@ -50,6 +50,15 @@
         />
       </div>
 
+      <!-- Web Search activity (Web Search §13/§14): live progress during
+           streaming, honest provenance after. Rendered BEFORE the bubble
+           so it reads like the research that produced the answer.      -->
+      <WebSearchActivity
+        v-if="message.role === 'assistant' && (searchActivity || message.web_search)"
+        :activity="searchActivity"
+        :web-search="searchActivity ? null : message.web_search"
+      />
+
       <!-- Inline edit composer (§17/§22): text + attachment keep/remove/add -->
       <div v-if="isEditing" class="edit-composer" @keydown.esc.prevent="cancelEdit">
         <div v-if="editAttachments.length" class="ec-atts">
@@ -167,6 +176,17 @@
         <AnimatedIcon icon="fas fa-file-shield" />
         <span>Source: {{ message.sources.join(', ') }}</span>
       </div>
+
+      <!-- Web-grounded answer badge + real source cards (§16/§24/§41).
+           Only rendered from PERSISTED web_search provenance — the
+           backend attached it because it genuinely searched (§42). -->
+      <template v-if="showWebSearchResults">
+        <div class="ws-badge" :title="badgeTitle">
+          <i class="fas fa-globe" aria-hidden="true"></i>
+          <span>Web Search · {{ webSearchSources.length }} source{{ webSearchSources.length === 1 ? '' : 's' }}</span>
+        </div>
+        <SourceCards :sources="webSearchSources" />
+      </template>
 
       <!-- Actions -->
       <div class="actions" :class="[message.role, { 'always-on': message._status === 'failed' || ttsActive }]">
@@ -292,6 +312,8 @@ import { useAuthStore } from '../stores/auth'
 import api from '../api'
 import AnimatedIcon from './AnimatedIcon.vue'
 import MessageAttachment from './MessageAttachment.vue'
+import WebSearchActivity from './WebSearchActivity.vue'
+import SourceCards from './SourceCards.vue'
 import { register as registerAudio, unregister as unregisterAudio } from '../utils/audio'
 import { renderMarkdown } from '../utils/markdown'
 import { downloadCodeFiles, extractCodeFiles, withoutCodeFences } from '../utils/codeArtifacts'
@@ -301,12 +323,36 @@ const props = defineProps({
   isLast: { type: Boolean, default: false },       // last assistant message → regenerate
   regenBusy: { type: Boolean, default: false },
   isCodingTask: { type: Boolean, default: false },
-  artifactName: { type: String, default: 'kinyabot-project' }
+  artifactName: { type: String, default: 'kinyabot-project' },
+  // LIVE search activity from the SSE stream (streaming bubble only,
+  // Web Search §13/§14) — null for finished messages.
+  searchActivity: { type: Object, default: null }
 })
 const emit = defineEmits(['delete', 'copy', 'retry', 'regenerate', 'edit-save', 'version', 'open-artifact'])
 
 const auth = useAuthStore()
 const userInitial = computed(() => auth.user?.username?.[0]?.toUpperCase() || 'U')
+
+/* ── Web-grounded answer (Web Search §41/§42) ───────────────────
+   Sources are rendered ONLY from message.web_search — the structured
+   provenance the backend attached after a REAL search. Nothing here
+   is invented in the UI layer. */
+const webSearchSources = computed(() =>
+  Array.isArray(props.message?.web_search?.sources) ? props.message.web_search.sources : []
+)
+const showWebSearchResults = computed(() =>
+  props.message?.role === 'assistant' &&
+  !props.message?._streaming &&
+  !props.message?._error &&
+  props.message?.web_search?.status === 'success' &&
+  webSearchSources.value.length > 0
+)
+const badgeTitle = computed(() => {
+  const ws = props.message?.web_search
+  if (!ws) return ''
+  const mode = ws.mode === 'manual' ? 'Manual web research' : (ws.mode === 'agent' ? 'Agent web search' : 'Automatic web search')
+  return `${mode}${ws.queries?.length ? ` — “${ws.queries[0]}”` : ''}`
+})
 
 const liked = ref(null) // true=liked, false=disliked, null=neutral
 const copied = ref(false)
@@ -767,6 +813,15 @@ function doDelete() {
 }
 .sources-line i { color:var(--brand-text); font-size:10px; flex-shrink:0; }
 .sources-line span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* Web-grounded answer badge (§41) — subtle, not distracting */
+.ws-badge {
+  display:inline-flex; align-items:center; gap:6px;
+  margin-top:5px; padding:3px 10px;
+  background:var(--brand-soft); border:1px solid rgba(99,102,241,.3);
+  border-radius:99px; font-size:11px; font-weight:600; color:var(--brand-text);
+}
+.ws-badge i { font-size:9.5px; }
 
 /* TTS */
 .tts-error { font-size:11.5px; color:var(--error); margin-top:3px; }

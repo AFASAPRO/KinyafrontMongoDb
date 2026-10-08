@@ -39,6 +39,30 @@ export const useChatStore = defineStore('chat', () => {
   // Track IDs already added via streaming to prevent socket duplicates
   const seenMessageIds = ref(new Set())
 
+  /* ── Web Search (Web Search §13/§14/§41) ─────────────────────
+     composerMode  — the mode selected in the composer (chat default,
+                     'web_search' = explicit research, 'agent').
+                     Restored from the conversation on load (§27).
+     webSearchActivity — live search progress for the CURRENT stream:
+                     { active, done, stage, query, queries, sources,
+                       sourcesFound, domains, status, notice, elapsedMs }
+                     Rendered by the streaming bubble; the finished
+                     message carries the same data as `web_search`. */
+  const composerMode = ref('chat')
+  const webSearchActivity = ref(null)
+  let searchStartedAt = 0
+  function resetSearchActivity() {
+    webSearchActivity.value = null
+    searchStartedAt = 0
+  }
+  function patchSearchActivity(patch) {
+    if (!webSearchActivity.value) webSearchActivity.value = { active: true, done: false, stage: 'understanding' }
+    if (searchStartedAt && !webSearchActivity.value.elapsedMs) {
+      webSearchActivity.value.elapsedMs = Date.now() - searchStartedAt
+    }
+    webSearchActivity.value = { ...webSearchActivity.value, ...patch }
+  }
+
   // Per-chat reply preferences (language / style) — stored locally, sent as
   // whitelisted headers with each generation request.
   const chatPrefs = ref((() => { try { return JSON.parse(localStorage.getItem('kb_chat_prefs') || '{}') } catch { return {} } })())
@@ -149,6 +173,10 @@ export const useChatStore = defineStore('chat', () => {
       // Seed seen IDs so socket won't duplicate
       seenMessageIds.value = new Set(data.messages?.map(m => m.id) || [])
       joinChat(data.id)
+      // Mode persistence (§27): the composer reopens in the mode the
+      // conversation was used with.
+      composerMode.value = ['web_search', 'agent'].includes(data.mode) ? data.mode : 'chat'
+      resetSearchActivity()
     } catch (err) {
       activeChat.value = null
       messages.value = []
@@ -177,6 +205,8 @@ export const useChatStore = defineStore('chat', () => {
     messages.value = []
     seenMessageIds.value.clear()
     loadError.value = null
+    composerMode.value = 'chat'
+    resetSearchActivity()
   }
 
   async function renameChat(id, title) {
@@ -219,7 +249,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /* Parse the SSE byte stream and dispatch typed events. */
-  async function consumeSSE(response, { onChunk, onDone, onError, onUserMessage, onConversation }) {
+  async function consumeSSE(response, { onChunk, onDone, onError, onUserMessage, onConversation, onSearchStatus, onSearchResults, onSearchNotice }) {
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
     let buffer = ''
@@ -249,6 +279,10 @@ export const useChatStore = defineStore('chat', () => {
         else if (eventType === 'chunk') onChunk?.(data.text || '')
         else if (eventType === 'done') onDone?.(data)
         else if (eventType === 'error') onError?.(data.message || 'AI error', data)
+        // Web Search activity events (§13/§14) — the elegant progress UI
+        else if (eventType === 'search_status') onSearchStatus?.(data)
+        else if (eventType === 'search_results') onSearchResults?.(data)
+        else if (eventType === 'search_notice') onSearchNotice?.(data)
       }
     }
   }
@@ -256,13 +290,16 @@ export const useChatStore = defineStore('chat', () => {
   /* Core send/regenerate flow.
      url            — SSE endpoint
      content, files — user turn payload
+     mode           — composer mode for this turn ('chat' | 'web_search' | 'agent');
+                      omitted → the conversation's persisted mode
      isNew          — lazy conversation create (backend emits `conversation`)
      replaceIdx     — index of an existing assistant bubble the stream
                       replaces (regeneration keeps its position)        */
-  async function runGeneration({ url, content, files = [], isNew = false, replaceIdx = -1 }) {
+  async function runGeneration({ url, content, files = [], mode = null, isNew = false, replaceIdx = -1 }) {
     if (!isNew && !activeChat.value) return
     sending.value = true
     streaming.value = false
+    resetSearchActivity()
 
     const tempId   = `temp_${Date.now()}`
     const streamId = `stream_${Date.now()}`
@@ -312,7 +349,7 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const fd = new FormData()
       if (content) fd.append('content', content)
-      fd.append('mode', chatCtx?.mode || 'chat')
+      fd.append('mode', mode || composerMode.value || chatCtx?.mode || 'chat')
       for (const f of (files || [])) fd.append('files', f, f.name)
 
       const response = await fetch(`${API_BASE}${url}`, {
@@ -335,6 +372,15 @@ export const useChatStore = defineStore('chat', () => {
           const e = new Error(msg)
           e.code = 'DAILY_LIMIT_REACHED'
           e.usage = payload.usage
+          throw e
+        }
+        // Web Search is Pro-only (§2): surface the upgrade modal instead
+        // of a generic error — the backend already refused to search.
+        if (payload?.code === 'FEATURE_LOCKED' && payload?.feature === 'webSearch') {
+          const e = new Error(msg)
+          e.code = 'FEATURE_LOCKED'
+          e.feature = 'webSearch'
+          e.upgradeHint = payload.upgradeHint !== false
           throw e
         }
         throw new Error(msg)
@@ -365,6 +411,39 @@ export const useChatStore = defineStore('chat', () => {
           }
         },
         onUserMessage: (data) => { realUserMsg = data },
+        onSearchStatus: (data) => {
+          if (!searchStartedAt) searchStartedAt = Date.now()
+          patchSearchActivity({
+            active: true, done: false,
+            stage: data.stage || 'searching',
+            query: data.query || webSearchActivity.value?.query || null,
+            sourcesFound: data.sourcesFound ?? webSearchActivity.value?.sourcesFound ?? null,
+            domains: data.domains || webSearchActivity.value?.domains || [],
+          })
+        },
+        onSearchResults: (data) => {
+          patchSearchActivity({
+            active: true, done: true,
+            stage: data.performed ? 'preparing' : 'unavailable',
+            status: data.status || null,
+            queries: data.queries || [],
+            query: data.queries?.[0] || webSearchActivity.value?.query || null,
+            sources: data.sources || [],
+            sourcesFound: data.resultCount ?? 0,
+            domains: data.domains || [],
+            durationMs: data.durationMs || null,
+            cached: !!data.cached,
+            trigger: data.trigger || null,
+            notice: data.status === 'unavailable'
+              ? 'Web Search is temporarily unavailable. I can still answer using my existing knowledge.'
+              : (data.status === 'rate_limited'
+                ? 'Web Search is cooling down for a moment — answering from existing knowledge.'
+                : null),
+          })
+        },
+        onSearchNotice: (data) => {
+          if (data?.message) patchSearchActivity({ notice: data.message })
+        },
         onChunk: (text) => {
           const idx = messages.value.findIndex(m => m.id === streamTargetId)
           if (idx !== -1) {
@@ -484,13 +563,15 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /* Send a user turn. With no open conversation the request itself
-     creates one (lazy, §3) and the URL updates to /c/{id}.        */
-  async function sendMessage(content, files = []) {
+     creates one (lazy, §3) and the URL updates to /c/{id}.
+     opts.mode — composer mode ('chat' | 'web_search' | 'agent');
+                 omitted → the current composer mode is used.       */
+  async function sendMessage(content, files = [], opts = {}) {
     const isNew = !activeChat.value
     const url = isNew
       ? '/chats/messages/stream'
       : `/chats/${activeChat.value.id}/messages/stream`
-    await runGeneration({ url, content, files, isNew })
+    await runGeneration({ url, content, files, mode: opts.mode ?? null, isNew })
   }
 
   /* Regenerate the response for a specific user turn (§19).
@@ -660,11 +741,13 @@ export const useChatStore = defineStore('chat', () => {
     loading.value = false
     sending.value = false
     streaming.value = false
+    composerMode.value = 'chat'
+    resetSearchActivity()
   }
 
   return {
     chats, activeChat, messages, loading, loadError, sending, streaming, searchResults, stats,
-    pinnedChats, recentChats, chatPrefs, limitReachedInfo,
+    pinnedChats, recentChats, chatPrefs, limitReachedInfo, composerMode, webSearchActivity,
     fetchChats, fetchStats, loadChat, startNewChat, clearLoadError, renameChat, pinChat,
     deleteChat, deleteAllChats, getPrefs, setPrefs, sendMessage, editMessage, regenerate, switchVersion,
     retry, stopGeneration, deleteMessage, searchMessages, clearSearch,

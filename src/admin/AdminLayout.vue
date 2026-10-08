@@ -153,6 +153,7 @@ const nav = computed(() => [
   ]},
   { label: 'AI & SYSTEM', items: [
     { path: '/admin/ai', icon: 'fas fa-robot', label: 'AI Control' },
+    { path: '/admin/websearch', icon: 'fas fa-globe', label: 'Web Search' },
     { path: '/admin/ai-testing', icon: 'fas fa-flask', label: 'AI Testing' },
     { path: '/admin/health', icon: 'fas fa-heart-pulse', label: 'System Health' },
     { path: '/admin/usage', icon: 'fas fa-gauge-high', label: 'Usage' },
@@ -184,6 +185,7 @@ const PAGE_META = {
   '/admin/moderation': ['Moderation', 'Flagged content and reports'],
   '/admin/notifications': ['Alerts', 'Real system events that need attention'],
   '/admin/ai': ['AI Control', 'Provider, models and runtime configuration'],
+  '/admin/websearch': ['Web Search', 'LangSearch analytics, health and configuration'],
   '/admin/ai-testing': ['AI Testing', 'Diagnose the configured AI system'],
   '/admin/health': ['System Health', 'Is KinyaBot operational?'],
   '/admin/usage': ['Usage', 'Real consumption across the platform'],

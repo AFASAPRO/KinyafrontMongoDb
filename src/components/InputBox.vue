@@ -74,6 +74,53 @@
       <!-- Toolbar -->
       <div class="toolbar">
         <div class="tl-left">
+          <!-- Mode selector: Chat / Web Search / Agent (§39/§40).
+               Chat is (and stays) the default; Web Search carries a
+               Pro lock for unentitled accounts and opens the upgrade
+               modal instead of sending a doomed request.            -->
+          <div class="mode-wrap" ref="modeWrapEl" @keydown.esc="modeOpen=false">
+            <button
+              class="tb-btn mode-btn"
+              :class="{ on: modeOpen || mode !== 'chat' }"
+              @click="modeOpen=!modeOpen"
+              aria-label="Conversation mode"
+              aria-haspopup="menu"
+              :aria-expanded="modeOpen ? 'true' : 'false'"
+              title="Conversation mode"
+            >
+              <AnimatedIcon :icon="modeMeta.icon" animation="subtle-hover" />
+              <span class="tb-label">{{ modeMeta.label }}</span>
+              <i class="fas fa-chevron-down mode-caret" aria-hidden="true"></i>
+            </button>
+            <transition name="pop">
+              <div v-if="modeOpen" class="mode-menu" role="menu" aria-label="Conversation mode options">
+                <button class="am-item" role="menuitemradio" :aria-checked="mode==='chat'" @click="pickMode('chat')">
+                  <AnimatedIcon icon="fas fa-comments" animation="subtle-hover" />
+                  <span>
+                    <b>Chat</b>
+                    <small>Normal conversation — auto web search when needed</small>
+                  </span>
+                  <i v-if="mode==='chat'" class="fas fa-check am-check" aria-hidden="true"></i>
+                </button>
+                <button class="am-item" role="menuitemradio" :aria-checked="mode==='web_search'" :class="{ locked: !canWebSearch }" @click="pickMode('web_search')">
+                  <AnimatedIcon icon="fas fa-globe" animation="subtle-hover" />
+                  <span>
+                    <b>Web Search <i v-if="!canWebSearch" class="fas fa-lock lock-ic" aria-label="Pro feature"></i><em v-if="!canWebSearch" class="pro-tag">Pro</em></b>
+                    <small>Always research the live web with citations</small>
+                  </span>
+                  <i v-if="mode==='web_search'" class="fas fa-check am-check" aria-hidden="true"></i>
+                </button>
+                <button class="am-item" role="menuitemradio" :aria-checked="mode==='agent'" :class="{ locked: !canAgent }" @click="pickMode('agent')">
+                  <AnimatedIcon icon="fas fa-robot" animation="subtle-hover" />
+                  <span>
+                    <b>Agent <i v-if="!canAgent" class="fas fa-lock lock-ic" aria-label="Not available on your plan"></i></b>
+                    <small>Tool-using assistant — can search the web</small>
+                  </span>
+                  <i v-if="mode==='agent'" class="fas fa-check am-check" aria-hidden="true"></i>
+                </button>
+              </div>
+            </transition>
+          </div>
           <!-- Attach menu: 📎 → 🖼 Image / 📄 Document -->
           <div class="attach-wrap" ref="attachWrapEl" @keydown.esc="attachOpen=false">
             <button
@@ -177,9 +224,16 @@ const props = defineProps({
   // Centered hero mode (desktop empty state) — tighter chrome,
   // disclaimer hidden, the welcome layout provides spacing.
   centered: Boolean,
-  suggestionsEnabled: { type: Boolean, default: true }
+  suggestionsEnabled: { type: Boolean, default: true },
+  // Conversation mode plumbing (Web Search §39): the selected mode is
+  // echoed back through `update:mode` and sent with every message.
+  mode: { type: String, default: 'chat' },
+  // Plan entitlements (server remains the authority — this only hides
+  // and routes to the upgrade modal, §2 "do not rely only on frontend")
+  canWebSearch: { type: Boolean, default: false },
+  canAgent: { type: Boolean, default: false },
 })
-const emit  = defineEmits(['send', 'focus', 'files-consumed'])
+const emit  = defineEmits(['send', 'focus', 'files-consumed', 'update:mode', 'upgrade'])
 
 const inputVal     = ref('')
 const attachments  = ref([])   // { id, file, isImg, url, name, sizeLabel, kindLabel, icon, error }
@@ -261,6 +315,22 @@ watch(inputVal, () => {
   suggestionsDismissed.value = false
   activeSuggestion.value = 0
 })
+
+/* ── Mode selector (Web Search §39) ─────────────────────────── */
+const modeOpen = ref(false)
+const modeWrapEl = ref(null)
+const MODE_META = {
+  chat:       { label: 'Chat',       icon: 'fas fa-comments' },
+  web_search: { label: 'Web Search', icon: 'fas fa-globe' },
+  agent:      { label: 'Agent',      icon: 'fas fa-robot' },
+}
+const modeMeta = computed(() => MODE_META[props.mode] || MODE_META.chat)
+function pickMode(m) {
+  modeOpen.value = false
+  if (m === 'web_search' && !props.canWebSearch) { emit('upgrade'); return }
+  if (m === 'agent' && !props.canAgent) return
+  emit('update:mode', m)
+}
 
 /* ── Attach menu ─────────────────────────────────────────────── */
 const attachOpen = ref(false)
@@ -413,9 +483,10 @@ function showNotice(msg) {
   noticeTimer = setTimeout(() => { notice.value = '' }, 6000)
 }
 
-/* Close attach menu on outside click */
+/* Close attach + mode menus on outside click */
 function onDocClick(e) {
   if (attachOpen.value && attachWrapEl.value && !attachWrapEl.value.contains(e.target)) attachOpen.value = false
+  if (modeOpen.value && modeWrapEl.value && !modeWrapEl.value.contains(e.target)) modeOpen.value = false
 }
 
 /* ── Composer basics ─────────────────────────────────────────── */
@@ -493,7 +564,7 @@ function submit() {
   const files = attachments.value.map(a => a.file)
   if (!content && !files.length) return
   sendTrigger.value += 1
-  emit('send', { content, files })
+  emit('send', { content, files, mode: props.mode })
   // Guest mode keeps the draft so closing the auth gate returns the
   // user to their message exactly as they typed it.
   if (props.preserveOnSend) return
@@ -612,6 +683,7 @@ function onKey(e) {
   if (e.key === 'Escape') {
     taRef.value?.blur()
     attachOpen.value = false
+    modeOpen.value = false
     if (isRec.value) stopRecording()
   }
 }
@@ -689,6 +761,25 @@ onBeforeUnmount(() => {
 
 /* Attach menu */
 .attach-wrap { position:relative; display:flex; }
+/* Mode selector (Web Search §39) */
+.mode-wrap { position:relative; display:flex; }
+.mode-btn .mode-caret { font-size:9px; opacity:.55; margin-left:-2px; }
+.mode-menu {
+  position:absolute; bottom:calc(100% + 8px); left:0;
+  min-width:270px; background:var(--bg-card);
+  border:1px solid var(--border-md); border-radius:12px;
+  padding:6px; z-index:30;
+  box-shadow:0 12px 32px rgba(0,0,0,.45);
+  animation:popIn .16s ease;
+}
+.mode-menu .am-item.locked b .pro-tag {
+  font-style:normal; font-size:9px; font-weight:800; letter-spacing:.06em;
+  color:var(--brand-text); background:var(--brand-soft);
+  border:1px solid rgba(99,102,241,.3); border-radius:99px; padding:1.5px 7px; margin-left:6px;
+  vertical-align:middle;
+}
+.mode-menu .lock-ic { font-size:10px !important; width:auto !important; height:auto !important; background:none !important; border:none !important; color:var(--text-3) !important; margin-left:5px; }
+.am-check { width:auto !important; height:auto !important; background:none !important; border:none !important; color:var(--brand-text) !important; font-size:11px !important; margin-left:auto; }
 .attach-menu {
   position:absolute; bottom:calc(100% + 8px); left:0;
   min-width:230px; background:var(--bg-card);
