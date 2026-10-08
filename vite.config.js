@@ -130,7 +130,6 @@ export default defineConfig({
         // re-download the whole dependency graph (faster PWA updates)
         manualChunks: {
           'vendor-vue': ['vue', 'vue-router', 'pinia'],
-          'vendor-firebase': ['firebase/app', 'firebase/auth'],
           'vendor-markdown': ['marked', 'highlight.js'],
           'vendor-socket': ['socket.io-client'],
           'vendor-axios': ['axios'],

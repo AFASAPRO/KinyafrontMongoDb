@@ -54,6 +54,8 @@ const routes = [
   { path: '/register',        component: () => import('../views/RegisterView.vue'),         meta: { guestOnly: true } },
   { path: '/verify-email',    redirect: '/onboarding' },
   { path: '/onboarding',      component: () => import('../views/OnboardingView.vue'),       meta: { requiresAuth: true } },
+  // Google OAuth return page: exchanges the one-time code for a KinyaBot session
+  { path: '/auth/google/callback', component: () => import('../views/GoogleCallbackView.vue') },
   { path: '/forgot-password', component: () => import('../views/ForgotPasswordView.vue'),   meta: { guestOnly: true } },
   { path: '/reset-password',  component: () => import('../views/ResetPasswordView.vue'),    meta: { guestOnly: true } },
 

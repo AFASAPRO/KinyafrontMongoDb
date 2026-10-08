@@ -107,11 +107,12 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import { isLightMode } from '../theme'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import MobileAuthShell from '../components/mobile/MobileAuthShell.vue'
 import DesktopAuthShell from '../components/desktop/DesktopAuthShell.vue'
 import { useIsMobile } from '../composables/useIsMobile'
+import { googleErrorMessage } from '../utils/googleAuthErrors'
 
 const isMobile = useIsMobile()
 const socialToast = ref('')
@@ -159,17 +160,22 @@ async function handleRegister() {
   } catch(err){ serverError.value=err.response?.data?.error||'Registration failed.' }
   finally{loading.value=false}
 }
-async function handleGoogleRegister() {
+function handleGoogleRegister() {
+  if (loading.value) return            // prevent duplicate clicks
   serverError.value = ''; loading.value = true
-  try {
-    const result = await auth.loginWithGoogle()
-    rememberAuthMethod('google')
-    router.push(result.user.onboarded ? '/' : '/onboarding')
-  } catch(err) {
-    serverError.value = err.response?.data?.error || 'Google sign-up failed. Please try again.'
-  } finally {
-    loading.value = false
-  }
+  // Full-page redirect: backend → Google → backend → back to /chat/auth/google/callback
+  auth.startGoogleLogin({ from: 'register' })
+}
+
+// Google sent the user back with an error (cancelled, expired, …)
+const route = useRoute()
+if (typeof route.query.google_error === 'string') {
+  serverError.value = googleErrorMessage(route.query.google_error)
+  router.replace({ path: route.path, query: { ...route.query, google_error: undefined } })
+}
+// Back/forward cache: returning from Google's page must not leave the button spinning
+if (typeof window !== 'undefined') {
+  window.addEventListener('pageshow', (e) => { if (e.persisted) loading.value = false })
 }
 </script>
 
@@ -183,6 +189,7 @@ async function handleGoogleRegister() {
 .social-btn { min-height: 43px; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 9px 16px; background: var(--bg-card); border: 1px solid var(--border-md); border-radius: 9px; color: var(--text-1); font-size: 13px; font-weight: 600; transition: background .18s, border-color .18s, transform .18s; }
 .social-btn:hover { background: var(--bg-hover); border-color: var(--text-3); transform: translateY(-1px); }
 .social-btn:focus-visible, .submit-btn:focus-visible, .eye-btn:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent-solid) 35%, transparent); outline-offset: 2px; }
+.social-btn:disabled { opacity: .65; cursor: wait; transform: none; }
 .fa-google { color: #ea4335; font-size: 15px; }
 .fa-apple { font-size: 16px; }
 .divider { display: flex; align-items: center; gap: 12px; color: var(--text-3); font-size: 10px; font-weight: 700; letter-spacing: .1em; margin-bottom: .9rem; }

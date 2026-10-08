@@ -44,8 +44,8 @@
 
     <div class="m-or"><span>Or</span></div>
     <div class="m-social">
-      <button type="button" @click="showOAuth('Google')" aria-label="Continue with Google" :title="lastAuthMethod === 'google' ? 'Last used sign-in method: Google' : 'Continue with Google'">
-        <i class="fab fa-google"></i><span v-if="lastAuthMethod === 'google'" class="last-used-badge" aria-hidden="true">Last used</span>
+      <button type="button" @click="showOAuth('Google')" :disabled="loading" aria-label="Continue with Google" :title="lastAuthMethod === 'google' ? 'Last used sign-in method: Google' : 'Continue with Google'">
+        <i :class="loading ? 'fas fa-spinner fa-spin' : 'fab fa-google'"></i><span v-if="lastAuthMethod === 'google'" class="last-used-badge" aria-hidden="true">Last used</span>
       </button>
       <button type="button" @click="showOAuth('Apple')" aria-label="Continue with Apple"><i class="fab fa-apple"></i></button>
     </div>
@@ -94,8 +94,8 @@
 
         <form v-else @submit.prevent="handleLogin" novalidate>
           <div class="social-btns">
-            <button type="button" class="social-btn" @click="showOAuth('Google')">
-              <i class="fab fa-google"></i><span>Continue with Google</span>
+            <button type="button" class="social-btn" :disabled="loading" @click="showOAuth('Google')">
+              <i :class="loading ? 'fas fa-spinner fa-spin' : 'fab fa-google'"></i><span>{{ loading ? 'Connecting to Google…' : 'Continue with Google' }}</span>
               <span v-if="lastAuthMethod === 'google'" class="last-used-badge" aria-hidden="true">Last used</span>
             </button>
             <button type="button" class="social-btn" @click="showOAuth('Apple')">
@@ -174,6 +174,7 @@ import { isLightMode, toggleThemeMode } from '../theme'
 import MobileAuthShell from '../components/mobile/MobileAuthShell.vue'
 import DesktopAuthShell from '../components/desktop/DesktopAuthShell.vue'
 import { useIsMobile } from '../composables/useIsMobile'
+import { googleErrorMessage } from '../utils/googleAuthErrors'
 
 const isMobile = useIsMobile()
 
@@ -223,20 +224,26 @@ function afterAuth(result) {
   else router.push(redirectTarget)
 }
 
-async function showOAuth(provider) {
+function showOAuth(provider) {
   if (provider === 'Google') {
+    if (loading.value) return            // prevent duplicate clicks
     serverError.value = ''; loading.value = true
-    try {
-      const result = await auth.loginWithGoogle()
-      rememberAuthMethod('google')
-      afterAuth(result)
-    } catch (err) {
-      serverError.value = err.response?.data?.error || 'Google login failed. Please try again.'
-    } finally { loading.value = false }
+    // Full-page redirect: backend → Google → backend → back to /chat/auth/google/callback
+    auth.startGoogleLogin({ from: 'login', redirect: redirectTarget })
   } else {
     oauthToast.value = provider
     setTimeout(() => { oauthToast.value = '' }, 3500)
   }
+}
+
+// Google sent the user back with an error (cancelled, expired, …)
+if (typeof route.query.google_error === 'string') {
+  serverError.value = googleErrorMessage(route.query.google_error)
+  router.replace({ path: route.path, query: { ...route.query, google_error: undefined } })
+}
+// Back/forward cache: returning from Google's page must not leave the button spinning
+if (typeof window !== 'undefined') {
+  window.addEventListener('pageshow', (e) => { if (e.persisted) loading.value = false })
 }
 
 // Reactive theme state — shared across the whole app (see src/theme.js).
@@ -292,6 +299,7 @@ async function handleForgot() {
 .m-social button .last-used-badge { position:absolute; right:-8px; top:-8px; margin:0; background:var(--bg-base); }
 .social-btn:hover { background: var(--bg-hover); border-color: var(--text-3); transform: translateY(-1px); }
 .social-btn:focus-visible, .submit-btn:focus-visible, .eye-btn:focus-visible, .forgot-link:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent-solid) 35%, transparent); outline-offset: 2px; }
+.social-btn:disabled { opacity: .65; cursor: wait; transform: none; }
 .fa-google { color: #ea4335; font-size: 16px; }
 .fa-apple { font-size: 17px; }
 .divider { display: flex; align-items: center; gap: 13px; color: var(--text-3); font-size: 10px; font-weight: 700; letter-spacing: .1em; margin: 0 0 1.15rem; }

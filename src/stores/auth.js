@@ -1,8 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '../api'
-import { auth as firebaseAuth, googleProvider } from '../firebase'
-import { signInWithPopup } from 'firebase/auth'
 
 /**
  * Authentication store — explicit state machine.
@@ -90,10 +88,28 @@ export const useAuthStore = defineStore('auth', () => {
     return data
   }
 
-  async function loginWithGoogle() {
-    const result = await signInWithPopup(firebaseAuth, googleProvider)
-    const idToken = await result.user.getIdToken()
-    const { data } = await api.post('/auth/google', { idToken })
+  /* ── Google sign-in (official OAuth 2.0, controlled by the backend) ──
+     1. startGoogleLogin()  → full-page redirect to  <API>/auth/google
+        (backend → Google consent screen → backend callback)
+     2. Backend redirects back to /chat/auth/google/callback?code=<one-time>
+     3. completeGoogleLogin(code) swaps that single-use code for the normal
+        KinyaBot { token, user } — identical to e-mail/password login.
+     No Google secret or token ever exists in the frontend.              */
+  function googleStartUrl({ from = 'login', redirect = '' } = {}) {
+    const base = String(import.meta.env.VITE_API_URL || '/api').replace(/\/+$/, '')
+    const u = new URL(`${base}/auth/google`, window.location.origin)
+    u.searchParams.set('origin', window.location.origin)
+    u.searchParams.set('from', from)
+    if (redirect && redirect !== '/') u.searchParams.set('redirect', redirect)
+    return u.toString()
+  }
+
+  function startGoogleLogin(opts) {
+    window.location.assign(googleStartUrl(opts))
+  }
+
+  async function completeGoogleLogin(code) {
+    const { data } = await api.post('/auth/google/exchange', { code })
     applyAuth(data)
     return data
   }
@@ -171,7 +187,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     token, user, status, isLoggedIn, needsOnboarding, needsEmailVerification, sessionExpired,
-    init, login, loginWithGoogle, register, completeOnboarding, fetchProfile, updateProfile,
+    init, login, startGoogleLogin, completeGoogleLogin, register, completeOnboarding, fetchProfile, updateProfile,
     forgotPassword, verifyOtp, resetPassword, sendVerification, verifyEmail, inviteTeammate, logout
   }
 })

@@ -2,3 +2,7 @@ node_modules/
 dist/
 .env
 uploads/
+
+# Google OAuth credential files
+client_secret*.json
+*.apps.googleusercontent.com.json

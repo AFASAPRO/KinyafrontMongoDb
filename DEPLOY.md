@@ -80,3 +80,14 @@ npm run preview        # serves dist/ — note: preview does not apply vercel.js
 - **`[kb-merge] landing-dist/ is missing`**: the build was run from a copy
   of the project that omitted `frontend/landing-dist/`. Copy it back — it
   is required (it IS the landing page).
+
+## Google sign-in (OAuth 2.0, no Firebase)
+
+"Continue with Google" is a backend-controlled OAuth 2.0 / OIDC authorization-code flow
+(`backend/routes/googleAuth.js`): SPA → `GET <API>/auth/google` → Google → `GET <API>/auth/google/callback`
+→ SPA `/chat/auth/google/callback?code=<one-time>` → `POST <API>/auth/google/exchange` → normal KinyaBot JWT.
+
+Render (backend) environment variables: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
+`GOOGLE_CALLBACK_URL=https://backendkiny1.onrender.com/api/auth/google/callback`, `FRONTEND_URL=https://www.kinyabotai.online`.
+Google Cloud Console → Authorized redirect URI must equal `GOOGLE_CALLBACK_URL` exactly.
+The client secret lives ONLY on the backend — never in Vercel/`VITE_*` variables.
