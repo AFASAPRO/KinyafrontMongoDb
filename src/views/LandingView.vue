@@ -324,7 +324,7 @@
           "@type": "ListItem",
           "position": 1,
           "name": "Home",
-          "item": "https://kinyabotai.vercel.app/"
+          "item": "https://kinyabotai.online/"
         }
       ]
     }

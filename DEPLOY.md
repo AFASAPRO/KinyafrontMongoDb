@@ -1,12 +1,18 @@
 # Deploying KinyaBot
 
+## Production domain
+
+Canonical site: **https://kinyabotai.online** (`www.kinyabotai.online` is also valid; Vercel handles the
+root↔www redirect — the app adds none). Production env: Render `FRONTEND_URL=https://kinyabotai.online`;
+Vercel `VITE_API_URL=<Render backend URL>/api`.
+
 ## What runs where
 
 | Piece | Host | Notes |
 |---|---|---|
 | Landing page (`/`) | Vercel | Static clone built from `frontend/landing-dist/` |
 | Chat SPA (`/chat/`) | Vercel | Vue 3 app, requires login (guests are sent to the landing page) |
-| API server | Render | `backend/` — unchanged, already allows the Vercel domain |
+| API server | Render | `backend/` — CORS/Socket.IO allow `https://kinyabotai.online` and `https://www.kinyabotai.online` |
 
 The **build assembles everything automatically**: `vite build` produces a
 `dist/` folder that already contains the landing page at the root and the

@@ -1,4 +1,4 @@
-# KinyaBot AI – https://kinyabotai.vercel.app/
+# KinyaBot AI – https://kinyabotai.online/
 # Allow all crawlers to index the marketing landing page
 
 User-agent: *
@@ -10,4 +10,4 @@ Disallow: /chat/admin/
 Disallow: /chat/onboarding
 
 # Sitemap location
-Sitemap: https://kinyabotai.vercel.app/sitemap.xml
+Sitemap: https://kinyabotai.online/sitemap.xml
