@@ -14,6 +14,20 @@
       <div v-if="chatStore.activeChat" class="chat-title-pill">
         {{ chatStore.activeChat.title }}
       </div>
+      <!-- Agent workspace (§5): reopen the panel from the topbar
+           whenever a task belongs to this conversation. -->
+      <button
+        v-if="agentTaskHere"
+        class="voice-pill agent-pill"
+        :class="{ live: agentBusyHere }"
+        @click="agentStore.openPanel()"
+        title="Agent workspace"
+        aria-label="Open agent workspace"
+      >
+        <AnimatedIcon icon="fas fa-table-columns" animation="subtle-hover" />
+        <span class="vp-label">Workspace</span>
+      </button>
+
       <!-- Voice Mode (optional, authed users) -->
       <button
         v-if="!guest"
@@ -97,6 +111,11 @@
         />
       </transition-group>
 
+      <!-- ═══ AGENT LIVE TASK CARD (§16/§26): progress + workspace
+           door for the task bound to THIS conversation. The final
+           result arrives as a normal assistant message. ═══ -->
+      <AgentTaskCard v-if="agentTaskHere" class="agent-card-slot" />
+
       <!-- Suggested follow-ups (phones) -->
       <transition name="fade">
         <div v-if="isPhone && showFollowups" class="m-follow">
@@ -136,7 +155,7 @@
           centered
           class="wh-input"
           @send="handleSend"
-          :disabled="chatStore.sending"
+          :disabled="chatStore.sending || agentBusyHere"
           :preserve-on-send="guest"
           :suggestions-enabled="!hasMessages"
           :injected-text="composerInject"
@@ -229,7 +248,7 @@
     <InputBox
       v-if="hasMessages || isPhone"
       @send="handleSend"
-      :disabled="chatStore.sending"
+      :disabled="chatStore.sending || agentBusyHere"
       :preserve-on-send="guest"
       :suggestions-enabled="!hasMessages"
       :injected-text="composerInject"
@@ -262,6 +281,9 @@ import MessageBubble from './MessageBubble.vue'
 import InputBox from './InputBox.vue'
 import WebSearchUpgradeModal from './WebSearchUpgradeModal.vue'
 import AnimatedIcon from './AnimatedIcon.vue'
+import AgentTaskCard from './agent/AgentTaskCard.vue'
+import { useAgentStore } from '../stores/agent'
+import { useRouter } from 'vue-router'
 import { extractCodeFiles } from '../utils/codeArtifacts'
 // Lazy-loaded: Voice Mode pulls in three.js + the 3D character, so it
 // should only be downloaded when the person actually opens it.
@@ -291,6 +313,8 @@ const emit = defineEmits(['toggle-sidebar', 'auth-required', 'draft-consumed', '
 const chatStore = useChatStore()
 const auth = useAuthStore()
 const subscriptionStore = useSubscriptionStore()
+const agentStore = useAgentStore()
+const router = useRouter()
 const isPhone = useIsMobile()
 const hasMessages = computed(() => !!chatStore.activeChat && chatStore.messages.length > 0)
 const showSearchUpgrade = ref(false)
@@ -299,6 +323,40 @@ const showSearchUpgrade = ref(false)
    which menu entry opens the upgrade modal. */
 const canWebSearch = computed(() => !props.guest && subscriptionStore.features?.webSearch === true)
 const canAgent = computed(() => !props.guest && subscriptionStore.features?.agentAccess === true)
+
+/* The workspace binds to the task whose conversation is open (§26).
+   Both sides use the chat's ObjectId string. */
+const agentTaskHere = computed(() => {
+  const t = agentStore.activeTask
+  return t && chatStore.activeChat && String(t.conversation_id) === String(chatStore.activeChat.id) ? t : null
+})
+const agentBusyHere = computed(() => !!agentTaskHere.value && agentStore.isActive)
+
+/* §25 restore: when a conversation with agent history loads (or a
+   task is mirrored in from another tab), bind its latest agent task
+   so the workspace (plan, terminal, files, changes, preview, logs)
+   rebuilds from REAL persisted events. Watching the DERIVED id (not
+   the chat) handles both load-timing and new messages naturally. */
+const lastAgentTaskId = computed(() => {
+  if (!chatStore.activeChat || props.guest) return null
+  for (let i = chatStore.messages.length - 1; i >= 0; i--) {
+    if (chatStore.messages[i].agent_task_id) return chatStore.messages[i].agent_task_id
+  }
+  return null
+})
+watch(lastAgentTaskId, async (taskId) => {
+  if (!taskId) { agentStore.clearTask(); return }
+  // A LIVE task bound to this conversation always wins over history
+  // (a new task was just created here — don't rebind to an old one).
+  const t = agentStore.activeTask
+  if (t && agentStore.isActive && chatStore.activeChat && String(t.conversation_id) === String(chatStore.activeChat.id)) return
+  if (t?.id === taskId) return   // already bound
+  try {
+    await agentStore.loadTask(taskId)
+    // Restore is silent: panel stays closed; live tasks open it.
+    if (agentStore.isActive) agentStore.openPanel()
+  } catch { /* task may be pruned — workspace simply stays empty */ }
+}, { immediate: true })
 const firstName = computed(() => {
   const n = (auth.user?.username || '').trim().split(/\s+/)[0]
   return !props.guest && n ? n : ''
@@ -452,6 +510,15 @@ async function handleSend({ content, files, mode }) {
     emit('auth-required', { content, file: files?.[0] || null })
     return
   }
+
+  /* AGENT MODE (§4/§5): the prompt becomes an autonomous TASK —
+     not a chat stream. The backend persists the user message and
+  creates the conversation (§26), the workspace opens, and the
+     final result arrives later as a normal assistant message. */
+  if ((mode || chatStore.composerMode) === 'agent' && canAgent.value) {
+    await sendAgentTask(content)
+    return
+  }
   if (props.restoredDraft || props.restoredFile) emit('draft-consumed')
   try {
     await chatStore.sendMessage(content, files || [], { mode })
@@ -462,6 +529,51 @@ async function handleSend({ content, files, mode }) {
     if (err?.code === 'FEATURE_LOCKED' && err?.feature === 'webSearch') showSearchUpgrade.value = true
   }
   scrollBottom()
+}
+
+/* §4/§26: create an Agent task from the composer. Optimistic user
+   bubble; real persistence + conversation linkage happen server-side
+   (POST /agent/tasks creates both). New conversations navigate to
+   /c/{id} so history, result mirroring and restore all work.   */
+async function sendAgentTask(content) {
+  if (agentBusyHere.value) return   // one live task per conversation
+  const isNew = !chatStore.activeChat
+  const convId = chatStore.activeChat?.conversation_id || null
+
+  // Optimistic user bubble (replaced on next conversation load).
+  chatStore.messages.push({
+    id: `agent_user_${Date.now()}`,
+    chat_id: chatStore.activeChat?.id || null,
+    role: 'user',
+    content,
+    created_at: new Date().toISOString(),
+    message_type: 'text',
+    _status: 'completed',
+  })
+  scrollBottom()
+
+  try {
+    const { conversationId } = await agentStore.createTask(content, convId)
+    agentStore.openPanel()
+    if (isNew && conversationId) {
+      // §26: the conversation now exists — route to it; the watcher
+      // above rebinds the task from the loaded messages.
+      router.push(`/c/${conversationId}`)
+    }
+  } catch (err) {
+    const code = err?.response?.data?.code
+    const msg = err?.response?.data?.error || 'The agent task could not be started.'
+    if (code === 'FEATURE_LOCKED' && err?.response?.data?.feature === 'agentAccess') { showSearchUpgrade.value = true; return }
+    // Roll the optimistic bubble into an honest error bubble.
+    chatStore.messages.push({
+      id: `agent_err_${Date.now()}`,
+      role: 'assistant',
+      content: `**Agent task failed to start.** ${msg}`,
+      created_at: new Date().toISOString(),
+      _error: true,
+    })
+    scrollBottom()
+  }
 }
 
 /* Message edit save (§17) — the store patches, supersedes the old
@@ -753,4 +865,17 @@ onBeforeUnmount(() => {
 @keyframes marqueeL { from { transform:translateX(0); } to { transform:translateX(-50%); } }
 @keyframes marqueeR { from { transform:translateX(-50%); } to { transform:translateX(0); } }
 @media (prefers-reduced-motion: reduce) { .m-chip-track { animation:none !important; } }
+
+/* ═══ AGENT V1 (§5/§16) ═════════════════════════════════════ */
+.agent-card-slot { margin: 6px 0 14px; }
+.agent-pill.live { color: var(--accent-cyan); border-color: rgba(34,211,238,.45); }
+.agent-pill.live::after {
+  content:''; width:7px; height:7px; border-radius:50%;
+  background: var(--accent-cyan);
+  animation: agentPulse 1.6s ease infinite;
+}
+@keyframes agentPulse {
+  0%,100% { box-shadow:0 0 0 0 rgba(34,211,238,.5); }
+  50% { box-shadow:0 0 0 5px rgba(34,211,238,0); }
+}
 </style>

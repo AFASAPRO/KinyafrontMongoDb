@@ -46,6 +46,17 @@ const routes = [
     component: () => import('../views/ChatView.vue'),
     meta: { requiresAuth: true }
   },
+  /* ═══ AGENT TASK ROUTE (§5) ═══
+     Deep link to one Agent task: /chat/agent/{taskRef}. ChatView
+     resolves the task server-side, jumps to its owning conversation
+     (mode 'agent') and opens the workspace bound to that task —
+     so shared links land on the exact task with its terminal,
+     files, changes, preview and logs.                                  */
+  {
+    path: '/agent/:taskRef',
+    component: () => import('../views/ChatView.vue'),
+    meta: { requiresAuth: true }
+  },
   // First-run mobile intro (image-1 style "Get Started" screen). Guest-only;
   // reachable by direct link — first-time visitors now meet the marketing
   // landing page at `/` instead.

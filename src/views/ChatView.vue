@@ -171,6 +171,14 @@
       />
     </div>
 
+    <!-- ═══ AGENT WORKSPACE (§5): the third column of the app-shell
+         row — resizable, collapsible; on phones it teleports to a
+         near-full-screen drawer. Mounted whenever the user is
+         authenticated so transitions and wiring stay alive. ═══ -->
+    <AgentWorkspace v-if="!isGuest">
+      <AgentWorkspacePanel />
+    </AgentWorkspace>
+
     <template v-if="!isGuest">
       <transition name="slide-r">
         <RightPanel v-if="rightOpen" @load-chat="handleLoadChat" @close="rightOpen=false" />
@@ -211,6 +219,8 @@ import AnimatedIcon from '../components/AnimatedIcon.vue'
 import Sidebar from '../components/Sidebar.vue'
 import ChatWindow from '../components/ChatWindow.vue'
 import RightPanel from '../components/RightPanel.vue'
+import AgentWorkspace from '../components/agent/AgentWorkspace.vue'
+import AgentWorkspacePanel from '../components/agent/AgentWorkspacePanel.vue'
 import AuthGateModal from '../components/AuthGateModal.vue'
 import SettingsModal from '../components/SettingsModal.vue'
 import LimitReachedModal from '../components/plans/LimitReachedModal.vue'
@@ -218,10 +228,12 @@ import UserToasts from '../components/plans/UserToasts.vue'
 import UpgradeCelebration from '../components/plans/UpgradeCelebration.vue'
 import { useIsMobile } from '../composables/useIsMobile'
 import { useSubscriptionStore } from '../stores/subscription'
+import { useAgentStore } from '../stores/agent'
 
 const auth = useAuthStore()
 const chatStore = useChatStore()
 const subStore = useSubscriptionStore()
+const agentStore = useAgentStore()
 const plansCatalog = computed(() => subStore.plansCatalog)
 const route = useRoute()
 const router = useRouter()
@@ -362,10 +374,26 @@ async function initAuthenticatedSession() {
   if (auth.token) {
     connectSocket(auth.token)
     chatStore.setupSocketListeners()
+    // Agent realtime (§15): binds AFTER the socket exists — the
+    // store then ingests agent_event messages on the SAME socket.
+    nextTick(() => { agentStore.bindSocket() })
   }
 
   await Promise.all([chatStore.fetchChats(), chatStore.fetchStats()])
   if (routeConversationId.value) await chatStore.loadChat(routeConversationId.value)
+
+  // Deep link: /agent/:taskRef (§5) → resolve the task, jump to its
+  // conversation, then open the workspace bound to that task.
+  const deepTask = route.params?.taskRef
+  if (deepTask) {
+    try {
+      const { task, conversationId } = await agentStore.loadTask(deepTask)
+      if (task && conversationId && routeConversationId.value !== conversationId) {
+        router.replace(`/c/${conversationId}`)
+      }
+      if (task) agentStore.openPanel()
+    } catch { /* unknown/expired task ref — stay on the current view */ }
+  }
 }
 
 // Transition guest → member the moment authentication succeeds
