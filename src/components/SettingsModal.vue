@@ -181,13 +181,41 @@
             </div>
           </div>
 
-          <!-- ── Notifications ── -->
+          <!-- ── Notifications (V1.2 §12: REAL permission + push state) ── -->
           <div v-if="activeTab==='notifications'" class="sm-section">
             <h2 class="sm-title">Notifications</h2>
+
             <div class="setting-row">
-              <div class="setting-info"><div class="setting-name">Browser Notifications</div><div class="setting-desc">Get notified when AI responds (requires permission)</div></div>
-              <button class="toggle" :class="{on:notifBrowser}" @click="toggleBrowserNotif"><span class="toggle-knob"></span></button>
+              <div class="setting-info">
+                <div class="setting-name">Agent task notifications</div>
+                <div class="setting-desc">A real notification when an Agent task completes, fails or needs your approval — delivered in-app, on desktop, and via push where supported.</div>
+              </div>
+              <button class="toggle" :class="{on: notifOn}" :disabled="notifBusy" @click="toggleNotifications"><span class="toggle-knob"></span></button>
             </div>
+
+            <!-- Honest current state + guidance (§12.A) -->
+            <div v-if="notifState === 'granted'" class="notif-state ok">
+              <i class="fas fa-circle-check"></i>
+              <span>Browser notifications are <b>allowed</b>{{ pushSubscribed ? ' and this device is subscribed to push' : '' }}.</span>
+            </div>
+            <div v-else-if="notifState === 'denied'" class="notif-state denied">
+              <i class="fas fa-circle-xmark"></i>
+              <span>Notifications are <b>blocked</b> for this site. To enable them: click the lock icon in the address bar → Site settings → Notifications → Allow, then reload the page.</span>
+            </div>
+            <div v-else-if="!desktopSupported" class="notif-state">
+              <i class="fas fa-circle-info"></i>
+              <span>This browser does not support system notifications — in-app notifications still work.</span>
+            </div>
+            <div v-else-if="!pushConfigured && notifState === 'granted'" class="notif-state">
+              <i class="fas fa-mobile-screen"></i>
+              <span>Desktop notifications are enabled. Push delivery to closed apps needs VAPID keys on the server (<code>npm run generate-vapid</code>).</span>
+            </div>
+
+            <div v-if="pushSubscribed" class="setting-row">
+              <div class="setting-info"><div class="setting-name">Push on this device</div><div class="setting-desc">Remove this device from push delivery (unsubscribing takes effect immediately).</div></div>
+              <button class="sm-btn danger" @click="unsubscribePush">Unsubscribe</button>
+            </div>
+
             <div class="setting-row">
               <div class="setting-info"><div class="setting-name">Sound Notification</div><div class="setting-desc">Play a sound when a response is ready</div></div>
               <button class="toggle" :class="{on:notifSound}" @click="notifSound=!notifSound"><span class="toggle-knob"></span></button>
@@ -215,9 +243,10 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useChatStore } from '../stores/chat'
+import { useNotificationsStore } from '../stores/notifications'
 import { themeMode, setThemeMode } from '../theme'
 
 defineEmits(['close'])
@@ -339,18 +368,48 @@ function exportData() {
 }
 
 // Notifications
-const notifBrowser = ref(false)
 const notifSound = ref(false)
 const notifEmail = ref(false)
 
-async function toggleBrowserNotif() {
-  if (!notifBrowser.value) {
-    const perm = await Notification.requestPermission()
-    if (perm === 'granted') notifBrowser.value = true
-    else alert('Notification permission denied. Please allow notifications in your browser settings.')
-  } else {
-    notifBrowser.value = false
+/* ── V1.2 §12: REAL notification settings backed by the store ──
+   The toggle reflects the browser's ACTUAL permission state (plus
+   the push subscription); enabling explains WHY and only then asks
+   the browser — never a blind prompt, never a fabricated state. */
+const notifStore = useNotificationsStore()
+const notifBusy = ref(false)
+const notifState = computed(() => notifStore.permission)
+const desktopSupported = computed(() => notifStore.desktopSupported)
+const pushConfigured = computed(() => notifStore.push.configured)
+const pushSubscribed = computed(() => notifStore.push.subscribed)
+const notifOn = computed(() => notifStore.permission === 'granted')
+
+onMounted(async () => {
+  await notifStore.refreshPermission()
+  notifStore.refreshPushState()
+})
+
+async function toggleNotifications() {
+  if (notifOn.value) {
+    // Turning off: remove the push subscription (permission itself
+    // stays at the browser level; we stop delivering to this device).
+    await notifStore.disablePush()
+    await notifStore.refreshPermission()
+    return
   }
+  notifBusy.value = true
+  try {
+    const r = await notifStore.enable({ wantPush: true })
+    if (!r.ok && r.reason === 'permission') {
+      // Denied — the honest guidance is already rendered below.
+      await notifStore.refreshPermission()
+    }
+  } finally {
+    notifBusy.value = false
+  }
+}
+
+async function unsubscribePush() {
+  await notifStore.disablePush()
 }
 
 // Shortcuts
@@ -384,6 +443,15 @@ const shortcuts = [
 .sm-title { font-size:16px;font-weight:700;color:var(--text-1);margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border) }
 
 .setting-row { display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);gap:16px }
+/* V1.2 §12: honest notification permission/push state rows */
+.notif-state { display:flex;align-items:flex-start;gap:9px;margin:4px 0 8px;padding:11px 13px;border-radius:var(--r-sm);font-size:12.5px;line-height:1.5;color:var(--text-2);background:var(--bg-input);border:1px solid var(--border) }
+.notif-state i { margin-top:2px;flex-shrink:0 }
+.notif-state.ok { border-color:rgba(52,211,153,.35); }
+.notif-state.ok i { color:var(--green, #34d399) }
+.notif-state.denied { border-color:rgba(239,68,68,.35); }
+.notif-state.denied i { color:var(--red, #ef4444) }
+.notif-state b { color:var(--text-1) }
+.notif-state code { font-size:11px }
 .setting-row.col { flex-direction:column;align-items:stretch }
 .setting-info { flex:1;min-width:0 }
 .setting-name { font-size:13.5px;font-weight:500;color:var(--text-1);margin-bottom:2px }

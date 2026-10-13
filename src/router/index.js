@@ -97,6 +97,7 @@ const routes = [
       { path: 'moderation',    name: 'admin-moderation',component: () => import('../admin/views/ModerationView.vue') },
       { path: 'notifications', name: 'admin-alerts',    component: () => import('../admin/views/NotificationsView.vue') },
       { path: 'ai',            name: 'admin-ai',        component: () => import('../admin/views/AIControlView.vue') },
+      { path: 'agent',         name: 'admin-agent',     component: () => import('../admin/views/AgentManagementView.vue') },
       { path: 'websearch',     name: 'admin-websearch', component: () => import('../admin/views/WebSearchView.vue') },
       { path: 'ai-testing',    name: 'admin-ai-test',   component: () => import('../admin/views/AITestingView.vue') },
       { path: 'health',        name: 'admin-health',    component: () => import('../admin/views/HealthView.vue') },

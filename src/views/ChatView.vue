@@ -91,6 +91,8 @@
             </div>
           </div>
           <div class="topbar-right">
+            <!-- V1.2 §12: real notifications (persistent history + push) -->
+            <NotificationsBell v-if="!isGuest" />
             <button
               class="topbar-action voice-action"
               type="button"
@@ -219,6 +221,7 @@ import AnimatedIcon from '../components/AnimatedIcon.vue'
 import Sidebar from '../components/Sidebar.vue'
 import ChatWindow from '../components/ChatWindow.vue'
 import RightPanel from '../components/RightPanel.vue'
+import NotificationsBell from '../components/NotificationsBell.vue'
 import AgentWorkspace from '../components/agent/AgentWorkspace.vue'
 import AgentWorkspacePanel from '../components/agent/AgentWorkspacePanel.vue'
 import AuthGateModal from '../components/AuthGateModal.vue'
@@ -351,6 +354,24 @@ function onMqChange(e) {
 }
 const rightOpen = ref(!mqMobile.matches && window.innerWidth > 1200)
 
+/* ═══ V1.2 §4: CHAT ↔ AGENT PANEL SWITCHING ═════════════════════
+   Selecting Agent mode CLOSES the Chat details/settings sidebar and
+   OPENS the Agent workspace panel; returning to Chat restores the
+   normal layout and closes the Agent panel. Central layout state
+   only (no DOM poking); works for the mode selector, sidebar nav and
+   deep links because they all flow through composerMode + the panel
+   store. A page refresh is never required.                      */
+watch(() => chatStore.composerMode, (mode) => {
+  if (mode === 'agent') {
+    if (rightOpen.value) rightOpen.value = false
+    // Open the workspace when there is something to show (live or
+    // finished task); with no task the composer hero stays clean.
+    if (agentStore.activeTask) agentStore.openPanel()
+  } else if (mode === 'chat') {
+    if (agentStore.panelOpen) agentStore.closePanel()
+  }
+})
+
 // Reactive theme state — shared with the rest of the app (src/theme.js)
 const isLightMode = sharedIsLightMode
 
@@ -365,7 +386,26 @@ onMounted(async () => {
 
   window.addEventListener('keydown', handleGlobalKeys)
   mqMobile.addEventListener('change', onMqChange)
+
+  /* V1.2 §12: notification clicks on an ALREADY-OPEN window arrive as
+     postMessages from the service worker — SPA-navigate to the deep
+     link (agent task, conversation…). */
+  window.addEventListener('message', onDeepLink)
 })
+onBeforeUnmount(() => {
+  window.removeEventListener('message', onDeepLink)
+  window.removeEventListener('keydown', handleGlobalKeys)
+  mqMobile.removeEventListener('change', onMqChange)
+})
+
+function onDeepLink(event) {
+  if (event.data?.type === 'kb_deep_link' && event.data.url) {
+    const url = String(event.data.url)
+    if (url.startsWith('/admin')) return   // the admin console owns those
+    const path = url.startsWith('/chat') ? url.replace(/^\/chat/, '') : url
+    router.push(path.startsWith('/') ? path || '/' : `/${path}`)
+  }
+}
 
 /** Load conversations + socket for a signed-in user (chat history restore).
     The conversation itself comes from the URL: /chat → empty home state

@@ -17,7 +17,7 @@
  *    always go straight to the network (auth, AI conversations, admin data).
  */
 
-const VERSION = '2.2.0'
+const VERSION = '2.3.0'
 const SHELL_CACHE = `kb-shell-${VERSION}`
 const ASSET_CACHE = `kb-assets-${VERSION}`
 const CDN_CACHE = `kb-cdn-${VERSION}`
@@ -70,41 +70,52 @@ self.addEventListener('message', (event) => {
   if (event.data === 'SKIP_WAITING') self.skipWaiting()
 })
 
-/* ── WEB PUSH (Superadmin alerts) ──────────────────────────────
-   Payload: { title, body, tag, url, priority, ts }
-   `url` is a real deep link into the Superadmin console — clicking
-   the notification opens that exact page (AI Control, Security,
-   Moderation, …). */
+/* ── WEB PUSH (user + Superadmin notifications, V1.2 §12) ──────
+   Payload: { title, body, tag, url, priority, kind, ts }
+   `url` is a REAL deep link — /chat/agent/<task_ref> for user task
+   events, /admin/… for Superadmin alerts. Clicking focuses an open
+   window and navigates it, or opens the target route.           */
 self.addEventListener('push', (event) => {
   let payload = {}
   try { payload = event.data ? event.data.json() : {} } catch { payload = { body: event.data?.text() || '' } }
   const title = payload.title || 'KinyaBot'
+  const isAdmin = String(payload.url || '').startsWith('/admin')
   const options = {
     body: payload.body || '',
     tag: payload.tag || 'kinyabot',
     renotify: !!payload.tag,
     requireInteraction: payload.priority === 'critical',
-    icon: '/chat/admin-icon-192.png',
-    badge: '/chat/admin-icon-192.png',
-    data: { url: payload.url || '/admin/dashboard' },
+    icon: isAdmin ? '/chat/admin-icon-192.png' : '/chat/icon-192.png',
+    badge: isAdmin ? '/chat/admin-icon-192.png' : '/chat/icon-192.png',
+    data: { url: payload.url || '/chat/' },
     vibrate: payload.priority === 'critical' ? [300, 120, 300] : [120],
   }
   event.waitUntil(self.registration.showNotification(title, options))
 })
 
-/* Deep link: focus an existing console window if there is one,
-   otherwise open the target route directly. */
+/* Deep link: focus an existing window under this origin if there is
+   one (console for /admin targets, the chat app for user targets) and
+   navigate it to the deep link; otherwise open a new window.     */
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const target = event.notification.data?.url || '/admin/dashboard'
+  const target = event.notification.data?.url || '/chat/'
   const fullUrl = new URL(target, self.location.origin).href
+  const wantsAdmin = target.startsWith('/admin')
   event.waitUntil((async () => {
     const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    // Prefer a window already showing the right surface…
     for (const client of clientList) {
-      // A console window is any client under the /chat/ scope showing /admin
-      if (client.url.includes('/admin')) {
+      const rightSurface = wantsAdmin ? client.url.includes('/admin') : client.url.includes('/chat')
+      if (rightSurface) {
         await client.focus()
-        // Navigate the focused console to the deep-link target
+        client.postMessage({ type: 'kb_deep_link', url: target })
+        return
+      }
+    }
+    // …else ANY window under our scope, navigated to the target.
+    for (const client of clientList) {
+      if (new URL(client.url).origin === self.location.origin) {
+        await client.focus()
         client.postMessage({ type: 'kb_deep_link', url: target })
         return
       }

@@ -102,6 +102,7 @@ const isEmpty = computed(() => data.value && !items.value.length)
 
 const categories = [
   { value: 'security', label: 'Security' }, { value: 'ai', label: 'AI' },
+  { value: 'agent', label: 'Agent' },
   { value: 'moderation', label: 'Moderation' }, { value: 'system', label: 'System' },
   { value: 'config', label: 'Config' }, { value: 'usage', label: 'Usage' },
 ]
@@ -125,6 +126,7 @@ function iconFor(n) {
   }
   if (n.category === 'security') return 'fas fa-shield-halved'
   if (n.category === 'ai') return 'fas fa-robot'
+  if (n.category === 'agent') return 'fas fa-terminal'
   if (n.category === 'moderation') return 'fas fa-flag'
   if (n.category === 'config') return 'fas fa-sliders'
   return map[n.type] || 'fas fa-bell'

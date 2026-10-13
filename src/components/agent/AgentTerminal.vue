@@ -31,6 +31,25 @@
         </div>
       </div>
 
+      <!-- V1.2 §9: uploaded project imported (extraction, not execution) -->
+      <div v-else-if="line.kind === 'upload'" class="term-research">
+        <i class="fas fa-file-arrow-up" aria-hidden="true"></i>
+        <div>
+          <code>{{ line.name }}</code>
+          <p class="dim">{{ line.note }}{{ line.skippedSecrets ? ` · ${line.skippedSecrets} secret file(s) skipped for safety` : '' }}</p>
+        </div>
+      </div>
+
+      <!-- V1.2 §10: web research — labeled so researched facts stay
+           visually DISTINCT from real command execution. -->
+      <div v-else-if="line.kind === 'search'" class="term-research">
+        <i class="fas fa-book-open" aria-hidden="true"></i>
+        <div>
+          <code>{{ line.query }}</code>
+          <p class="dim">{{ line.note }}</p>
+        </div>
+      </div>
+
       <!-- Output -->
       <pre v-if="line.output" class="term-out">{{ line.output }}</pre>
 
@@ -170,6 +189,20 @@ function fmtTime(iso) {
 .term-blocked > i { color: var(--ag-gold); margin-top: 2px; }
 .term-blocked code { color: var(--ag-text); word-break: break-all; }
 .term-blocked .dim { font-size: 11px; margin: 3px 0 0; font-family: var(--ag-font); }
+
+/* V1.2 §9/§10: imported-project + web-research lines — visually
+   distinct from command execution so researched facts and imports are
+   never mistaken for shell output. */
+.term-research {
+  display: flex; gap: 9px; padding: 10px 11px;
+  background: rgba(59,130,246,.07);
+  border: 1px solid rgba(59,130,246,.28);
+  border-radius: var(--ag-r-sm);
+  color: var(--ag-text-2);
+}
+.term-research > i { color: #60a5fa; margin-top: 2px; }
+.term-research code { color: var(--ag-text); word-break: break-all; }
+.term-research .dim { font-size: 11px; margin: 3px 0 0; font-family: var(--ag-font); }
 
 .term-fail { border-color: rgba(239,68,68,.35); }
 .term-fail .term-cmd { border-left: 2px solid var(--ag-danger); }

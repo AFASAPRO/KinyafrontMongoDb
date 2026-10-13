@@ -47,9 +47,9 @@
           <span class="nav-ico new"><AnimatedIcon icon="fas fa-plus" animation="press" /></span>
           <span class="nav-label">New chat</span>
         </button>
-        <button class="nav-item" title="Create Image" aria-label="Create Image" @click="openCanvas">
-          <span class="nav-ico"><AnimatedIcon icon="fas fa-image" animation="subtle-hover" /></span>
-          <span class="nav-label">Create Image</span>
+        <button class="nav-item" :class="{ active: chatStore.composerMode === 'agent' }" title="Agent Mode" aria-label="Agent Mode (AI development workspace)" @click="activateAgentMode">
+          <span class="nav-ico agent"><AnimatedIcon icon="fas fa-terminal" animation="subtle-hover" /></span>
+          <span class="nav-label">Agent Mode</span>
         </button>
         <button class="nav-item" title="Canvas" aria-label="Canvas" @click="openCanvas">
           <span class="nav-ico"><AnimatedIcon icon="fas fa-pen-to-square" animation="subtle-hover" /></span>
@@ -484,6 +484,17 @@ function openCanvas() {
   if (props.guest) { requireAuth(); return }
   emit('close-mobile'); showCanvas.value = true
 }
+
+/* V1.2 §5: the sidebar's Agent Mode entry — activates the agent
+   composer (and via the ChatView §4 watcher, closes the Chat details
+   sidebar + opens the Agent workspace). It can never trigger the
+   image-generation feature, which remains available in Canvas and
+   the chat composer. */
+function activateAgentMode() {
+  if (props.guest) { requireAuth(); return }
+  emit('close-mobile')
+  chatStore.composerMode = 'agent'
+}
 function openGuided() {
   if (props.guest) { requireAuth(); return }
   emit('close-mobile'); showGuided.value = true
@@ -610,6 +621,9 @@ onBeforeUnmount(() => {
 .nav { display:flex; flex-direction:column; gap:2px; padding-bottom:10px; }
 .nav-item { display:flex; align-items:center; gap:12px; width:100%; height:40px; padding:0 8px; border-radius:var(--r); background:none; border:none; color:var(--text-1); font-size:14.5px; font-weight:500; text-align:left; cursor:pointer; transition:background var(--t-fast); }
 .nav-item:hover { background:var(--bg-hover); }
+/* V1.2 §5: active navigation state for the Agent Mode entry */
+.nav-item.active { background:var(--bg-hover); color:var(--text-1); }
+.nav-item.active .nav-ico { color:var(--accent, #6366f1); }
 .nav-ico { width:24px; height:24px; display:grid; place-items:center; color:var(--icon); font-size:15px; flex-shrink:0; transition:color var(--t-fast); }
 .nav-item:hover .nav-ico { color:var(--icon-hover); }
 .nav-ico.new { width:28px; height:28px; margin:-2px; border-radius:50%; background:var(--bg-hover); color:var(--text-1); font-size:13px; }

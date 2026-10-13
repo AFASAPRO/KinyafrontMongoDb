@@ -526,7 +526,7 @@ function onVisualViewportChange() {
   }
 }
 
-async function handleSend({ content, files, mode }) {
+async function handleSend({ content, files, mode, referenceImageIds, projectZipId }) {
   // GUESTS: the AI is never contacted before authentication.
   // The typed message AND the attached file are handed to the auth
   // gate — the file is kept in memory (SPA navigation keeps it alive)
@@ -541,7 +541,7 @@ async function handleSend({ content, files, mode }) {
   creates the conversation (§26), the workspace opens, and the
      final result arrives later as a normal assistant message. */
   if ((mode || chatStore.composerMode) === 'agent' && canAgent.value) {
-    await sendAgentTask(content)
+    await sendAgentTask(content, { referenceImageIds, projectZipId })
     return
   }
   if (props.restoredDraft || props.restoredFile) emit('draft-consumed')
@@ -560,7 +560,7 @@ async function handleSend({ content, files, mode }) {
    bubble; real persistence + conversation linkage happen server-side
    (POST /agent/tasks creates both). New conversations navigate to
    /c/{id} so history, result mirroring and restore all work.   */
-async function sendAgentTask(content) {
+async function sendAgentTask(content, { referenceImageIds = [], projectZipId = null } = {}) {
   if (agentBusyHere.value) return   // one live task per conversation
   const isNew = !chatStore.activeChat
   const convId = chatStore.activeChat?.conversation_id || null
@@ -578,7 +578,7 @@ async function sendAgentTask(content) {
   scrollBottom()
 
   try {
-    const { conversationId } = await agentStore.createTask(content, convId)
+    const { conversationId } = await agentStore.createTask(content, convId, { referenceImageIds, projectZipId })
     agentStore.openPanel()
     if (isNew && conversationId) {
       // §26: the conversation now exists — route to it; the watcher
@@ -589,6 +589,18 @@ async function sendAgentTask(content) {
     const code = err?.response?.data?.code
     const msg = err?.response?.data?.error || 'The agent task could not be started.'
     if (code === 'FEATURE_LOCKED' && err?.response?.data?.feature === 'agentAccess') { showSearchUpgrade.value = true; return }
+    // Upload-related failures surface the backend's honest message.
+    if (code === 'AGENT_TASK_ACTIVE') {
+      chatStore.messages.push({
+        id: `agent_err_${Date.now()}`,
+        role: 'assistant',
+        content: `**A task is already running.** ${msg}`,
+        created_at: new Date().toISOString(),
+        _error: true,
+      })
+      scrollBottom()
+      return
+    }
     // Roll the optimistic bubble into an honest error bubble.
     chatStore.messages.push({
       id: `agent_err_${Date.now()}`,

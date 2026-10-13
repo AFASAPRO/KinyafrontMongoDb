@@ -153,6 +153,7 @@ const nav = computed(() => [
   ]},
   { label: 'AI & SYSTEM', items: [
     { path: '/admin/ai', icon: 'fas fa-robot', label: 'AI Control' },
+    { path: '/admin/agent', icon: 'fas fa-terminal', label: 'Agent Management' },
     { path: '/admin/websearch', icon: 'fas fa-globe', label: 'Web Search' },
     { path: '/admin/ai-testing', icon: 'fas fa-flask', label: 'AI Testing' },
     { path: '/admin/health', icon: 'fas fa-heart-pulse', label: 'System Health' },
