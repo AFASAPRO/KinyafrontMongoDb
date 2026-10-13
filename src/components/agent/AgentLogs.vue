@@ -1,5 +1,5 @@
 <template>
-  <div class="ag-logs" ref="scrollEl">
+  <div class="ag-logs ag-ui" ref="scrollEl">
     <div v-if="!filtered.length" class="lg-empty">
       <i class="fas fa-list-check" aria-hidden="true"></i>
       <p>Execution events appear here as they happen.</p>
@@ -38,6 +38,7 @@
  */
 import { ref, computed, watch, nextTick } from 'vue'
 import { useAgentStore } from '../../stores/agent'
+import '../../assets/agent.css'
 
 const agent = useAgentStore()
 const scrollEl = ref(null)
@@ -137,49 +138,46 @@ watch(() => agent.events.length, async () => {
 .ag-logs { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
 .lg-filters {
-  display: flex; gap: 4px; padding: 8px 10px; flex-wrap: wrap;
-  border-bottom: 1px solid var(--border-subtle, #172033);
-  background: var(--surface-secondary, #111827);
+  display: flex; gap: 4px; padding: 8px 12px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--ag-border);
 }
-:global(.light-mode) .lg-filters { background: #F3F5F9; border-bottom-color: #E3E7EF; }
 .lg-chip {
-  border: none; border-radius: 999px; padding: 3px 10px;
+  border: 1px solid transparent; border-radius: 999px; padding: 4px 11px;
   font-size: 11px; cursor: pointer;
-  background: transparent; color: var(--text-muted);
-  transition: background .12s, color .12s;
+  background: transparent; color: var(--ag-text-3);
+  transition: background .12s, color .12s, border-color .12s;
 }
-.lg-chip:hover { background: var(--surface-elevated, #151B2B); color: var(--text-primary); }
-.lg-chip.on { background: var(--brand-soft, rgba(99,102,241,.12)); color: var(--brand-text, #818CF8); font-weight: 600; }
+.lg-chip:hover { background: rgba(255,255,255,.05); color: var(--ag-text-2); }
+.lg-chip.on { background: var(--ag-card); color: var(--ag-text); border-color: var(--ag-border-2); font-weight: 600; }
 
-.lg-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--text-muted); font-size: 13px; }
+.lg-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--ag-text-3); font-size: 13px; }
 .lg-empty i { font-size: 26px; opacity: .5; }
 
-.lg-list { flex: 1; overflow-y: auto; padding: 6px 8px 16px; }
+.lg-list { flex: 1; overflow-y: auto; padding: 6px 10px 16px; }
 
 .lg-row {
   display: flex; gap: 8px; align-items: flex-start;
-  padding: 4px 6px; border-radius: var(--r-xs, 6px);
+  padding: 4px 6px; border-radius: 8px;
   font-size: 11.5px; line-height: 1.45;
 }
-.lg-row:hover { background: rgba(255,255,255,.025); }
-:global(.light-mode) .lg-row:hover { background: rgba(15,23,42,.04); }
+.lg-row:hover { background: rgba(255,255,255,.03); }
 
 .lg-ic {
   width: 22px; height: 22px; flex-shrink: 0;
   display: grid; place-items: center;
   border-radius: 6px; font-size: 10px;
-  color: var(--text-muted); background: var(--surface-elevated, #151B2B);
+  color: var(--ag-text-3); background: rgba(255,255,255,.05);
   margin-top: 1px;
 }
-.lg-ic.brand { color: var(--brand-text, #818CF8); }
-.lg-ic.cyan { color: var(--accent-cyan, #22D3EE); }
-.lg-ic.ok { color: var(--success, #22C55E); }
-.lg-ic.err { color: var(--error, #EF4444); }
-.lg-ic.warn { color: var(--warning, #F59E0B); }
+.lg-ic.brand { color: #60a5fa; }
+.lg-ic.cyan { color: var(--ag-accent-2); }
+.lg-ic.ok { color: var(--ag-accent-2); }
+.lg-ic.err { color: #f87171; }
+.lg-ic.warn { color: var(--ag-warn); }
 
 .lg-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.lg-type { color: var(--text-secondary); font-family: var(--font-mono, monospace); font-size: 11px; }
+.lg-type { color: var(--ag-text-2); font-family: var(--ag-mono); font-size: 11px; }
 .lg-data { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
-.lg-time { flex-shrink: 0; font-size: 10px; font-family: var(--font-mono, monospace); margin-top: 2px; }
-.dim { color: var(--text-muted); }
+.lg-time { flex-shrink: 0; font-size: 10px; font-family: var(--ag-mono); margin-top: 2px; }
+.dim { color: var(--ag-text-3); }
 </style>

@@ -1,36 +1,36 @@
 <template>
-  <!-- ═══ DESKTOP: resizable right column (§5) ═══ -->
+  <!-- ═══ DESKTOP: rounded "computer panel" column (§5, reference) ═ -->
   <aside
     v-if="!isMobile"
-    class="agent-ws"
+    class="ag-ws ag-ui"
     :class="{ open: agent.panelOpen }"
     :style="{ width: agent.panelOpen ? agent.panelWidth + 'px' : '0px' }"
     aria-label="Agent workspace"
   >
-    <!-- Drag-resize handle -->
+    <!-- Drag-resize handle (kept from V1 — real resizable panel) -->
     <div
       v-if="agent.panelOpen"
-      class="ws-resize"
+      class="ag-ws-resize"
       role="separator"
       aria-orientation="vertical"
       aria-label="Resize workspace"
       @pointerdown="startResize"
     ></div>
 
-    <div v-if="agent.panelOpen" class="ws-inner">
+    <div v-if="agent.panelOpen" class="ag-ws-inner">
       <slot />
     </div>
   </aside>
 
-  <!-- ═══ MOBILE: full-screen drawer (§5 responsive) ═══ -->
+  <!-- ═══ MOBILE: bottom sheet with grip (§5 responsive) ═════════ -->
   <teleport to="body">
-    <transition name="aw-fade">
-      <div v-if="isMobile && agent.panelOpen" class="aw-mob-overlay" @click="agent.closePanel()"></div>
+    <transition name="ag-fade">
+      <div v-if="isMobile && agent.panelOpen" class="ag-mob-overlay" @click="agent.closePanel()"></div>
     </transition>
-    <transition name="aw-slide-up">
-      <div v-if="isMobile && agent.panelOpen" class="aw-mob-sheet" role="dialog" aria-label="Agent workspace">
-        <div class="aw-mob-grip" @pointerdown="startSheetDrag"></div>
-        <div class="ws-inner">
+    <transition name="ag-sheet">
+      <div v-if="isMobile && agent.panelOpen" class="ag-mob-sheet ag-ui" role="dialog" aria-label="Agent workspace">
+        <div class="ag-mob-grip" @pointerdown="startSheetDrag"></div>
+        <div class="ag-ws-inner">
           <slot />
         </div>
       </div>
@@ -40,17 +40,16 @@
 
 <script setup>
 /**
- * KinyaBot Agent V1 — Workspace Shell (§5, §27)
- * ─────────────────────────────────────────────
- * The third column of the Agent layout:
- *   desktop → resizable right panel (360–720px, drag handle)
- *   mobile  → near-full-screen drawer with grip + backdrop
- *
- * Pure layout: the CONTENT (header/plan/tabs) is slotted in by
- * AgentWorkspacePanel.vue so the shell stays reusable.
+ * KinyaBot Agent V1.1 — Workspace Shell (reference "computer" panel)
+ * ─────────────────────────────────────────────────────────────────
+ * Same functional skeleton as V1 (resizable desktop column 360–760px,
+ * mobile bottom sheet with grip + backdrop) restyled to the reference:
+ * a rounded panel inset from the canvas edge instead of a flat column.
+ * The CONTENT is slotted by AgentWorkspacePanel.vue.
  */
 import { useAgentStore } from '../../stores/agent'
 import { useIsMobile } from '../../composables/useIsMobile'
+import '../../assets/agent.css'
 
 const agent = useAgentStore()
 const isMobile = useIsMobile()
@@ -62,8 +61,7 @@ function startResize(e) {
   e.target.setPointerCapture?.(e.pointerId)
   const onMove = (ev) => {
     if (!resizing) return
-    // width grows when the pointer moves LEFT of the right edge
-    agent.setWidth(window.innerWidth - ev.clientX)
+    agent.setWidth(window.innerWidth - ev.clientX - 10)
   }
   const onUp = () => {
     resizing = false
@@ -89,66 +87,69 @@ function startSheetDrag(e) {
 </script>
 
 <style scoped>
-/* ── Desktop panel ─────────────────────────────────────────── */
-.agent-ws {
+/* desktop: rounded panel floating on the canvas (reference) */
+.ag-ws {
   position: relative;
   flex-shrink: 0;
   height: 100vh; height: 100dvh;
-  background: var(--surface-sidebar);
-  border-left: 1px solid var(--border);
   overflow: hidden;
-  transition: width .18s ease;
+  transition: width .2s cubic-bezier(.2,.7,.2,1);
 }
-.agent-ws:not(.open) { border-left: none; }
+.ag-ws-inner {
+  height: 100%;
+  margin: 10px 10px 10px 0;      /* inset — the panel reads as floating */
+  border-radius: 16px;
+  background: var(--ag-panel);
+  border: 1px solid var(--ag-border);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  min-width: 340px;               /* content never reflows mid-drag */
+  box-shadow: 0 18px 50px rgba(0,0,0,.4);
+}
 
-.ws-resize {
+.ag-ws-resize {
   position: absolute; left: 0; top: 0; bottom: 0;
-  width: 7px; cursor: col-resize; z-index: 5;
+  width: 10px; cursor: col-resize; z-index: 5;
   touch-action: none;
 }
-.ws-resize::after {
-  content: ''; position: absolute; left: 3px; top: 50%;
+.ag-ws-resize::after {
+  content: ''; position: absolute; left: 4px; top: 50%;
   transform: translateY(-50%);
-  width: 2px; height: 42px; border-radius: 2px;
-  background: var(--border-strong);
+  width: 2.5px; height: 46px; border-radius: 3px;
+  background: var(--ag-border-2);
   opacity: 0; transition: opacity .15s;
 }
-.agent-ws:hover .ws-resize::after { opacity: .8; }
-.ws-resize:hover::after { background: var(--brand); opacity: 1; }
+.ag-ws:hover .ag-ws-resize::after { opacity: .9; }
+.ag-ws-resize:hover::after { background: var(--ag-accent); opacity: 1; }
 
-.ws-inner {
-  height: 100%;
-  display: flex; flex-direction: column;
-  min-width: 340px; /* content never reflows mid-drag */
-}
-
-/* ── Mobile drawer ─────────────────────────────────────────── */
-.aw-mob-overlay {
+/* mobile sheet */
+.ag-mob-overlay {
   position: fixed; inset: 0; z-index: 210;
-  background: rgba(2,4,10,.55);
-  backdrop-filter: blur(2px);
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(3px);
 }
-.aw-mob-sheet {
-  position: fixed; left: 0; right: 0; bottom: 0; top: 44px;
+.ag-mob-sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; top: 40px;
   z-index: 211;
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  border-radius: 16px 16px 0 0;
-  box-shadow: var(--shadow-md);
+  background: var(--ag-panel);
+  border-top: 1px solid var(--ag-border);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -18px 50px rgba(0,0,0,.5);
   display: flex; flex-direction: column;
   overflow: hidden;
 }
-.aw-mob-grip {
+.ag-mob-grip {
   position: absolute; top: 7px; left: 50%;
   transform: translateX(-50%);
   width: 44px; height: 5px; border-radius: 3px;
-  background: var(--border-strong);
+  background: var(--ag-border-2);
   cursor: grab; z-index: 6;
 }
+.ag-mob-sheet .ag-ws-inner { margin: 0; border-radius: 0; min-width: 0; }
 
 /* transitions */
-.aw-fade-enter-active, .aw-fade-leave-active { transition: opacity .18s ease; }
-.aw-fade-enter-from, .aw-fade-leave-to { opacity: 0; }
-.aw-slide-up-enter-active, .aw-slide-up-leave-active { transition: transform .22s cubic-bezier(.32,.72,.28,1); }
-.aw-slide-up-enter-from, .aw-slide-up-leave-to { transform: translateY(100%); }
+.ag-fade-enter-active, .ag-fade-leave-active { transition: opacity .18s ease; }
+.ag-fade-enter-from, .ag-fade-leave-to { opacity: 0; }
+.ag-sheet-enter-active, .ag-sheet-leave-active { transition: transform .24s cubic-bezier(.32,.72,.28,1); }
+.ag-sheet-enter-from, .ag-sheet-leave-to { transform: translateY(100%); }
 </style>

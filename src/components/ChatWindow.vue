@@ -1,5 +1,5 @@
 <template>
-  <div class="chat-window"
+  <div class="chat-window" :class="{ 'agent-mode': inAgentComposer }"
     @dragenter="onDragEnter"
     @dragover="onDragOver"
     @dragleave="onDragLeave"
@@ -111,10 +111,11 @@
         />
       </transition-group>
 
-      <!-- ═══ AGENT LIVE TASK CARD (§16/§26): progress + workspace
-           door for the task bound to THIS conversation. The final
-           result arrives as a normal assistant message. ═══ -->
-      <AgentTaskCard v-if="agentTaskHere" class="agent-card-slot" />
+      <!-- ═══ AGENT ACTIVITY TIMELINE (V1.1, reference ss1–ss3):
+           thinking globe · plan overview card · real file/command
+           activity · verification rows. The final result arrives as a
+           normal assistant message (§26). ═══ -->
+      <AgentTimeline v-if="agentTaskHere" class="agent-card-slot" />
 
       <!-- Suggested follow-ups (phones) -->
       <transition name="fade">
@@ -135,13 +136,17 @@
 
     <!-- ═══ DESKTOP CENTERED HOME (empty state) — greeting + centered
          composer + suggestion cards, styled after the marketing site ═══ -->
-    <div v-if="!isPhone && !hasMessages" class="welcome-hero">
+    <div v-if="!isPhone && !hasMessages" class="welcome-hero" :class="{ 'agent-hero': inAgentComposer }">
       <div class="wh-inner">
-        <div class="wh-brand">
+        <!-- V1.1 (reference ss4): in Agent mode the WHITE COMPOSER CARD is
+             the hero — the chat branding, serif greeting and chat suggestion
+             cards are suppressed so the agent empty state matches the
+             reference's clean composer-centered presentation. -->
+        <div v-if="!inAgentComposer" class="wh-brand">
           <img src="/logo.png" alt="" />
           <span>KinyaBot AI</span>
         </div>
-        <h1 class="wh-greet serif-display">
+        <h1 v-if="!inAgentComposer" class="wh-greet serif-display">
           <template v-for="(part, pi) in greeting.parts" :key="pi">
             <em v-if="part.hl">{{ part.t }}</em><template v-else>{{ part.t }}</template>
           </template>
@@ -151,7 +156,16 @@
           <strong>sign in to start chatting.</strong>
         </p>
 
+        <AgentComposer
+          v-if="inAgentComposer"
+          centered
+          class="wh-input ag-hero-composer"
+          :disabled="chatStore.sending"
+          @send="handleSend"
+          @switch-chat="chatStore.composerMode = 'chat'"
+        />
         <InputBox
+          v-else
           centered
           class="wh-input"
           @send="handleSend"
@@ -170,7 +184,8 @@
           @focus="scrollBottom"
         />
 
-        <div class="wh-cards">
+        <!-- V1.1: chat suggestion cards are hidden in Agent mode (see above) -->
+        <div v-if="!inAgentComposer" class="wh-cards">
           <button type="button" class="wh-card" @click="useChip('Tell me a fun fact I probably do not know and explain it simply')">
             <span class="whc-ic"><AnimatedIcon icon="fas fa-magnifying-glass" animation="subtle-hover" /></span>
             <span class="whc-body">
@@ -245,8 +260,14 @@
       </div>
     </transition>
 
+    <AgentComposer
+      v-if="inAgentComposer && (hasMessages || isPhone)"
+      :disabled="chatStore.sending"
+      @send="handleSend"
+      @switch-chat="chatStore.composerMode = 'chat'"
+    />
     <InputBox
-      v-if="hasMessages || isPhone"
+      v-else-if="hasMessages || isPhone"
       @send="handleSend"
       :disabled="chatStore.sending || agentBusyHere"
       :preserve-on-send="guest"
@@ -281,7 +302,8 @@ import MessageBubble from './MessageBubble.vue'
 import InputBox from './InputBox.vue'
 import WebSearchUpgradeModal from './WebSearchUpgradeModal.vue'
 import AnimatedIcon from './AnimatedIcon.vue'
-import AgentTaskCard from './agent/AgentTaskCard.vue'
+import AgentTimeline from './agent/AgentTimeline.vue'
+import AgentComposer from './agent/AgentComposer.vue'
 import { useAgentStore } from '../stores/agent'
 import { useRouter } from 'vue-router'
 import { extractCodeFiles } from '../utils/codeArtifacts'
@@ -331,6 +353,9 @@ const agentTaskHere = computed(() => {
   return t && chatStore.activeChat && String(t.conversation_id) === String(chatStore.activeChat.id) ? t : null
 })
 const agentBusyHere = computed(() => !!agentTaskHere.value && agentStore.isActive)
+/* V1.1: while Agent mode is selected, the reference composer card
+   replaces the chat InputBox (both hero + bottom placements). */
+const inAgentComposer = computed(() => chatStore.composerMode === 'agent' && canAgent.value && !props.guest)
 
 /* §25 restore: when a conversation with agent history loads (or a
    task is mirrored in from another tab), bind its latest agent task
@@ -878,4 +903,48 @@ onBeforeUnmount(() => {
   0%,100% { box-shadow:0 0 0 0 rgba(34,211,238,.5); }
   50% { box-shadow:0 0 0 5px rgba(34,211,238,0); }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   AGENT MODE CANVAS (V1.1 — reference screenshots)
+   The conversation area becomes the reference's deep-black canvas;
+   user bubbles adopt the reference's #2d2d2d rounded prompt bubble;
+   the white composer card floats at the bottom with breathing room.
+   ════════════════════════════════════════════════════════════════ */
+.chat-window.agent-mode { background: #0d0d0d; }
+.chat-window.agent-mode .msg-area { background: #0d0d0d; padding-bottom: 18px; }
+
+/* user bubble → reference prompt bubble (ss3) */
+.chat-window.agent-mode :deep(.msg-row) { padding: 6px 0; }
+.chat-window.agent-mode :deep(.bubble.user) {
+  background: #2d2d2d;
+  border: 1px solid #343436;
+  color: #eee;
+  border-radius: 14px;
+  padding: 11px 16px;
+}
+.chat-window.agent-mode :deep(.bubble.user) :deep(*) { color: inherit; }
+
+/* assistant messages read as plain text on the canvas */
+.chat-window.agent-mode :deep(.bubble.assistant) { color: #e8e8ea; }
+
+/* typing/system bubbles on the agent canvas */
+.chat-window.agent-mode :deep(.typing-bubble),
+.chat-window.agent-mode :deep(.error-bubble) {
+  background: #161618;
+  border-color: #27272a;
+}
+
+/* the white composer floats above the canvas */
+.chat-window.agent-mode > .agc {
+  margin: 6px auto 10px;
+  flex-shrink: 0;
+}
+.chat-window.agent-mode > .agc.centered { margin-top: 0; }
+
+/* hero (empty state) variant */
+.chat-window.agent-mode .ag-hero-composer { box-shadow: 0 18px 50px rgba(0,0,0,.5); }
+
+/* topbar pills on the agent canvas */
+.chat-window.agent-mode .chat-topbar { background: #0d0d0d; }
+
 </style>

@@ -1,0 +1,171 @@
+/* ═════════════════════════════════════════════════════════════════
+   KinyaBot Agent V1.1 — Design System
+   Derived from the uploaded reference screenshots (Manus-style
+   agent interface):
+   • deep neutral-black canvas (#0d0d0d) with elevated dark cards
+   • a WHITE composer card (the signature element of the reference)
+   • emerald status accents, gold "flagged" annotations
+   • white primary buttons / bordered secondary buttons
+   • mono code blocks with line numbers and gold "changed" markers
+   All tokens are scoped under .ag-ui so the existing Chat design
+   system is untouched. Agent mode is a world of its own.
+═════════════════════════════════════════════════════════════════ */
+
+.ag-ui {
+  /* surfaces */
+  --ag-bg:        #0d0d0d;
+  --ag-panel:     #141416;
+  --ag-card:      #1c1c1e;
+  --ag-nested:    #141416;
+  --ag-hover:     #232326;
+  --ag-border:    #27272a;
+  --ag-border-2:  #3f3f46;
+
+  /* text */
+  --ag-text:      #fafafa;
+  --ag-text-2:    #a1a1aa;
+  --ag-text-3:    #71717a;
+
+  /* accents */
+  --ag-accent:    #10b981;              /* emerald — live/success      */
+  --ag-accent-2:  #34d399;
+  --ag-accent-soft: rgba(16,185,129,.12);
+  --ag-blue:      #3b82f6;              /* progress / selection        */
+  --ag-gold:      #c5a059;              /* "changed/flagged" markers   */
+  --ag-danger:    #ef4444;
+  --ag-warn:      #f59e0b;
+
+  /* code */
+  --ag-code-bg:   #1a1a1c;
+  --ag-code-head: #101012;
+
+  /* type */
+  --ag-font:      'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ag-mono:      'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --ag-r-sm: 10px;
+  --ag-r:    14px;
+  --ag-r-lg: 20px;
+
+  color: var(--ag-text);
+  font-family: var(--ag-font);
+}
+
+/* ── Buttons (reference: white primary "Approve", bordered secondary
+      "View Plan", dark "Stop" chip) ─────────────────────────────── */
+.ag-ui .ag-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  font-family: var(--ag-font); font-size: 13px; font-weight: 600;
+  border-radius: 999px; padding: 9px 18px;
+  cursor: pointer; white-space: nowrap;
+  transition: background .13s ease, border-color .13s ease, color .13s ease, transform .1s ease;
+  border: 1px solid transparent;
+}
+.ag-ui .ag-btn:active { transform: scale(.98); }
+.ag-ui .ag-btn.primary {
+  background: #ffffff; color: #101012;
+}
+.ag-ui .ag-btn.primary:hover { background: #ececf0; }
+.ag-ui .ag-btn.secondary {
+  background: transparent; color: var(--ag-text); border-color: var(--ag-border-2);
+}
+.ag-ui .ag-btn.secondary:hover { background: rgba(255,255,255,.06); }
+.ag-ui .ag-btn.stop {
+  background: #2d2d2d; color: #fff; padding: 8px 14px;
+}
+.ag-ui .ag-btn.stop:hover { background: #3a3a3d; }
+.ag-ui .ag-btn.danger-ghost {
+  background: transparent; color: #f87171; border-color: rgba(239,68,68,.35);
+}
+.ag-ui .ag-btn.danger-ghost:hover { background: rgba(239,68,68,.08); }
+.ag-ui .ag-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+/* Small ghost icon button */
+.ag-ui .ag-icon-btn {
+  display: grid; place-items: center;
+  width: 30px; height: 30px; border-radius: 8px;
+  background: transparent; border: none; color: var(--ag-text-3);
+  cursor: pointer; transition: background .12s, color .12s;
+  flex-shrink: 0;
+}
+.ag-ui .ag-icon-btn:hover { background: rgba(255,255,255,.07); color: var(--ag-text); }
+.ag-ui .ag-icon-btn:disabled { opacity: .35; cursor: default; }
+
+/* ── Status dots & rings (reference: green check circles, pulsing
+      partial ring for the auto-approve countdown, dotted pending) ── */
+.ag-ui .ag-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.ag-ui .ag-dot.ok    { background: var(--ag-accent); }
+.ag-ui .ag-dot.warn  { background: var(--ag-warn); }
+.ag-ui .ag-dot.err   { background: var(--ag-danger); }
+.ag-ui .ag-dot.idle  { background: var(--ag-border-2); }
+
+/* live spinner ring (used while the agent works) */
+.ag-ui .ag-ring {
+  --ring-size: 14px;
+  width: var(--ring-size); height: var(--ring-size); flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid var(--ag-accent-soft);
+  border-top-color: var(--ag-accent);
+  animation: ag-spin 1s linear infinite;
+}
+@keyframes ag-spin { to { transform: rotate(360deg) } }
+
+/* ── Code surface (reference: line-numbered, syntax-tinted, with
+      gold "Relevant" right-margin annotations) ─────────────────── */
+.ag-ui .ag-code {
+  background: var(--ag-code-bg);
+  border: 1px solid var(--ag-border);
+  border-radius: var(--ag-r-sm);
+  overflow: hidden;
+}
+.ag-ui .ag-code-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 12px;
+  background: var(--ag-code-head);
+  border-bottom: 1px solid var(--ag-border);
+  color: var(--ag-text-2);
+  font-family: var(--ag-mono); font-size: 12px;
+}
+.ag-ui .ag-code-body {
+  margin: 0; padding: 10px 0;
+  overflow-x: auto;
+  font-family: var(--ag-mono); font-size: 12.5px; line-height: 1.6;
+  color: #d4d4d4;
+  tab-size: 2;
+}
+.ag-ui .ag-code-line { display: flex; min-width: max-content; }
+.ag-ui .ag-code-ln {
+  width: 44px; flex-shrink: 0; text-align: right; padding-right: 14px;
+  color: #858585; user-select: none;
+}
+.ag-ui .ag-code-tx { white-space: pre; padding-right: 16px; }
+.ag-ui .ag-code-line.add    .ag-code-tx { color: #4ec9b0; }
+.ag-ui .ag-code-line.del    .ag-code-tx { color: #f87171; }
+.ag-ui .ag-code-line.add    { background: rgba(16,185,129,.07); }
+.ag-ui .ag-code-line.del    { background: rgba(239,68,68,.06); }
+
+/* tiny language chip after a breadcrumb */
+.ag-ui .ag-lang {
+  font-family: var(--ag-mono); font-size: 10.5px;
+  color: var(--ag-text-3);
+  padding: 1px 7px; border-radius: 999px;
+  background: rgba(255,255,255,.05);
+}
+
+/* gold annotation (reference: "Relevant" / "N lines flagged") */
+.ag-ui .ag-flag { color: var(--ag-gold); }
+
+/* ── The agent canvas (conversation area in agent mode) ────────── */
+.ag-canvas { background: var(--ag-bg); }
+
+/* shared scrollbar for the agent world */
+.ag-ui ::-webkit-scrollbar, .ag-canvas ::-webkit-scrollbar { width: 5px; height: 5px; }
+.ag-ui ::-webkit-scrollbar-thumb, .ag-canvas ::-webkit-scrollbar-thumb { background: #2a2a2e; border-radius: 99px; }
+.ag-ui ::-webkit-scrollbar-thumb:hover, .ag-canvas ::-webkit-scrollbar-thumb:hover { background: #3a3a3f; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ag-ui *, .ag-canvas * { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+
+/* focus visibility for the agent world */
+.ag-ui :focus-visible { outline: 2px solid #52525b; outline-offset: 2px; }

@@ -59,6 +59,12 @@ export const useAgentStore = defineStore('agent', () => {
   const preview = reactive({ token: null, url: null, port: null, status: 'offline' })
   const pendingConfirmation = ref(null)
 
+  /* ── V1.1 additions ──────────────────────────────────────────── */
+  const agentConfig = ref(null)       // real provider/model info (GET /agent/config)
+  const autoApprove = ref(false)      // user pre-approves §13 confirmations for THIS task
+  const downloadState = ref('idle')   // idle | downloading | error | done
+  const downloadError = ref(null)
+
   /* ── Live status helpers ───────────────────────────────────── */
   const isActive = computed(() => ACTIVE_STATES.includes(activeTask.value?.status))
   const statusLabel = computed(() => {
@@ -200,10 +206,21 @@ export const useAgentStore = defineStore('agent', () => {
         preview.token = null
         preview.url = null
         break
-      case 'task.confirmation.requested':
+      case 'task.confirmation.requested': {
         pendingConfirmation.value = { id: d.id, command: d.command, reason: d.reason, at: evt.at }
         t.status = 'waiting_for_confirmation'
+        /* V1.1 “Auto-approve”: the user pre-authorized THIS task's §13
+           prompts. We still call the REAL confirm endpoint — the backend
+           stays the authority; nothing is bypassed client-side.        */
+        if (autoApprove.value) {
+          const pc = pendingConfirmation.value
+          pendingConfirmation.value = null
+          api.post(`/agent/tasks/${t.task_ref}/confirm`, { confirmationId: pc.id, approved: true })
+            .then(() => { if (ACTIVE_STATES.includes(t.status)) t.status = 'running' })
+            .catch(() => { pendingConfirmation.value = pc })
+        }
         break
+      }
       case 'task.confirmation.resolved':
         pendingConfirmation.value = null
         if (ACTIVE_STATES.includes(t.status)) t.status = 'running'
@@ -346,6 +363,55 @@ export const useAgentStore = defineStore('agent', () => {
     return tasks.value
   }
 
+  /* ═══ V1.1: PROJECT ZIP DOWNLOAD (§8) ══════════════════════════
+     Streams the REAL workspace archive from the backend. Loading,
+     success and error states are surfaced honestly; a failure never
+     fakes a download. */
+  async function downloadTask() {
+    const t = activeTask.value
+    if (!t?.task_ref) throw new Error('No active task')
+    downloadState.value = 'downloading'
+    downloadError.value = null
+    try {
+      const res = await api.get(`/agent/tasks/${t.task_ref}/download`, { responseType: 'blob', timeout: 300000 })
+      const blob = res.data
+      if (!blob || blob.size === 0) throw new Error('The archive was empty.')
+      // Filename from the real Content-Disposition header.
+      const cd = String(res.headers?.['content-disposition'] || '')
+      const m = cd.match(/filename="([^"]+)"/)
+      const name = m?.[1] || 'agent-project.zip'
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = name
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 4000)
+      downloadState.value = 'done'
+      setTimeout(() => { if (downloadState.value === 'done') downloadState.value = 'idle' }, 2500)
+      return { name, size: blob.size }
+    } catch (err) {
+      downloadState.value = 'error'
+      // Blob error bodies carry the honest backend message.
+      let msg = err?.response?.data?.error || err?.message || 'The project archive could not be created.'
+      if (err?.response?.data instanceof Blob) {
+        try { msg = JSON.parse(await err.response.data.text())?.error || msg } catch {}
+      }
+      downloadError.value = msg
+      throw new Error(msg)
+    }
+  }
+
+  /* ═══ V1.1: capability discovery (the model chip is REAL) ═════ */
+  async function fetchConfig() {
+    try {
+      const res = await api.get('/agent/config')
+      agentConfig.value = res.data || null
+    } catch { agentConfig.value = null }
+    return agentConfig.value
+  }
+
   /* ════════════════════════════════════════════════════════════
      WORKSPACE TAB DATA (§5, §6)
      ════════════════════════════════════════════════════════════ */
@@ -409,7 +475,10 @@ export const useAgentStore = defineStore('agent', () => {
   function openPanel(tab = null) { if (tab) activeTab.value = tab; panelOpen.value = true }
   function closePanel() { panelOpen.value = false }
   function setTab(tab) { activeTab.value = tab }
-  function setWidth(px) { panelWidth.value = Math.min(720, Math.max(360, px)) }
+  function setWidth(px) { panelWidth.value = Math.min(760, Math.max(360, px)) }
+
+  /** New task ⇒ auto-approve does not carry over (per-task decision). */
+  function resetAutoApprove() { autoApprove.value = false }
 
   /** Detach the workspace (keep socket wiring — cheap and harmless). */
   function clearTask() {
@@ -428,12 +497,13 @@ export const useAgentStore = defineStore('agent', () => {
     // state
     panelOpen, panelWidth, activeTab, activeTask, tasks, events, lastSeq,
     terminal, files, changes, preview, pendingConfirmation,
+    agentConfig, autoApprove, downloadState, downloadError,
     // computed
     isActive, statusLabel, previewLive,
     // actions
     createTask, loadTask, openTask, stopTask, resolveConfirmation, fetchTasks,
     syncEvents, fetchFiles, readFile, writeFile, editFile, deleteFile,
-    fetchChanges, fetchPreviewToken,
+    fetchChanges, fetchPreviewToken, downloadTask, fetchConfig, resetAutoApprove,
     openPanel, closePanel, setTab, setWidth, clearTask, bindSocket, unbindSocket,
   }
 })

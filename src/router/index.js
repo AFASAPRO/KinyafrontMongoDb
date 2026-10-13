@@ -159,8 +159,12 @@ router.beforeEach(async (to) => {
   // unauthenticated visitors are bounced to the public landing page —
   // EXCEPT inside the installed app (PWA), where they stay in the app
   // and land on the user login screen instead.
+  // V1.1 fix: the DEV server is also exempt — `/` is not a real landing
+  // page under `vite` (it 302-redirects back to /chat/), so bouncing
+  // there caused an INFINITE page-reload loop for signed-out visitors
+  // during local development. In dev, keep them in the SPA on /login.
   if (to.meta.requiresAuth && !authed) {
-    if (isPwaContext()) return '/login'
+    if (isPwaContext() || import.meta.env.DEV) return '/login'
     gotoLanding()
     return false
   }

@@ -1,7 +1,7 @@
 <template>
-  <div class="ag-term" ref="scrollEl">
+  <div class="agt ag-ui" ref="scrollEl">
     <div v-if="!agent.terminal.length" class="term-empty">
-      <i class="fas fa-terminal" aria-hidden="true"></i>
+      <AgentGlobe :size="44" />
       <p>Real commands the Agent runs appear here — with live stdout, stderr, exit codes and durations.</p>
       <p class="dim">Nothing has been executed yet.</p>
     </div>
@@ -45,7 +45,7 @@
         <span v-if="line.completedAt" class="dim">{{ fmtTime(line.completedAt) }}</span>
       </div>
       <div v-else-if="line.kind === 'command'" class="term-meta">
-        <span class="running"><i class="fas fa-spinner fa-spin" aria-hidden="true"></i> running…</span>
+        <span class="running"><span class="ag-ring" aria-hidden="true"></span> running…</span>
       </div>
     </div>
   </div>
@@ -53,13 +53,15 @@
 
 <script setup>
 /**
- * KinyaBot Agent V1 — Terminal Tab (§6, §10)
- * Every line comes from a REAL task.terminal.* event: the command the
- * agent ran, its streamed stdout/stderr, the true exit code and wall
- * duration. Blocked commands are shown as refused, never faked as run.
+ * KinyaBot Agent V1.1 — Terminal Tab (§6, §10)
+ * Same REAL data as V1 (every line comes from a task.terminal.* event:
+ * command, streamed stdout/stderr, true exit code and duration) in the
+ * reference-styled skin. Blocked commands show as refused, never faked.
  */
 import { ref, watch, nextTick, onMounted } from 'vue'
 import { useAgentStore } from '../../stores/agent'
+import AgentGlobe from './AgentGlobe.vue'
+import '../../assets/agent.css'
 
 const agent = useAgentStore()
 const scrollEl = ref(null)
@@ -72,6 +74,12 @@ function onScroll() {
 }
 
 watch(() => agent.terminal.length, async () => {
+  await nextTick()
+  const el = scrollEl.value
+  if (el && pinned) el.scrollTop = el.scrollHeight
+})
+// Long outputs append in place — keep following when pinned.
+watch(() => agent.terminal.map(l => (l.output || '').length).join(','), async () => {
   await nextTick()
   const el = scrollEl.value
   if (el && pinned) el.scrollTop = el.scrollHeight
@@ -91,77 +99,79 @@ function fmtTime(iso) {
 </script>
 
 <style scoped>
-.ag-term {
+.agt {
   flex: 1; overflow-y: auto; overflow-x: hidden;
-  padding: 10px 12px 18px;
-  font-family: var(--font-mono, ui-monospace, 'SF Mono', Menlo, Consolas, monospace);
+  padding: 4px 12px 18px;
+  font-family: var(--ag-mono);
   font-size: 12px; line-height: 1.55;
-  background: var(--code-bg, #0A0F1A);
+  background: var(--ag-panel);
 }
-:global(.light-mode) .ag-term { background: #F7F8FB; }
 
 .term-empty {
   height: 100%; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 8px;
-  color: var(--text-muted); text-align: center; padding: 30px;
-  font-family: var(--font); font-size: 13px;
+  align-items: center; justify-content: center; gap: 10px;
+  color: var(--ag-text-3); text-align: center; padding: 30px;
+  font-family: var(--ag-font); font-size: 13px;
 }
-.term-empty i { font-size: 26px; opacity: .5; }
 .term-empty .dim { font-size: 12px; opacity: .7; }
 
-.term-block { margin-bottom: 10px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-subtle, #172033); }
-:global(.light-mode) .term-block { border-color: #E3E7EF; }
+.term-block {
+  margin-bottom: 12px; border-radius: var(--ag-r-sm);
+  overflow: hidden;
+  border: 1px solid var(--ag-border);
+  background: var(--ag-card);
+}
 
 .term-cmd {
-  display: flex; align-items: center; gap: 7px;
-  padding: 7px 10px;
-  background: var(--code-header, #0D1422);
-  color: var(--code-text, #E2E8F0);
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 11px;
+  background: var(--ag-code-head);
+  color: #d4d4d4;
 }
-:global(.light-mode) .term-cmd { background: #EBEDF3; color: #243044; }
-.term-prompt { color: var(--brand); flex-shrink: 0; font-size: 10px; }
-.term-prompt.bg { color: var(--accent-cyan, #22D3EE); }
+.term-prompt { color: var(--ag-accent); flex-shrink: 0; font-size: 10px; }
+.term-prompt.bg { color: var(--ag-warn); }
 .term-cmd code { white-space: pre-wrap; word-break: break-all; flex: 1; }
 
 .term-badge {
-  flex-shrink: 0; font-size: 10px; padding: 2px 7px;
-  border-radius: 999px; background: rgba(34,211,238,.14); color: var(--accent-cyan, #22D3EE);
-  font-family: var(--font);
+  flex-shrink: 0; font-size: 10px; padding: 2px 8px;
+  border-radius: 999px; background: rgba(245,158,11,.12); color: var(--ag-warn);
+  font-family: var(--ag-font);
 }
-.term-badge.risk { background: rgba(245,158,11,.14); color: var(--warning, #F59E0B); }
+.term-badge:not(.risk) { background: rgba(255,255,255,.06); color: var(--ag-text-2); }
 
 .term-out {
-  margin: 0; padding: 8px 10px;
+  margin: 0; padding: 9px 11px;
   white-space: pre-wrap; word-break: break-word;
-  color: var(--code-text, #E2E8F0);
+  color: #c8c8ca;
   max-height: 320px; overflow-y: auto;
-  border-top: 1px solid var(--border-subtle, #172033);
+  border-top: 1px solid var(--ag-border);
+  background: var(--ag-code-bg);
 }
-:global(.light-mode) .term-out { color: #2A3446; border-top-color: #E3E7EF; background: #FFFFFF; }
 
 .term-meta {
   display: flex; gap: 10px; align-items: center;
-  padding: 5px 10px;
+  padding: 6px 11px;
   background: rgba(255,255,255,.02);
-  border-top: 1px solid var(--border-subtle, #172033);
-  font-size: 11px; color: var(--text-muted);
+  border-top: 1px solid var(--ag-border);
+  font-size: 11px; color: var(--ag-text-3);
 }
-:global(.light-mode) .term-meta { background: #F3F5F9; border-top-color: #E3E7EF; }
-.term-meta .exit.ok { color: var(--success, #22C55E); }
-.term-meta .exit:not(.ok) { color: var(--error, #EF4444); }
-.term-meta .running { color: var(--accent-cyan, #22D3EE); }
-.dim { color: var(--text-muted); }
+.term-meta .exit.ok { color: var(--ag-accent-2); display: inline-flex; align-items: center; gap: 5px; }
+.term-meta .exit:not(.ok) { color: #f87171; display: inline-flex; align-items: center; gap: 5px; }
+.term-meta .running { color: var(--ag-accent-2); display: inline-flex; align-items: center; gap: 7px; }
+.dim { color: var(--ag-text-3); }
 
 .term-blocked {
-  display: flex; gap: 9px; padding: 9px 10px;
-  background: rgba(245,158,11,.07);
-  border: 1px solid rgba(245,158,11,.25);
-  color: var(--text-secondary);
+  display: flex; gap: 9px; padding: 10px 11px;
+  background: rgba(197,160,89,.06);
+  border: 1px solid rgba(197,160,89,.3);
+  border-radius: var(--ag-r-sm);
+  color: var(--ag-text-2);
 }
-.term-blocked > i { color: var(--warning, #F59E0B); margin-top: 2px; }
-.term-blocked code { color: var(--text-primary); word-break: break-all; }
-.term-blocked .dim { font-size: 11px; margin: 3px 0 0; font-family: var(--font); }
+.term-blocked > i { color: var(--ag-gold); margin-top: 2px; }
+.term-blocked code { color: var(--ag-text); word-break: break-all; }
+.term-blocked .dim { font-size: 11px; margin: 3px 0 0; font-family: var(--ag-font); }
 
-.term-fail .term-cmd { border-left: 2px solid var(--error, #EF4444); }
-.term-bg .term-cmd { border-left: 2px solid var(--accent-cyan, #22D3EE); }
+.term-fail { border-color: rgba(239,68,68,.35); }
+.term-fail .term-cmd { border-left: 2px solid var(--ag-danger); }
+.term-bg .term-cmd { border-left: 2px solid var(--ag-warn); }
 </style>

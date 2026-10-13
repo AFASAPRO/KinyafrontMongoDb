@@ -1,14 +1,21 @@
 <template>
-  <div class="ag-preview">
-    <!-- ── Toolbar (§24) ──────────────────────────────────────── -->
-    <div class="pv-tools">
-      <span class="pv-title"><i class="fas fa-eye" aria-hidden="true"></i> Live preview</span>
+  <div class="agp ag-ui">
+    <!-- ── Browser chrome (reference preview panel look) ──────── -->
+    <div class="pv-chrome">
+      <div class="pv-dots" aria-hidden="true">
+        <span class="d r"></span><span class="d y"></span><span class="d g"></span>
+      </div>
+      <div class="pv-url" :title="urlTitle">
+        <i class="fas fa-lock" aria-hidden="true" v-if="agent.preview.url"></i>
+        <i class="fas fa-globe" aria-hidden="true" v-else></i>
+        <span class="pv-url-text">{{ urlLabel }}</span>
+      </div>
       <div class="pv-actions">
-        <span v-if="agent.preview.port" class="pv-port">port {{ agent.preview.port }}</span>
-        <button class="pv-btn" title="Open in new tab" :disabled="!agent.preview.url" @click="openExternal">
+        <span v-if="agent.preview.port" class="pv-port">:{{ agent.preview.port }}</span>
+        <button class="ag-icon-btn" title="Open in new tab" :disabled="!agent.preview.url" @click="openExternal">
           <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
         </button>
-        <button class="pv-btn" title="Reload preview" :disabled="!agent.preview.url" @click="reload">
+        <button class="ag-icon-btn" title="Reload preview" :disabled="!agent.preview.url" @click="reload">
           <i class="fas fa-rotate" aria-hidden="true"></i>
         </button>
       </div>
@@ -17,12 +24,12 @@
     <!-- ── Honest states (§32) ────────────────────────────────── -->
     <div v-if="!agent.preview.url" class="pv-empty">
       <template v-if="starting">
-        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+        <span class="ag-ring" style="--ring-size:26px" aria-hidden="true"></span>
         <p>Starting the preview server…</p>
         <p class="dim">The Agent starts it as soon as a dev server is ready.</p>
       </template>
       <template v-else>
-        <i class="fas fa-eye-slash" aria-hidden="true"></i>
+        <AgentGlobe :size="44" />
         <p>No preview server is running.</p>
         <p class="dim">When the Agent runs a dev server (for example a static site or Vite app), the live result appears here.</p>
       </template>
@@ -44,14 +51,15 @@
 
 <script setup>
 /**
- * KinyaBot Agent V1 — Preview Tab (§24)
- * Shows the REAL dev-server output through the server's signed-token
- * proxy. The iframe URL is issued by the backend ONLY after it probes
- * the port live — if nothing listens, the honest empty state shows.
- * "Reload" re-requests a fresh token; "Open" pops a new tab.
+ * KinyaBot Agent V1.1 — Preview Tab (§24)
+ * Same REAL preview pipeline as V1 (signed-token proxy iframe, honest
+ * offline/loading states) inside a reference-styled browser chrome.
+ * "Reload" re-requests a fresh token; "Open" pops a real new tab.
  */
 import { ref, computed, watch, onMounted } from 'vue'
 import { useAgentStore } from '../../stores/agent'
+import AgentGlobe from './AgentGlobe.vue'
+import '../../assets/agent.css'
 
 const agent = useAgentStore()
 const frameKey = ref(0)
@@ -63,6 +71,12 @@ const iframeSrc = computed(() => {
   if (!agent.preview.url) return ''
   return baseURL + agent.preview.url
 })
+
+const urlLabel = computed(() => {
+  if (agent.preview.url) return `localhost:${agent.preview.port} (proxied)`
+  return 'no preview'
+})
+const urlTitle = computed(() => agent.preview.url ? 'Live preview served through the authenticated proxy' : 'No preview server running')
 
 function reload() {
   agent.fetchPreviewToken().finally(() => { frameKey.value++ })
@@ -77,34 +91,46 @@ watch(() => agent.previewLive, live => { if (live && !agent.preview.url) agent.f
 </script>
 
 <style scoped>
-.ag-preview { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.agp { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
-.pv-tools {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 12px; border-bottom: 1px solid var(--border-subtle, #172033);
-  background: var(--surface-secondary, #111827);
+/* browser chrome */
+.pv-chrome {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--ag-border);
+  background: var(--ag-card);
 }
-:global(.light-mode) .pv-tools { background: #F3F5F9; border-bottom-color: #E3E7EF; }
-.pv-title { display: flex; gap: 7px; align-items: center; font-size: 12px; color: var(--text-secondary); }
-.pv-title i { color: var(--brand); }
-.pv-actions { display: flex; gap: 4px; align-items: center; }
+.pv-dots { display: flex; gap: 5px; flex-shrink: 0; }
+.pv-dots .d { width: 9px; height: 9px; border-radius: 50%; }
+.pv-dots .r { background: #3a3a3d; }
+.pv-dots .y { background: #3a3a3d; }
+.pv-dots .g { background: var(--ag-accent); }
+.pv-url {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 7px;
+  background: var(--ag-code-bg);
+  border: 1px solid var(--ag-border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-family: var(--ag-mono); font-size: 11px; color: var(--ag-text-3);
+  overflow: hidden;
+}
+.pv-url i { font-size: 9px; flex-shrink: 0; color: var(--ag-text-3); }
+.pv-url-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pv-actions { display: flex; gap: 3px; align-items: center; flex-shrink: 0; }
 .pv-port {
   font-size: 10.5px; padding: 2px 8px; border-radius: 999px;
-  background: rgba(34,211,238,.12); color: var(--accent-cyan, #22D3EE);
-  font-family: var(--font-mono, monospace);
+  background: rgba(16,185,129,.12); color: var(--ag-accent-2);
+  font-family: var(--ag-mono);
 }
-.pv-btn {
-  width: 28px; height: 28px; display: grid; place-items: center;
-  border: none; border-radius: var(--r-xs, 6px);
-  background: transparent; color: var(--text-muted); cursor: pointer; font-size: 12.5px;
+
+.pv-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; color: var(--ag-text-3); font-size: 13px; text-align: center; padding: 24px; }
+.pv-empty .dim { font-size: 12px; max-width: 280px; line-height: 1.5; }
+
+.pv-frame-wrap {
+  flex: 1; background: #FFF; position: relative;
+  border-radius: 0 0 var(--ag-r-sm) var(--ag-r-sm);
+  overflow: hidden;
 }
-.pv-btn:hover:not(:disabled) { background: var(--surface-elevated, #151B2B); color: var(--text-primary); }
-.pv-btn:disabled { opacity: .35; cursor: default; }
-
-.pv-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--text-muted); font-size: 13px; text-align: center; padding: 24px; }
-.pv-empty i { font-size: 26px; opacity: .6; }
-.pv-empty .dim { font-size: 12px; max-width: 260px; line-height: 1.5; }
-
-.pv-frame-wrap { flex: 1; background: #FFF; position: relative; }
 .pv-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: none; background: #FFF; }
 </style>
