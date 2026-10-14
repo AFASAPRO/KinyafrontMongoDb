@@ -71,22 +71,32 @@
     <div v-if="hasMessages || isPhone" class="msg-area" ref="msgArea" @scroll="handleScroll">
       <!-- Welcome screen -->
       <!-- ═══ MOBILE HOME ═══ -->
-      <div v-if="isPhone && !hasMessages" class="m-home">
-        <h1 class="m-greet">
-          <template v-for="(part, pi) in greeting.parts" :key="pi">
-            <em v-if="part.hl">{{ part.t }}</em><template v-else>{{ part.t }}</template>
-          </template>
-        </h1>
-        <div class="m-chips">
-          <div v-for="(row, ri) in marqueeRows" :key="ri" class="m-chip-row" :class="`r${ri}`">
-            <div class="m-chip-track" :class="`dir${ri}`">
-              <button v-for="(c,ci) in row" :key="ri+'-'+ci" class="m-chip" type="button" @click="useChip(c.prompt)">
-                <span class="ic"><AnimatedIcon :icon="c.icon" animation="subtle-hover" /></span>
-                <span>{{ c.lead }} <b>{{ c.accent }}</b></span>
-              </button>
+      <div v-if="isPhone && !hasMessages" class="m-home" :class="{ 'm-agent-home': inAgentComposer }">
+        <AgentComposer
+          v-if="inAgentComposer"
+          centered
+          class="m-agent-composer"
+          :disabled="chatStore.sending"
+          @send="handleSend"
+          @switch-chat="chatStore.composerMode = 'chat'"
+        />
+        <template v-else>
+          <h1 class="m-greet">
+            <template v-for="(part, pi) in greeting.parts" :key="pi">
+              <em v-if="part.hl">{{ part.t }}</em><template v-else>{{ part.t }}</template>
+            </template>
+          </h1>
+          <div class="m-chips">
+            <div v-for="(row, ri) in marqueeRows" :key="ri" class="m-chip-row" :class="`r${ri}`">
+              <div class="m-chip-track" :class="`dir${ri}`">
+                <button v-for="(c,ci) in row" :key="ri+'-'+ci" class="m-chip" type="button" @click="useChip(c.prompt)">
+                  <span class="ic"><AnimatedIcon :icon="c.icon" animation="subtle-hover" /></span>
+                  <span>{{ c.lead }} <b>{{ c.accent }}</b></span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </template>
       </div>
 
       <!-- Message list -->
@@ -138,10 +148,8 @@
          composer + suggestion cards, styled after the marketing site ═══ -->
     <div v-if="!isPhone && !hasMessages" class="welcome-hero" :class="{ 'agent-hero': inAgentComposer }">
       <div class="wh-inner">
-        <!-- V1.1 (reference ss4): in Agent mode the WHITE COMPOSER CARD is
-             the hero — the chat branding, serif greeting and chat suggestion
-             cards are suppressed so the agent empty state matches the
-             reference's clean composer-centered presentation. -->
+        <!-- In Agent mode the build studio takes over the hero; the chat
+             branding, greeting and chat suggestion cards are suppressed. -->
         <div v-if="!inAgentComposer" class="wh-brand">
           <img src="/logo.png" alt="" />
           <span>KinyaBot AI</span>
@@ -261,7 +269,7 @@
     </transition>
 
     <AgentComposer
-      v-if="inAgentComposer && (hasMessages || isPhone)"
+      v-if="inAgentComposer && hasMessages"
       :disabled="chatStore.sending"
       @send="handleSend"
       @switch-chat="chatStore.composerMode = 'chat'"
@@ -917,10 +925,7 @@ onBeforeUnmount(() => {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   AGENT MODE CANVAS (V1.1 — reference screenshots)
-   The conversation area becomes the reference's deep-black canvas;
-   user bubbles adopt the reference's #2d2d2d rounded prompt bubble;
-   the white composer card floats at the bottom with breathing room.
+   AGENT MODE CANVAS
    ════════════════════════════════════════════════════════════════ */
 .chat-window.agent-mode { background: #0d0d0d; }
 .chat-window.agent-mode .msg-area { background: #0d0d0d; padding-bottom: 18px; }
@@ -946,15 +951,25 @@ onBeforeUnmount(() => {
   border-color: #27272a;
 }
 
-/* the white composer floats above the canvas */
+/* the composer floats above the canvas */
 .chat-window.agent-mode > .agc {
   margin: 6px auto 10px;
   flex-shrink: 0;
 }
 .chat-window.agent-mode > .agc.centered { margin-top: 0; }
 
-/* hero (empty state) variant */
-.chat-window.agent-mode .ag-hero-composer { box-shadow: 0 18px 50px rgba(0,0,0,.5); }
+/* spacious new-chat build studio */
+.welcome-hero.agent-hero { padding: 28px 24px 30px; }
+.welcome-hero.agent-hero .wh-inner { max-width: 1180px; }
+.chat-window.agent-mode .ag-hero-composer { box-shadow: none; }
+.chat-window.agent-mode .m-agent-home {
+  align-items: stretch;
+  text-align: left;
+  padding: 28px 0 20px;
+}
+.chat-window.agent-mode .m-agent-composer { width: 100%; max-width: 100%; }
+.chat-window.agent-mode .m-agent-composer :deep(.agc-projects) { grid-template-columns: 1fr; }
+.chat-window.agent-mode .m-agent-composer :deep(.agc-project-art) { min-height: 190px; }
 
 /* topbar pills on the agent canvas */
 .chat-window.agent-mode .chat-topbar { background: #0d0d0d; }
