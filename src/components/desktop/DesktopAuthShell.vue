@@ -25,19 +25,7 @@
       <div class="das-left"><div class="das-left-inner"><slot /></div></div>
       <div class="das-right">
         <div class="das-panel">
-          <!-- KinyaBot mascot loop (the character on the landing page's
-               cream palette) — replaces the old static screenshot. -->
-          <video
-            class="das-video"
-            src="/media/kinya-mascot-auth.mp4"
-            poster="/media/kinya-mascot-auth-poster.jpg"
-            autoplay
-            muted
-            loop
-            playsinline
-            preload="metadata"
-            aria-label="KinyaBot mascot animation"
-          ></video>
+          <AuthVideoPanel />
         </div>
       </div>
     </main>
@@ -46,6 +34,7 @@
 
 <script setup>
 import { isLightMode, toggleThemeMode } from '../../theme'
+import AuthVideoPanel from '../auth/AuthVideoPanel.vue'
 
 // The landing page lives at the domain root, outside the /chat/ router base
 function goToLanding(hash = '') {
@@ -89,30 +78,27 @@ function goToLanding(hash = '') {
 .das-theme:active { transform: scale(.9); }
 
 /* ── Body split ──────────────────────────────────────────── */
-.das-body { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-height: 0; }
-.das-left { overflow-y: auto; display: flex; padding: 3rem clamp(2.5rem, 6vw, 6rem); }
+.das-body { flex: 1; display: grid; grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); min-height: 0; }
+.das-left { min-width: 0; overflow-y: auto; display: flex; padding: 3rem clamp(1.5rem, 4vw, 5rem); }
 .das-left-inner { margin: auto; width: 100%; max-width: 420px; animation: fadeUp .45s ease both; }
 
 .das-right { padding: 20px 20px 20px 0; display: flex; }
 .das-panel {
-  flex: 1; border-radius: 22px; overflow: hidden; position: relative;
+  flex: 1; min-width: 0; border-radius: 22px; overflow: hidden; position: relative;
   background: #efe4d1; /* matches the mascot video's cream backdrop */
   border: 1px solid var(--border);
   box-shadow: 0 24px 70px rgba(0,0,0,.18);
 }
-.das-video {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: cover; object-position: center;
-  display: block;
-}
-
-@media (max-width: 1180px) {
-  .das-body { grid-template-columns: 1fr; }
+@media (max-width: 768px) {
   .das-right { display: none; }
-  .das-left { padding: 2.5rem 2rem; }
+  .das-body { grid-template-columns: minmax(0, 1fr); }
+  .das-left { padding: 2.5rem clamp(1.15rem, 5vw, 2rem); }
+}
+@media (max-width: 900px) {
+  .das-nav { padding-inline: 1.25rem; }
+  .das-links { display: none; }
 }
 @media (max-width: 640px) {
-  .das-nav { padding: 0 1.25rem; }
-  .das-links { display: none; }
+  .das-left { padding-top: 1.5rem; padding-bottom: max(1.5rem,env(safe-area-inset-bottom)); }
 }
 </style>

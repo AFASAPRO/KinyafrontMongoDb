@@ -220,13 +220,7 @@
     <!-- Desktop-only hero video panel (hidden on mobile via CSS) -->
     <div class="fp-hero">
       <div class="fp-hero-panel">
-        <video
-          class="fp-hero-video"
-          src="/media/kinya-mascot-auth.mp4"
-          poster="/media/kinya-mascot-auth-poster.jpg"
-          autoplay muted loop playsinline preload="metadata"
-          aria-label="KinyaBot mascot animation"
-        ></video>
+        <AuthVideoPanel />
       </div>
     </div>
     </div><!-- .fp-shell -->
@@ -236,6 +230,7 @@
 <script setup>
 import { ref, computed, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import AuthVideoPanel from '../components/auth/AuthVideoPanel.vue'
 import { isLightMode, toggleThemeMode } from '../theme'
 
 // The landing page lives at the domain root, outside the /chat/ router base

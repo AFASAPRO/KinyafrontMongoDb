@@ -125,7 +125,7 @@
           <div class="option-grid cols4">
             <button v-for="s in referralSources" :key="s.id" class="option-card"
               :class="{ selected: form.referral === s.id }" :aria-pressed="form.referral === s.id" @click="form.referral = s.id">
-              <div class="oc-icon" :style="{ background: s.bg, borderColor: s.border }">
+              <div class="oc-icon">
                 <i :class="s.icon" :style="{ color: s.color }"></i>
               </div>
               <span class="oc-label">{{ s.label }}</span>
@@ -154,7 +154,7 @@
           <div class="option-grid cols3">
             <button v-for="p in professions" :key="p.id" class="option-card"
               :class="{ selected: form.profession === p.id }" :aria-pressed="form.profession === p.id" @click="form.profession = p.id">
-              <div class="oc-icon" :style="{ background: 'rgba(99,102,241,.12)', borderColor: 'rgba(99,102,241,.25)' }">
+              <div class="oc-icon">
                 <i :class="p.icon" style="color:var(--brand-text)"></i>
               </div>
               <span class="oc-label">{{ p.label }}</span>
@@ -226,8 +226,8 @@
             <button v-for="s in starters" :key="s.id" class="starter-row"
               :class="{ selected: form.firstPrompt === s.prompt }" :aria-pressed="form.firstPrompt === s.prompt"
               @click="form.firstPrompt = s.prompt; customPrompt = ''">
-              <div class="sr-icon" :style="{ background: s.bg, borderColor: s.border }">
-                <i :class="s.icon" :style="{ color: s.color }"></i>
+              <div class="sr-icon" :style="{ color: s.color }">
+                <i :class="s.icon"></i>
               </div>
               <div class="sr-info">
                 <div class="sr-title">{{ s.title }}</div>
@@ -406,14 +406,14 @@ async function sendInvite() {
 }
 
 const referralSources = [
-  { id:'google',    icon:'fab fa-google',     label:'Google',      color:'#ea4335', bg:'rgba(234,67,53,.1)',   border:'rgba(234,67,53,.25)' },
-  { id:'instagram', icon:'fab fa-instagram',  label:'Instagram',   color:'#e1306c', bg:'rgba(225,48,108,.1)',  border:'rgba(225,48,108,.25)' },
-  { id:'twitter',   icon:'fab fa-x-twitter',  label:'Twitter / X', color:'#e3e3e3', bg:'rgba(255,255,255,.06)', border:'rgba(255,255,255,.12)' },
-  { id:'tiktok',    icon:'fab fa-tiktok',      label:'TikTok',      color:'#69c9d0', bg:'rgba(105,201,208,.1)', border:'rgba(105,201,208,.25)' },
-  { id:'youtube',   icon:'fab fa-youtube',    label:'YouTube',     color:'#ff0000', bg:'rgba(255,0,0,.1)',     border:'rgba(255,0,0,.25)' },
-  { id:'linkedin',  icon:'fab fa-linkedin',   label:'LinkedIn',    color:'#0a66c2', bg:'rgba(10,102,194,.1)',  border:'rgba(10,102,194,.25)' },
-  { id:'friend',    icon:'fas fa-user-group', label:'Friend',      color:'var(--success)', bg:'rgba(52,168,83,.1)',   border:'rgba(52,168,83,.25)' },
-  { id:'other',     icon:'fas fa-star',       label:'Other',       color:'#fbbc04', bg:'rgba(251,188,4,.1)',   border:'rgba(251,188,4,.25)' },
+  { id:'google',    icon:'fab fa-google',     label:'Google',      color:'#ea4335' },
+  { id:'instagram', icon:'fab fa-instagram',  label:'Instagram',   color:'#e1306c' },
+  { id:'twitter',   icon:'fab fa-x-twitter',  label:'Twitter / X', color:'#e3e3e3' },
+  { id:'tiktok',    icon:'fab fa-tiktok',     label:'TikTok',      color:'#69c9d0' },
+  { id:'youtube',   icon:'fab fa-youtube',    label:'YouTube',     color:'#ff0000' },
+  { id:'linkedin',  icon:'fab fa-linkedin',   label:'LinkedIn',    color:'#0a66c2' },
+  { id:'friend',    icon:'fas fa-user-group', label:'Friend',      color:'var(--success)' },
+  { id:'other',     icon:'fas fa-star',       label:'Other',       color:'#fbbc04' },
 ]
 
 const professions = [
@@ -430,19 +430,17 @@ const professions = [
 ]
 
 const starters = [
-  { id:'code',      icon:'fas fa-code',        title:'Generate Code',      sub:'Build something with AI', color:'var(--brand-text)', bg:'rgba(99,102,241,.12)',   border:'rgba(99,102,241,.25)',  prompt:'Write me a complete, responsive HTML/CSS landing page with a modern dark theme and smooth animations.' },
-  { id:'learn',     icon:'fas fa-book-open',   title:'Learn a Topic',      sub:'Get structured lessons',  color:'#67e8f9', bg:'rgba(6,182,212,.12)',   border:'rgba(6,182,212,.25)',  prompt:'Create a beginner-friendly learning plan for machine learning with topics, resources, and weekly goals.' },
-  { id:'write',     icon:'fas fa-pen-nib',      title:'Write Content',      sub:'Draft any document',      color:'#86efac', bg:'rgba(34,197,94,.12)',   border:'rgba(34,197,94,.25)',  prompt:'Help me write a compelling cover letter for a software engineering position at a tech startup.' },
-  { id:'analyze',   icon:'fas fa-chart-bar',   title:'Analyze Data',       sub:'Make sense of numbers',   color:'#fcd34d', bg:'rgba(245,158,11,.12)',  border:'rgba(245,158,11,.25)', prompt:'Explain the key metrics I should track to measure the success of a SaaS product launch.' },
-  { id:'image',     icon:'fas fa-image',       title:'Generate Image',     sub:'Create visuals with AI',  color:'#f9a8d4', bg:'rgba(236,72,153,.12)',  border:'rgba(236,72,153,.25)', prompt:'/image a futuristic African city at night with neon lights and flying cars, cinematic style, 4K' },
+  { id:'code',      icon:'fas fa-code',        title:'Generate Code',      sub:'Build something with AI', color:'var(--brand-text)', prompt:'Write me a complete, responsive HTML/CSS landing page with a modern dark theme and smooth animations.' },
+  { id:'learn',     icon:'fas fa-book-open',   title:'Learn a Topic',      sub:'Get structured lessons',  color:'#67e8f9', prompt:'Create a beginner-friendly learning plan for machine learning with topics, resources, and weekly goals.' },
+  { id:'write',     icon:'fas fa-pen-nib',     title:'Write Content',      sub:'Draft any document',      color:'#86efac', prompt:'Help me write a compelling cover letter for a software engineering position at a tech startup.' },
+  { id:'analyze',   icon:'fas fa-chart-bar',   title:'Analyze Data',       sub:'Make sense of numbers',   color:'#fcd34d', prompt:'Explain the key metrics I should track to measure the success of a SaaS product launch.' },
+  { id:'image',     icon:'fas fa-image',       title:'Generate Image',     sub:'Create visuals with AI',  color:'#f9a8d4', prompt:'/image a futuristic African city at night with neon lights and flying cars, cinematic style, 4K' },
   {
     id: 'kinyarwanda',
     icon: 'fas fa-globe-africa',
     title: 'Discussion en Français',
     sub: 'Parlez votre langue',
     color: '#6ee7b7',
-    bg: 'rgba(16,185,129,.12)',
-    border: 'rgba(16,185,129,.25)',
     prompt: 'Bonjour ! Je veux savoir comment KinyaBot peut aider dans les tâches quotidiennes, y compris la création de code et la rédaction de documents.'
   },
 ]
@@ -976,6 +974,94 @@ watch(step, (v) => { if (v === 6) runFinish() })
   .ob-card,.ob-card.wide { padding:20px 15px; }
   .ob-actions { margin:18px -15px -20px; padding-inline:15px; }
   .name-row { grid-template-columns:1fr; }
+}
+/* Keep every step reachable at normal zoom, including short landscape
+   screens and phones with safe-area insets. */
+.ob-root {
+  height:auto;
+  align-items:stretch;
+  overflow-x:hidden;
+  overflow-y:auto;
+  padding-top:env(safe-area-inset-top);
+  padding-bottom:max(20px,env(safe-area-inset-bottom));
+}
+.ob-header { flex-shrink:0; }
+.ob-layout {
+  flex:1 0 auto;
+  min-width:0;
+  align-items:start;
+  margin-top:clamp(16px,3vh,32px);
+  margin-bottom:24px;
+}
+.ob-card,.ob-card.wide,.ob-step { min-width:0; }
+.ob-step-badge,.ob-step-badge.star {
+  width:34px;
+  height:34px;
+  flex:0 0 34px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  color:var(--brand-text);
+  font-size:18px;
+}
+.oc-icon {
+  width:40px;
+  height:40px;
+  border:0!important;
+  border-radius:0;
+  background:transparent!important;
+  font-size:21px;
+}
+.sr-icon {
+  width:36px;
+  height:36px;
+  border:0!important;
+  border-radius:0;
+  background:transparent!important;
+  font-size:18px;
+}
+@media(max-width:900px) {
+  .ob-layout { margin-top:16px; }
+}
+@media(max-width:640px) {
+  .ob-root { padding-inline:clamp(12px,4vw,20px); }
+  .ob-header { min-width:0; }
+  .ob-header-progress { min-width:0; }
+  .ob-layout { margin-top:12px; }
+  .ob-card,.ob-card.wide { padding:clamp(18px,5vw,24px); }
+  .ob-step-header,.ob-step-header.center { min-width:0; }
+  .ob-step-header > div:last-child { min-width:0; }
+  .ob-title { overflow-wrap:anywhere; }
+  .name-row { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .ob-actions {
+    position:sticky;
+    bottom:0;
+    z-index:5;
+    margin:20px calc(-1 * clamp(18px,5vw,24px)) calc(-1 * clamp(18px,5vw,24px));
+    padding:12px clamp(18px,5vw,24px) max(12px,env(safe-area-inset-bottom));
+    background:var(--surface);
+    border-top:1px solid var(--border-subtle);
+  }
+}
+@media(max-width:420px) {
+  .ob-header { gap:8px; }
+  .ob-brand { gap:6px; font-size:12px; }
+  .ob-brand-logo { width:26px; height:26px; }
+  .ob-header-progress { width:min(128px,34vw); }
+  .ob-step-text { font-size:10px; }
+  .ob-exit { padding:7px 8px; white-space:nowrap; }
+  .name-row { grid-template-columns:minmax(0,1fr); }
+  .ob-actions { gap:8px; }
+  .ob-back-btn { min-width:76px; padding-inline:10px; }
+  .ob-back-btn,.ob-next-btn,.ob-finish-btn { font-size:13px; }
+  .option-card { min-width:0; }
+  .invite-member { flex-wrap:wrap; }
+  .invite-email { min-width:0; overflow-wrap:anywhere; }
+}
+@media(max-width:340px) {
+  .ob-header-progress { width:30vw; }
+  .ob-card,.ob-card.wide { padding:16px 12px; }
+  .ob-actions { margin:18px -12px -16px; padding-inline:12px; }
 }
 @media(prefers-reduced-motion:reduce) {
   .ob-root *, .ob-root *::before, .ob-root *::after { scroll-behavior:auto!important; animation-duration:.01ms!important; transition-duration:.01ms!important; }
