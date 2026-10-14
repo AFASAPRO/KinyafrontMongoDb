@@ -77,9 +77,17 @@
     </div>
 
     <!-- ═══ FAILURE / CANCEL banners (honest, §32) ══════════════ -->
-    <div v-if="task.status === 'failed'" class="ap-banner err">
-      <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
-      <div><strong>Task failed</strong><p>{{ task.error || 'The task failed.' }}</p></div>
+    <div
+      v-if="task.status === 'failed'"
+      class="ap-banner"
+      :class="task.error_code === 'AI_RATE_LIMIT' ? 'rate-limit' : 'err'"
+      role="alert"
+    >
+      <i class="fas" :class="task.error_code === 'AI_RATE_LIMIT' ? 'fa-clock' : 'fa-circle-exclamation'" aria-hidden="true"></i>
+      <div>
+        <strong>{{ task.error_code === 'AI_RATE_LIMIT' ? 'AI usage limit reached' : 'Task failed' }}</strong>
+        <p>{{ task.error || 'The task failed.' }}</p>
+      </div>
     </div>
     <div v-else-if="task.status === 'cancelled'" class="ap-banner warn">
       <i class="fas fa-ban" aria-hidden="true"></i>
@@ -318,6 +326,7 @@ function downloadPlan() {
 .ap-banner strong { display: block; font-size: 13px; margin-bottom: 2px; }
 .ap-banner p { margin: 0; font-size: 12.5px; color: var(--ag-text-2); line-height: 1.5; }
 .ap-banner.err  { background: rgba(239,68,68,.07);  color: #f87171; border: 1px solid rgba(239,68,68,.25); }
+.ap-banner.rate-limit { background: rgba(245,158,11,.06); color: var(--ag-warn); border: 1px solid rgba(245,158,11,.25); }
 .ap-banner.warn { background: rgba(245,158,11,.06); color: var(--ag-warn); border: 1px solid rgba(245,158,11,.25); }
 
 /* ── footer (reference ss2 layout) ──────────────────────────── */

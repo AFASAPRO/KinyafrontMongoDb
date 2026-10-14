@@ -35,6 +35,23 @@
       </div>
     </header>
 
+    <div
+      v-if="task.status === 'failed'"
+      class="agp-failure"
+      :class="task.error_code === 'AI_RATE_LIMIT' ? 'rate-limit' : 'failure'"
+      role="alert"
+    >
+      <i
+        class="fas"
+        :class="task.error_code === 'AI_RATE_LIMIT' ? 'fa-clock' : 'fa-circle-exclamation'"
+        aria-hidden="true"
+      ></i>
+      <div>
+        <strong>{{ task.error_code === 'AI_RATE_LIMIT' ? 'AI usage limit reached' : 'Task failed' }}</strong>
+        <p>{{ task.error || 'The task failed.' }}</p>
+      </div>
+    </div>
+
     <!-- download error (honest failures only, §32) -->
     <div v-if="agent.downloadState === 'error'" class="agp-dl-err" role="alert">
       <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
@@ -135,6 +152,22 @@ async function refreshAll() {
 
 <style scoped>
 .agp { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+.agp-failure {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin: 12px 14px 0; padding: 11px 13px; border-radius: var(--ag-r);
+  font-size: 12.5px;
+}
+.agp-failure.failure {
+  background: rgba(239,68,68,.07); border: 1px solid rgba(239,68,68,.25);
+  color: #f87171;
+}
+.agp-failure.rate-limit {
+  background: rgba(245,158,11,.06); border: 1px solid rgba(245,158,11,.25);
+  color: var(--ag-warn);
+}
+.agp-failure > i { margin-top: 2px; }
+.agp-failure strong { display: block; margin-bottom: 3px; font-size: 13px; }
+.agp-failure p { margin: 0; color: var(--ag-text-2); line-height: 1.5; }
 
 /* ── header ─────────────────────────────────────────────────── */
 .agp-head {

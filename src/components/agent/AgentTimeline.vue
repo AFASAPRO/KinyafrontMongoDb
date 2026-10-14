@@ -129,9 +129,9 @@
           <i class="fas fa-file-zipper" aria-hidden="true"></i> Download .zip
         </button>
       </div>
-      <div v-else-if="e.kind === 'failed'" class="ag-row err">
-        <span class="ag-dot err" aria-hidden="true"></span>
-        <i class="fas fa-circle-xmark" aria-hidden="true"></i>
+      <div v-else-if="e.kind === 'failed'" class="ag-row" :class="e.code === 'AI_RATE_LIMIT' ? 'warn' : 'err'" role="alert">
+        <span class="ag-dot" :class="e.code === 'AI_RATE_LIMIT' ? 'warn' : 'err'" aria-hidden="true"></span>
+        <i class="fas" :class="e.code === 'AI_RATE_LIMIT' ? 'fa-clock' : 'fa-circle-xmark'" aria-hidden="true"></i>
         <span>{{ e.error }}</span>
       </div>
       <div v-else-if="e.kind === 'cancelled'" class="ag-row err">
@@ -240,7 +240,7 @@ const entries = computed(() => {
         out.push({ kind: 'done', key: 'done', verified: d.verified })
         break
       case 'task.failed':
-        out.push({ kind: 'failed', key: 'failed', error: d.error || 'The task failed.' })
+        out.push({ kind: 'failed', key: 'failed', error: d.error || 'The task failed.', code: d.code })
         break
       case 'task.cancelled':
         out.push({ kind: 'cancelled', key: 'cancelled', reason: d.reason })

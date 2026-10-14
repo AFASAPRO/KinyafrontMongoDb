@@ -286,6 +286,8 @@ export const useAgentStore = defineStore('agent', () => {
       case 'task.failed':
         t.status = 'failed'
         t.error = d.error || 'The task failed.'
+        t.error_code = d.code || null
+        t.rate_limit_reset_at = d.rateLimitResetAt || null
         t.completed_at = evt.at
         pendingConfirmation.value = null
         preview.status = 'offline'
