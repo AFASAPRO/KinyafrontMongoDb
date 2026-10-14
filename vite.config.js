@@ -37,7 +37,7 @@ function kbMergeLandingDist() {
     configResolved(config) {
       outDirAbs = resolvePath(config.root, config.build.outDir || 'dist')
     },
-    closeBundle() {
+    writeBundle() {
       const frontend = resolvePath(outDirAbs, '..')
       const landingDist = join(frontend, 'landing-dist')
 

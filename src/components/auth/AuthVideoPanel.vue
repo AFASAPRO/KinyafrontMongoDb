@@ -4,7 +4,7 @@
       v-if="!mediaFailed"
       ref="videoRef"
       class="auth-video"
-      src="/media/kinya-mascot-auth.mp4"
+      :src="videoUrl"
       autoplay
       muted
       loop
@@ -33,6 +33,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 
+const videoUrl = '/media/kinya-mascot-auth.mp4'
 const videoRef = ref(null)
 const mediaFailed = ref(false)
 const playbackBlocked = ref(false)
