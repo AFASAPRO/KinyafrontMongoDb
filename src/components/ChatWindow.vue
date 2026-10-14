@@ -927,28 +927,28 @@ onBeforeUnmount(() => {
 /* ════════════════════════════════════════════════════════════════
    AGENT MODE CANVAS
    ════════════════════════════════════════════════════════════════ */
-.chat-window.agent-mode { background: #0d0d0d; }
-.chat-window.agent-mode .msg-area { background: #0d0d0d; padding-bottom: 18px; }
+.chat-window.agent-mode { background: var(--bg-base); }
+.chat-window.agent-mode .msg-area { background: var(--bg-base); padding-bottom: 18px; }
 
 /* user bubble → reference prompt bubble (ss3) */
 .chat-window.agent-mode :deep(.msg-row) { padding: 6px 0; }
 .chat-window.agent-mode :deep(.bubble.user) {
-  background: #2d2d2d;
-  border: 1px solid #343436;
-  color: #eee;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-1);
   border-radius: 14px;
   padding: 11px 16px;
 }
 .chat-window.agent-mode :deep(.bubble.user) :deep(*) { color: inherit; }
 
 /* assistant messages read as plain text on the canvas */
-.chat-window.agent-mode :deep(.bubble.assistant) { color: #e8e8ea; }
+.chat-window.agent-mode :deep(.bubble.assistant) { color: var(--text-1); }
 
 /* typing/system bubbles on the agent canvas */
 .chat-window.agent-mode :deep(.typing-bubble),
 .chat-window.agent-mode :deep(.error-bubble) {
-  background: #161618;
-  border-color: #27272a;
+  background: var(--surface-secondary);
+  border-color: var(--border);
 }
 
 /* the composer floats above the canvas */
@@ -972,6 +972,6 @@ onBeforeUnmount(() => {
 .chat-window.agent-mode .m-agent-composer :deep(.agc-project-art) { min-height: 190px; }
 
 /* topbar pills on the agent canvas */
-.chat-window.agent-mode .chat-topbar { background: #0d0d0d; }
+.chat-window.agent-mode .chat-topbar { background: var(--bg-base); }
 
 </style>

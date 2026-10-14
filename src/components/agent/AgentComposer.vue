@@ -1,8 +1,12 @@
 <template>
   <div class="agc ag-ui" :class="{ centered }">
     <header v-if="centered" class="agc-hero-heading">
-      <h1>What can I build for you?</h1>
-      <p>Bring an idea to life with your AI project builder</p>
+      <h1 aria-label="What can I build for you?">
+        <Transition name="agc-cycle" mode="out-in">
+          <span :key="activeHeadline" aria-hidden="true">{{ activeHeadline }}</span>
+        </Transition>
+      </h1>
+      <p>Build a complete product with KinyaBot — not just a mockup.</p>
     </header>
 
     <section class="agc-card" aria-label="Agent prompt">
@@ -109,13 +113,10 @@
         >
           <i class="fas fa-shield-halved" aria-hidden="true"></i>
           <span>{{ agent.autoApprove ? 'Auto-approve on' : 'Auto-approve' }}</span>
-        </button>
+        </button> 
       </div>
 
       <div class="agc-bar-right">
-        <span v-if="modelLabel" class="agc-model" :title="modelTitle">
-          <i class="fas fa-bolt" aria-hidden="true"></i>{{ modelLabel }}
-        </span>
         <!-- V1.2 §6: STOP replaces send while a task executes -->
         <button v-if="agent.isActive" class="agc-send stop" :aria-label="'Stop the running task'" :title="'Stop the task'" @click="stopRunning">
           <i class="fas fa-stop" aria-hidden="true"></i>
@@ -156,7 +157,7 @@
           :class="{ active: selectedCategory === category }"
           role="tab"
           :aria-selected="selectedCategory === category"
-          @click="selectedCategory = category"
+          @click="selectCategory(category)"
         >{{ category }}</button>
       </nav>
 
@@ -166,7 +167,7 @@
           :key="project.id"
           class="agc-project"
           type="button"
-          :aria-label="`Use ${project.name} as a project starting point`"
+          :aria-label="`Use the ${project.name} product starter`"
           @click="selectProject(project)"
         >
           <div class="agc-project-art" :class="project.theme">
@@ -178,14 +179,21 @@
             <div class="agc-art-copy">
               <span class="agc-art-kicker">{{ project.kicker }}</span>
               <strong>{{ project.headline }}</strong>
+              <span class="agc-art-description">{{ project.description }}</span>
               <span class="agc-art-cta">{{ project.cta }} <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
             </div>
             <span class="agc-art-orbit" aria-hidden="true"></span>
-            <div class="agc-art-foot"><span>{{ project.footer }}</span><span>01 — 03</span></div>
+            <div class="agc-art-features">
+              <span v-for="feature in project.features" :key="feature"><i class="fas fa-check" aria-hidden="true"></i>{{ feature }}</span>
+            </div>
+            <div class="agc-art-foot"><span>{{ project.footer }}</span><span>KINYABOT</span></div>
           </div>
           <span class="agc-project-caption"><span>{{ project.name }}</span><i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></span>
         </button>
       </div>
+      <p v-if="selectedProjectName" class="agc-project-status" role="status" aria-live="polite">
+        {{ selectedProjectName }} starter added to your prompt. Review it above and customize it before you build.
+      </p>
     </template>
 
     <!-- V1.2 §7: task shortcut chips -->
@@ -277,29 +285,54 @@ const CATEGORIES = [
   'Mini Game',
   'Personal Blog',
 ]
-const PROJECTS = [
-  { id: 'forge', category: CATEGORIES[0], name: 'Forge Fitness', brand: 'FORGE / PERFORMANCE', nav: 'STUDIO  TRAINING  ABOUT', kicker: 'BUILT BY DISCIPLINE', headline: 'FORGED IN IRON.', cta: 'Explore the studio', footer: 'EST. 2024  ·  EVERY REP COUNTS', theme: 'iron', prompt: 'Build a bold, responsive landing page for a strength training studio. Use a dark editorial look with warm orange accents, a strong hero, class highlights, and a clear membership call to action.' },
-  { id: 'stillwater', category: CATEGORIES[0], name: 'Stillwater Retreat', brand: 'STILLWATER', nav: 'STAY  EXPERIENCE  JOURNAL', kicker: 'A PLACE TO PAUSE', headline: 'Find your quiet.', cta: 'Discover the retreat', footer: 'SLOW DAYS BY THE WATER', theme: 'retreat', prompt: 'Build a cinematic landing page for a lakeside retreat. Use warm natural colors, elegant typography, immersive scenery, room cards, and a clear booking section.' },
-  { id: 'northstar', category: CATEGORIES[0], name: 'Northstar Atelier', brand: 'NORTHSTAR / ATELIER', nav: 'WORK  STUDIO  CONTACT', kicker: 'DESIGN WITH INTENTION', headline: 'Make room for wonder.', cta: 'See selected work', footer: 'INDEPENDENT CREATIVE STUDIO', theme: 'atelier', prompt: 'Build a refined portfolio landing page for an independent creative studio, with a confident editorial layout, an oversized headline, project highlights, and contact details.' },
-  { id: 'fieldnotes', category: CATEGORIES[1], name: 'Field Notes: Earth', brand: 'FIELD NOTES', nav: 'EXPLORE  LESSONS  ABOUT', kicker: 'A LIVING CLASSROOM', headline: 'Our planet, up close.', cta: 'Start exploring', footer: 'LEARN THROUGH DISCOVERY', theme: 'knowledge', prompt: 'Create an interactive teaching website about the natural world, with clear topic cards, short lessons, accessible reading, and engaging visual learning activities.' },
-  { id: 'little-lab', category: CATEGORIES[1], name: 'The Little Science Lab', brand: 'LITTLE LAB', nav: 'EXPERIMENTS  TOPICS  ABOUT', kicker: 'ASK. TEST. DISCOVER.', headline: 'Big ideas start small.', cta: 'Try an experiment', footer: 'SCIENCE FOR CURIOUS MINDS', theme: 'lab', prompt: 'Build a friendly science learning site for students with illustrated topic cards, simple experiments, step-by-step lessons, and a playful but readable design.' },
-  { id: 'language-club', category: CATEGORIES[1], name: 'Language Club', brand: 'LANGUAGE CLUB', nav: 'PRACTICE  VOCAB  PROGRESS', kicker: 'A LITTLE EVERY DAY', headline: 'Words open worlds.', cta: 'Begin a lesson', footer: 'LEARN AT YOUR OWN PACE', theme: 'language', prompt: 'Create a language-learning dashboard with daily lessons, vocabulary practice, a progress streak, and a welcoming responsive layout.' },
-  { id: 'soft-form', category: CATEGORIES[2], name: 'Soft Form Study', brand: 'FORM / STUDY 01', nav: 'OBJECTS  PROCESS  INFO', kicker: 'DIGITAL SCULPTURE', headline: 'A study in soft form.', cta: 'Rotate the object', footer: 'INTERACTIVE 3D GALLERY', theme: 'model', prompt: 'Create a polished 3D modeling showcase with an interactive central object, subtle lighting, orbit controls, and a clean gallery-style interface.' },
-  { id: 'orbit-room', category: CATEGORIES[2], name: 'Orbit Room', brand: 'ORBIT ROOM', nav: 'SCENES  COLLECTION  INFO', kicker: 'SPACES IN MOTION', headline: 'A world of your own.', cta: 'Enter the scene', footer: 'IMMERSIVE DIGITAL WORLDS', theme: 'orbit', prompt: 'Build an immersive 3D scene explorer with a moody space-inspired environment, interactive objects, smooth camera movement, and responsive controls.' },
-  { id: 'object-archive', category: CATEGORIES[2], name: 'Object Archive', brand: 'OBJECT ARCHIVE', nav: 'COLLECTION  INDEX  ABOUT', kicker: 'OBJECTS, REIMAGINED', headline: 'Form meets feeling.', cta: 'View the collection', footer: 'A DIGITAL OBJECT STUDY', theme: 'archive', prompt: 'Build an elegant 3D product gallery for a design collection, including detailed object views, concise item information, and keyboard-friendly controls.' },
-  { id: 'pixel-garden', category: CATEGORIES[3], name: 'Pixel Garden', brand: 'PIXEL GARDEN', nav: 'PLAY  GUIDE  SCORES', kicker: 'A TINY WORLD TO GROW', headline: 'Plant. Play. Bloom.', cta: 'Start a new game', footer: 'A COZY BROWSER GAME', theme: 'game', prompt: 'Build a cozy, playable browser game where players grow a tiny garden. Include clear controls, visible progress, a restart option, and a polished pixel-inspired interface.' },
-  { id: 'orbit-dash', category: CATEGORIES[3], name: 'Orbit Dash', brand: 'ORBIT DASH', nav: 'PLAY  HOW TO PLAY  SCORES', kicker: 'READY FOR LIFTOFF?', headline: 'Dodge the unknown.', cta: 'Launch game', footer: 'ARCADE MODE  ·  SOLO PLAY', theme: 'arcade', prompt: 'Create a fast, playable arcade game set in space with keyboard controls, obstacles, a score counter, and a clear start and game-over state.' },
-  { id: 'word-sprint', category: CATEGORIES[3], name: 'Word Sprint', brand: 'WORD SPRINT', nav: 'PLAY  RULES  BEST SCORES', kicker: 'THINK QUICK', headline: 'Find the hidden word.', cta: 'Play a round', footer: 'A QUICK DAILY CHALLENGE', theme: 'words', prompt: 'Build a fun word puzzle game with a timer, keyboard input, helpful feedback, score tracking, and a way to start a new round.' },
-  { id: 'slow-pages', category: CATEGORIES[4], name: 'Slow Pages', brand: 'SLOW PAGES', nav: 'STORIES  NOTES  ABOUT', kicker: 'A JOURNAL OF SMALL THINGS', headline: 'Take the long way.', cta: 'Read the latest story', footer: 'WORDS, PHOTOS, EVERYDAY LIFE', theme: 'blog', prompt: 'Build a personal journal with an editorial homepage, readable article pages, a thoughtful photo layout, and simple category navigation.' },
-  { id: 'weekend-journal', category: CATEGORIES[4], name: 'Weekend Journal', brand: 'WEEKEND JOURNAL', nav: 'TRAVEL  FOOD  NOTES', kicker: 'OUT OF OFFICE', headline: 'Somewhere, slowly.', cta: 'Read the travel notes', footer: 'A PERSONAL TRAVEL JOURNAL', theme: 'travel', prompt: 'Create a personal travel blog with immersive story cards, a featured destination, a clean article layout, and responsive navigation.' },
-  { id: 'everyday-cook', category: CATEGORIES[4], name: 'Everyday Table', brand: 'EVERYDAY TABLE', nav: 'RECIPES  STORIES  ABOUT', kicker: 'GOOD FOOD, NO FUSS', headline: 'Come hungry.', cta: 'Find a recipe', footer: 'RECIPES FROM MY KITCHEN', theme: 'food', prompt: 'Build a warm personal food blog with recipe cards, an author story, clear cooking steps, and easy-to-use category filters.' },
+const HEADLINES = [
+  'What can I build for you?',
+  'A product people can use?',
+  'A smarter KinyaBot experience?',
+  'Your next big idea?',
 ]
+const PROJECTS = [
+  { id: 'kinya-workspace', category: CATEGORIES[0], name: 'KinyaBot Workspace', brand: 'KINYABOT / WORKSPACE', nav: 'CHAT  PROJECTS  TEAM', kicker: 'YOUR WORK, IN FLOW', headline: 'Make space to build.', description: 'A team AI workspace with shared projects and live previews.', features: ['Shared projects', 'AI assistant', 'Live preview'], cta: 'Explore the workspace', footer: 'ONE SPACE. MORE MOMENTUM.', theme: 'iron', prompt: 'Build KinyaBot Workspace as a complete, usable product: a responsive team AI workspace with working project navigation, shared conversation views, an interactive project dashboard, and a live preview area. Use KinyaBot indigo, violet, and cyan branding. Implement real interactions and coherent empty/loading/error states; do not leave fake buttons or placeholder sections.' },
+  { id: 'kinya-creator', category: CATEGORIES[0], name: 'KinyaBot for Creators', brand: 'KINYABOT / CREATE', nav: 'IDEAS  CANVAS  PUBLISH', kicker: 'FROM FIRST THOUGHT TO FINISH', headline: 'Bring it to life.', description: 'A creator studio for turning prompts into polished work.', features: ['Prompt library', 'Creation canvas', 'Export flow'], cta: 'Open the creator studio', footer: 'MADE TO MOVE IDEAS FORWARD', theme: 'retreat', prompt: 'Build KinyaBot for Creators as a complete interactive creator platform, not a static marketing mockup. Include a searchable prompt library, an editable creation canvas, working save/export actions, and a polished responsive landing experience. Use KinyaBot indigo-violet-cyan branding. Make every visible control work and verify the primary creation flow in preview.' },
+  { id: 'kinya-business', category: CATEGORIES[0], name: 'KinyaBot for Business', brand: 'KINYABOT / BUSINESS', nav: 'SOLUTIONS  PRICING  SIGN IN', kicker: 'AI THAT WORKS WITH YOU', headline: 'Better work, together.', description: 'A practical AI toolkit for teams and growing businesses.', features: ['Team tools', 'Clear plans', 'Get started'], cta: 'See how it works', footer: 'BUILT FOR REAL WORKFLOWS', theme: 'atelier', prompt: 'Build KinyaBot for Business as a complete responsive product website with working feature navigation, a usable plan comparison, an interactive FAQ, and a functional sign-up/onboarding flow suitable for this project. Use KinyaBot indigo, violet, and cyan colors. Use realistic copy and working interactions; do not ship a static demo or dead-end buttons.' },
+  { id: 'kinya-learn', category: CATEGORIES[1], name: 'KinyaBot Learn', brand: 'KINYABOT / LEARN', nav: 'MY LEARNING  LIBRARY  HELP', kicker: 'LEARN AT YOUR OWN PACE', headline: 'Knowledge, made clear.', description: 'Short lessons with progress you can pick up anytime.', features: ['Guided lessons', 'Saved progress', 'Quick quizzes'], cta: 'Continue learning', footer: 'SMALL STEPS. REAL PROGRESS.', theme: 'knowledge', prompt: 'Build KinyaBot Learn as a complete learning product with a lesson library, readable lesson pages, working quizzes, saved learning progress, and a helpful home dashboard. Use KinyaBot indigo-violet-cyan branding. Persist progress locally or through the available backend, make the learning flows genuinely usable, and verify them in preview.' },
+  { id: 'kinya-help', category: CATEGORIES[1], name: 'KinyaBot Help Center', brand: 'KINYABOT / HELP', nav: 'GUIDES  TOPICS  CONTACT', kicker: 'ANSWERS WHEN YOU NEED THEM', headline: 'Find your next step.', description: 'A searchable, organized home for KinyaBot guidance.', features: ['Live search', 'Topic guides', 'Contact support'], cta: 'Browse help topics', footer: 'CLEAR ANSWERS. LESS FRICTION.', theme: 'lab', prompt: 'Build a complete KinyaBot Help Center with functional live article search, category filters, helpful article pages, related guides, and a working contact-support form with validation and clear feedback. Use KinyaBot brand colors and real, useful help content. Ensure the result works end-to-end in preview and is not just a visual demo.' },
+  { id: 'kinya-academy', category: CATEGORIES[1], name: 'KinyaBot Academy', brand: 'KINYABOT / ACADEMY', nav: 'COURSES  PATHS  MY ACCOUNT', kicker: 'MAKE AI WORK FOR YOU', headline: 'Learn by doing.', description: 'Practical AI courses with hands-on checkpoints.', features: ['Course paths', 'Hands-on tasks', 'Completion state'], cta: 'Choose a learning path', footer: 'PRACTICE THAT BUILDS SKILL', theme: 'language', prompt: 'Build KinyaBot Academy as a usable course platform: course discovery and filters, structured lesson pages, interactive exercises, and persisted completion tracking. Include realistic beginner-friendly content and responsive layouts. Align to KinyaBot indigo, violet, and cyan. Do not use placeholder links or controls; verify the course-to-completion flow.' },
+  { id: 'kinya-avatar', category: CATEGORIES[2], name: 'KinyaBot Avatar Studio', brand: 'KINYABOT / AVATAR STUDIO', nav: 'AVATARS  EDITOR  EXPORT', kicker: 'MEET YOUR DIGITAL COMPANION', headline: 'Shape your Kinya.', description: 'A hands-on 3D character studio with live controls.', features: ['Orbit controls', 'Expression picker', 'Save avatar'], cta: 'Customize the avatar', footer: 'INTERACTIVE 3D CHARACTER STUDIO', theme: 'model', prompt: 'Build KinyaBot Avatar Studio as a working interactive 3D character customization product. Provide a real orbitable 3D character (use available project assets if suitable), functional expression and appearance controls, reset, and save/load customization. Use KinyaBot brand colors and accessible controls. Avoid a static 3D image or dead buttons; run and verify the preview.' },
+  { id: 'kinya-world', category: CATEGORIES[2], name: 'KinyaBot Worlds', brand: 'KINYABOT / WORLDS', nav: 'WORLDS  BUILD  SHARE', kicker: 'STEP INTO YOUR IDEAS', headline: 'Create a world.', description: 'Explore and customize a small interactive 3D scene.', features: ['Scene picker', 'Camera controls', 'Save a scene'], cta: 'Enter the 3D workspace', footer: 'A PLAYABLE SPACE TO CREATE', theme: 'orbit', prompt: 'Build KinyaBot Worlds as a complete interactive 3D scene editor with selectable scenes, working camera/orbit controls, configurable scene elements, and save/reset actions. Use the available project stack and assets where possible, add accessible non-3D controls, and ensure it runs in the preview. This must be a usable product, not a static visual concept.' },
+  { id: 'kinya-showcase', category: CATEGORIES[2], name: 'KinyaBot Showcase', brand: 'KINYABOT / SHOWCASE', nav: 'COLLECTION  DETAILS  ABOUT', kicker: 'A CLOSER LOOK', headline: 'Every detail, in view.', description: 'An interactive 3D product viewer for KinyaBot devices.', features: ['Rotate model', 'Feature hotspots', 'Compare views'], cta: 'Explore the model', footer: 'BUILT FOR CURIOUS HANDS', theme: 'archive', prompt: 'Build a complete KinyaBot-branded 3D product showcase with a rotatable model or a useful procedural model if no asset exists, working feature hotspots, view controls, and a responsive details panel. Include meaningful fallbacks and keyboard-accessible controls. Do not substitute a static mockup; verify actual interactions in preview.' },
+  { id: 'kinya-quest', category: CATEGORIES[3], name: 'KinyaBot Quest', brand: 'KINYABOT / QUEST', nav: 'PLAY  QUESTS  PROFILE', kicker: 'YOUR NEXT CHALLENGE AWAITS', headline: 'Think. Choose. Discover.', description: 'A complete story game with choices and saved progress.', features: ['Branching story', 'Real choices', 'Save progress'], cta: 'Start your quest', footer: 'A STORY THAT RESPONDS TO YOU', theme: 'game', prompt: 'Build KinyaBot Quest as a complete playable branching-story game. Include multiple meaningful choices and endings, working navigation, saved progress, restart/continue actions, and a clear accessible game interface. Use KinyaBot brand colors and original story content. No fake controls: verify a complete playthrough in preview.' },
+  { id: 'kinya-brain', category: CATEGORIES[3], name: 'KinyaBot Brain Sprint', brand: 'KINYABOT / BRAIN SPRINT', nav: 'PLAY  DAILY  SCORES', kicker: 'A QUICK TEST OF YOUR WITS', headline: 'Beat your best.', description: 'Daily bite-sized quizzes with score history.', features: ['Timed rounds', 'Score history', 'Daily challenge'], cta: 'Play a round', footer: 'ONE MORE QUESTION?', theme: 'arcade', prompt: 'Build KinyaBot Brain Sprint as a complete quiz game with original questions, functional answer input, scoring, timer, results, replay, and persistent best scores. Include a daily challenge and mobile-friendly accessible controls. Use KinyaBot indigo-violet-cyan branding. Verify a full round works; do not leave demo-only interactions.' },
+  { id: 'kinya-puzzle', category: CATEGORIES[3], name: 'KinyaBot Puzzle Lab', brand: 'KINYABOT / PUZZLE LAB', nav: 'PUZZLES  HINTS  STATS', kicker: 'A NEW PUZZLE, EVERY DAY', headline: 'Find the pattern.', description: 'A replayable logic puzzle with helpful hints.', features: ['Playable board', 'Useful hints', 'Win tracking'], cta: 'Solve today’s puzzle', footer: 'THINK IT THROUGH TOGETHER', theme: 'words', prompt: 'Build KinyaBot Puzzle Lab as a genuinely playable logic puzzle product with a working board, rules, hint system, win detection, new/replay puzzle actions, and persisted stats. Make it responsive and keyboard accessible, use KinyaBot brand colors, and test the game loop in preview. Do not deliver a static demo.' },
+  { id: 'kinya-journal', category: CATEGORIES[4], name: 'KinyaBot Journal', brand: 'KINYABOT / JOURNAL', nav: 'MY JOURNAL  SAVED  SETTINGS', kicker: 'A QUIETER PLACE TO THINK', headline: 'Keep what matters.', description: 'A private-feeling journal with drafts and search.', features: ['Rich entries', 'Search notes', 'Saved drafts'], cta: 'Write a new entry', footer: 'YOUR WORDS, YOUR SPACE', theme: 'blog', prompt: 'Build KinyaBot Journal as a complete personal journaling app with create/edit/delete entries, autosaved drafts, search, tags, and a usable entry reader. Persist content in the available backend or local storage. Include empty and confirmation states, responsive accessible UI, and KinyaBot branding. Verify the full create-to-search flow; no placeholder controls.' },
+  { id: 'kinya-stories', category: CATEGORIES[4], name: 'KinyaBot Stories', brand: 'KINYABOT / STORIES', nav: 'COMMUNITY  STORIES  SHARE', kicker: 'IDEAS WORTH PASSING ON', headline: 'Stories bring us closer.', description: 'A community reading space for useful human stories.', features: ['Story feed', 'Topic filters', 'Reading list'], cta: 'Explore the stories', footer: 'A COMMUNITY BUILT ON SHARING', theme: 'travel', prompt: 'Build KinyaBot Stories as a complete community story-reading product: a filterable article feed, readable story pages, functional bookmarks/reading list, and a working submit-story flow with validation and clear status. Persist bookmarks where possible, use realistic original content, and apply KinyaBot brand colors. Ensure no dead controls and verify the full reader flow.' },
+  { id: 'kinya-notes', category: CATEGORIES[4], name: 'KinyaBot Field Notes', brand: 'KINYABOT / FIELD NOTES', nav: 'NOTES  COLLECTIONS  SEARCH', kicker: 'CATCH A THOUGHT BEFORE IT GOES', headline: 'Notes that find their way.', description: 'A searchable notebook for prompts and project ideas.', features: ['Quick capture', 'Collections', 'Export notes'], cta: 'Open your notebook', footer: 'FROM THOUGHT TO NEXT STEP', theme: 'food', prompt: 'Build KinyaBot Field Notes as a complete personal notes app for capturing prompts and ideas, with create/edit/delete, searchable notes, collections, and working export. Persist data locally or through the available backend, make the mobile flow excellent, use KinyaBot indigo-violet-cyan branding, and verify actual save/search/export behavior.' },
+]
+
+const headlineIndex = ref(0)
+const activeHeadline = computed(() => HEADLINES[headlineIndex.value])
+const selectedProjectName = ref('')
+let headlineTimer
+const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+function syncHeadlineMotion() {
+  window.clearInterval(headlineTimer)
+  headlineTimer = undefined
+  if (!motionQuery.matches) {
+    headlineTimer = window.setInterval(() => {
+      headlineIndex.value = (headlineIndex.value + 1) % HEADLINES.length
+    }, 3600)
+  }
+}
 
 const selectedCategory = ref(CATEGORIES[0])
 const visibleProjects = computed(() => PROJECTS.filter(project => project.category === selectedCategory.value))
 
 /* Real provider/model info from GET /agent/config. */
-onMounted(() => { if (!agent.agentConfig) agent.fetchConfig() })
+onMounted(() => {
+  if (!agent.agentConfig) agent.fetchConfig()
+  syncHeadlineMotion()
+  motionQuery.addEventListener('change', syncHeadlineMotion)
+})
 const modelLabel = computed(() => {
   const cfg = agent.agentConfig
   if (!cfg?.model) return 'Groq'
@@ -412,9 +445,15 @@ function clearPreset() {
   requestAnimationFrame(autoGrow)
 }
 
+function selectCategory(category) {
+  selectedCategory.value = category
+  selectedProjectName.value = ''
+}
+
 function selectProject(project) {
-  model.text = project.prompt
+  model.text = `${project.prompt}\n\nBuild this as a complete working product, not a static mockup or demo. Make every visible control functional, use realistic content, persist user data where appropriate, follow KinyaBot's indigo, violet, and cyan branding, and verify the key user flows in the preview.`
   activePreset.value = null
+  selectedProjectName.value = project.name
   requestAnimationFrame(() => {
     autoGrow()
     ta.value?.focus()
@@ -443,7 +482,11 @@ function onDocClick(e) {
   if (menuOpen.value && !e.target.closest?.('.agc-plus-wrap')) menuOpen.value = false
 }
 onMounted(() => document.addEventListener('click', onDocClick))
-onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocClick)
+  window.clearInterval(headlineTimer)
+  motionQuery.removeEventListener('change', syncHeadlineMotion)
+})
 
 defineExpose({ focus: () => ta.value?.focus(), setText: (t) => { model.text = t; requestAnimationFrame(autoGrow) } })
 </script>
@@ -705,7 +748,7 @@ defineExpose({ focus: () => ta.value?.focus(), setText: (t) => { model.text = t;
 /* Dark build studio and the new-chat project gallery. */
 .agc {
   background: transparent;
-  color: #f5f5f5;
+  color: var(--text-1);
   padding: 0;
   gap: 25px;
   box-shadow: none;
@@ -715,87 +758,107 @@ defineExpose({ focus: () => ta.value?.focus(), setText: (t) => { model.text = t;
 .agc-hero-heading { text-align: center; }
 .agc-hero-heading h1 {
   margin: 0;
-  color: #f4f2ee;
-  font: 400 clamp(2.6rem, 5.1vw, 4.4rem)/1.08 Georgia, 'Times New Roman', serif;
+  min-height: 1.12em;
+  overflow: hidden;
+  color: var(--text-1);
+  font: 600 clamp(2.6rem, 5.1vw, 4.4rem)/1.12 var(--font);
   letter-spacing: -.055em;
+  white-space: nowrap;
+}
+.agc-hero-heading h1 > span {
+  display: inline-block;
+  background: var(--gradient-ai);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 .agc-hero-heading p {
   margin: 24px 0 0;
-  color: #e4e4e7;
+  color: var(--text-2);
   font-size: 17px;
   line-height: 1.5;
 }
+.agc-cycle-enter-active, .agc-cycle-leave-active { transition: opacity .28s ease, transform .28s ease; }
+.agc-cycle-enter-from { opacity: 0; transform: translateY(65%); }
+.agc-cycle-leave-to { opacity: 0; transform: translateY(-65%); }
 .agc-card {
   width: 100%;
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 17px 20px 14px;
-  border: 1px solid #3d3d3f;
+  border: 1px solid var(--border);
   border-radius: 16px;
-  background: #272729;
-  box-shadow: 0 12px 34px rgba(0,0,0,.22);
+  background: var(--surface-secondary);
+  color: var(--text-1);
+  box-shadow: var(--shadow-md);
 }
 .agc.centered .agc-card { max-width: 1000px; align-self: center; }
 .agc-input {
-  color: #f4f4f5;
+  color: var(--text-1);
   font-size: 17px;
   min-height: 58px;
   padding: 2px 4px 0;
 }
-.agc-input::placeholder { color: #77777b; }
+.agc-input::placeholder { color: var(--text-3); }
 .agc-bar { min-height: 38px; }
 .agc-bar-left, .agc-bar-right { gap: 10px; }
 .agc-plus {
   width: 34px;
   height: 34px;
   background: transparent;
-  color: #c4c4c7;
+  color: var(--text-2);
   font-size: 17px;
 }
-.agc-plus:hover { background: #38383b; color: #fff; }
+.agc-plus:hover { background: var(--bg-hover); color: var(--text-1); }
 .agc-icon-tool {
   width: 34px;
   height: 34px;
   background: transparent;
   border: 1px solid transparent;
-  color: #c4c4c7;
+  color: var(--text-2);
   font-size: 15px;
 }
-.agc-icon-tool:hover:not(:disabled) { border-color: #4a4a4d; color: #fff; background: #38383b; }
-.agc-bypass { color: #b4b4b8; }
-.agc-bypass:hover { color: #fff; }
-.agc-bypass.on, .agc-bypass.on i { color: #34d399; }
-.agc-model { color: #b4b4b8; }
-.agc-model i { color: #a1a1aa; }
+.agc-icon-tool:hover:not(:disabled) { border-color: var(--border-md); color: var(--text-1); background: var(--bg-hover); }
+.agc-bypass { color: var(--text-2); }
+.agc-bypass:hover { color: var(--text-1); }
+.agc-bypass.on, .agc-bypass.on i { color: var(--success); }
+.agc-model { color: var(--text-2); }
+.agc-model i { color: var(--brand-text); }
 .agc-send {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: #5b5b5e;
-  color: #1b1b1d;
+  background: var(--brand);
+  color: var(--on-brand);
 }
-.agc-send:hover:not(:disabled) { background: #77777b; }
-.agc-send:disabled { background: #555558; color: #303033; opacity: 1; }
+.agc-send:hover:not(:disabled) { background: var(--brand-strong); }
+.agc-send:disabled { background: var(--bg-hover); color: var(--text-3); opacity: 1; }
 .agc-send.stop { background: #dc2626; color: #fff; }
 .agc-chips { padding: 0; }
 .agc-chip, .agc-att {
-  background: #303033;
-  border-color: #48484b;
-  color: #e4e4e7;
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text-1);
 }
-.agc-chip:hover { background: #39393c; border-color: #66666a; }
-.agc-chip i { color: #b4b4b8; }
-.agc-chip.live { border-color: #10b981; }
-.agc-chip.live .agc-chip-badge { background: #064e3b; color: #a7f3d0; }
-.agc-att-thumb { background: #3f3f42; }
-.agc-att-thumb.placeholder { color: #c4c4c7; }
-.agc-att-name { color: #e4e4e7; }
-.agc-att-x { background: #555558; color: #f4f4f5; }
-.agc-att-x:hover { background: #77777b; }
-.agc-up-spin, .agc-hint { color: #b4b4b8; }
-.agc-err { background: #35191b; border-color: #71343a; color: #fecaca; }
-.agc :focus-visible { outline-color: #d4d4d8; }
+.agc-chip:hover { background: var(--bg-hover); border-color: var(--border-md); }
+.agc-chip i { color: var(--text-2); }
+.agc-chip.live { border-color: var(--success); }
+.agc-chip.live .agc-chip-badge { background: var(--brand-soft); color: var(--brand-text); }
+.agc-chip-badge { background: var(--brand-soft); color: var(--brand-text); }
+.agc-att-thumb { background: var(--surface-secondary); }
+.agc-att-thumb.placeholder { color: var(--text-2); }
+.agc-att-name { color: var(--text-1); }
+.agc-att-x { background: var(--bg-hover); color: var(--text-1); }
+.agc-att-x:hover { background: var(--border-md); }
+.agc-up-spin, .agc-hint { color: var(--text-2); }
+.agc-err { background: var(--surface-secondary); border-color: var(--error); color: var(--error); }
+.agc :focus-visible { outline-color: var(--brand-hover); }
+.agc-menu { background: var(--surface-elevated); border-color: var(--border); color: var(--text-1); }
+.ag-menu-item { color: var(--text-2); }
+.ag-menu-item:hover { background: var(--bg-hover); color: var(--text-1); }
+.ag-menu-item i { color: var(--brand-text); }
+.ag-menu-sep { background: var(--border); }
 
 .agc-categories {
   width: 100%;
@@ -809,16 +872,16 @@ defineExpose({ focus: () => ta.value?.focus(), setText: (t) => { model.text = t;
 .agc-category {
   flex: 0 0 auto;
   padding: 10px 15px;
-  border: 1px solid #343437;
+  border: 1px solid var(--border);
   border-radius: 11px;
   background: transparent;
-  color: #88888d;
+  color: var(--text-3);
   font: 600 14px var(--ag-font);
   cursor: pointer;
   transition: color .15s, background .15s, border-color .15s;
 }
-.agc-category:hover { color: #e4e4e7; border-color: #5a5a5e; }
-.agc-category.active { color: #e4e4e7; background: #202022; border-color: #444447; }
+.agc-category:hover { color: var(--text-1); border-color: var(--border-md); }
+.agc-category.active { color: var(--brand-text); background: var(--brand-soft); border-color: var(--brand-ring); }
 .agc-projects {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -829,18 +892,18 @@ defineExpose({ focus: () => ta.value?.focus(), setText: (t) => { model.text = t;
   min-width: 0;
   padding: 0;
   overflow: hidden;
-  border: 1px solid #333336;
+  border: 1px solid var(--border);
   border-radius: 15px;
-  background: #181819;
-  color: #f4f4f5;
+  background: var(--surface);
+  color: var(--text-1);
   text-align: left;
   cursor: pointer;
   transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
 }
 .agc-project:hover {
   transform: translateY(-3px);
-  border-color: #66666a;
-  box-shadow: 0 12px 28px rgba(0,0,0,.3);
+  border-color: var(--brand-text);
+  box-shadow: var(--shadow-md), 0 0 0 1px var(--brand-ring);
 }
 .agc-project-art {
   position: relative;
@@ -858,8 +921,8 @@ defineExpose({ focus: () => ta.value?.focus(), setText: (t) => { model.text = t;
   z-index: -1;
   content: '';
   inset: 0;
-  opacity: .8;
-  background: linear-gradient(135deg, transparent 45%, rgba(255,255,255,.06));
+  opacity: .45;
+  background: linear-gradient(135deg, var(--brand-soft), transparent 55%, rgba(34,211,238,.12));
 }
 .agc-art-nav, .agc-art-foot {
   display: flex;
@@ -869,13 +932,13 @@ defineExpose({ focus: () => ta.value?.focus(), setText: (t) => { model.text = t;
   font: 600 7px/1.3 var(--ag-mono);
   letter-spacing: .08em;
 }
-.agc-art-mark { width: 7px; height: 7px; border-radius: 2px; background: #ef6639; }
+.agc-art-mark { width: 7px; height: 7px; border-radius: 2px; background: linear-gradient(135deg, #22d3ee, #8b5cf6); }
 .agc-art-nav-links { margin-left: auto; opacity: .75; text-align: right; }
-.agc-art-copy { position: relative; z-index: 1; max-width: 88%; }
+.agc-art-copy { position: relative; z-index: 1; max-width: 62%; }
 .agc-art-kicker {
   display: block;
   margin-bottom: 8px;
-  color: rgba(255,255,255,.65);
+  color: var(--brand-hover);
   font: 600 7px/1.3 var(--ag-mono);
   letter-spacing: .17em;
 }
@@ -890,11 +953,42 @@ defineExpose({ focus: () => ta.value?.focus(), setText: (t) => { model.text = t;
   align-items: center;
   gap: 7px;
   margin-top: 13px;
-  color: rgba(255,255,255,.78);
+  color: #c4b5fd;
   font: 500 8px/1.4 var(--ag-font);
   letter-spacing: .03em;
 }
 .agc-art-cta i { font-size: 7px; }
+.agc-art-description {
+  display: block;
+  max-width: 30ch;
+  margin-top: 8px;
+  color: rgba(255,255,255,.78);
+  font: 400 9px/1.45 var(--ag-font);
+}
+.agc-art-features {
+  position: absolute;
+  z-index: 1;
+  left: 14px;
+  bottom: 34px;
+  display: flex;
+  gap: 4px;
+  max-width: calc(100% - 28px);
+  overflow: hidden;
+}
+.agc-art-features span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 5px;
+  border: 1px solid rgba(165,180,252,.28);
+  border-radius: 6px;
+  background: rgba(11,16,32,.64);
+  color: #e0e7ff;
+  font: 500 7px/1.25 var(--ag-font);
+  white-space: nowrap;
+  flex: 0 1 auto;
+}
+.agc-art-features i { color: #67e8f9; font-size: 6px; }
 .agc-art-orbit {
   position: absolute;
   z-index: 0;
@@ -937,23 +1031,30 @@ defineExpose({ focus: () => ta.value?.focus(), setText: (t) => { model.text = t;
   justify-content: space-between;
   gap: 8px;
   padding: 11px 13px;
-  color: #d4d4d8;
+  color: var(--text-1);
   font-size: 12px;
   font-weight: 600;
 }
-.agc-project-caption i { color: #77777b; font-size: 10px; }
-.agc-preset { background: #252528; border-color: #414145; color: #d4d4d8; }
-.agc-preset i { color: #a1a1aa; }
-.agc-preset:hover { border-color: #66666a; background: #303033; }
-.agc-preset.active { background: #303033; border-color: #8a8a8f; color: #fff; }
-.agc-preset.active i { color: #fff; }
+.agc-project-caption i { color: var(--brand-text); font-size: 10px; }
+.agc-project-status {
+  margin: -10px 0 0;
+  color: var(--text-2);
+  font-size: 12px;
+  text-align: right;
+}
+.agc-preset { background: var(--surface-secondary); border-color: var(--border); color: var(--text-2); }
+.agc-preset i { color: var(--text-2); }
+.agc-preset:hover { border-color: var(--brand-text); background: var(--brand-soft); }
+.agc-preset.active { background: var(--brand-soft); border-color: var(--brand-text); color: var(--text-1); }
+.agc-preset.active i { color: var(--brand-text); }
 .agc-preset-note { color: #b4b4b8; }
 .agc-preset-note :deep(.ag-icon-btn) { color: #b4b4b8; }
 
 @media (max-width: 760px) {
   .agc { gap: 18px; }
-  .agc-hero-heading h1 { font-size: clamp(2.3rem, 10vw, 3.2rem); }
+  .agc-hero-heading h1 { font-size: clamp(1.2rem, 6vw, 3.2rem); }
   .agc-hero-heading p { margin-top: 12px; font-size: 14px; }
+  .agc-art-copy { max-width: 65%; }
   .agc-projects { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .agc-project-art { min-height: 180px; padding: 10px; }
   .agc-project-caption { padding: 9px 10px; font-size: 11px; }
@@ -968,10 +1069,14 @@ defineExpose({ focus: () => ta.value?.focus(), setText: (t) => { model.text = t;
 @media (max-width: 420px) {
   .agc-projects { grid-template-columns: 1fr; }
   .agc-project-art { min-height: 200px; }
-  .agc-hero-heading h1 { font-size: 2.25rem; }
+  .agc-hero-heading h1 { font-size: clamp(1.1rem, 5.8vw, 1.5rem); }
+  .agc-art-copy { max-width: 68%; }
   .agc-hero-heading p { font-size: 13px; }
   .agc-attach-group { gap: 0; }
   .agc-icon-tool { width: 30px; }
   .agc-model { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .agc-cycle-enter-active, .agc-cycle-leave-active { transition: none; }
 }
 </style>

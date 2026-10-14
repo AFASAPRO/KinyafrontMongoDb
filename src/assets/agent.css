@@ -1,47 +1,40 @@
 /* ═════════════════════════════════════════════════════════════════
-   KinyaBot Agent V1.1 — Design System
-   Derived from the uploaded reference screenshots (Manus-style
-   agent interface):
-   • deep neutral-black canvas (#0d0d0d) with elevated dark cards
-   • charcoal composer surfaces against a deep neutral-black canvas
-   • emerald status accents, gold "flagged" annotations
-   • white primary buttons / bordered secondary buttons
-   • mono code blocks with line numbers and gold "changed" markers
-   All tokens are scoped under .ag-ui so the existing Chat design
-   system is untouched. Agent mode is a world of its own.
+   KinyaBot Agent design system.
+   Reuses the app's shared theme tokens so Agent mode stays consistent
+   with the KinyaBot chat and responds to dark/light theme changes.
 ═════════════════════════════════════════════════════════════════ */
 
 .ag-ui {
   /* surfaces */
-  --ag-bg:        #0d0d0d;
-  --ag-panel:     #141416;
-  --ag-card:      #1c1c1e;
-  --ag-nested:    #141416;
-  --ag-hover:     #232326;
-  --ag-border:    #27272a;
-  --ag-border-2:  #3f3f46;
+  --ag-bg:        var(--bg-base);
+  --ag-panel:     var(--bg-panel);
+  --ag-card:      var(--bg-card);
+  --ag-nested:    var(--surface-secondary);
+  --ag-hover:     var(--bg-hover);
+  --ag-border:    var(--border);
+  --ag-border-2:  var(--border-strong);
 
   /* text */
-  --ag-text:      #fafafa;
-  --ag-text-2:    #a1a1aa;
-  --ag-text-3:    #71717a;
+  --ag-text:      var(--text-1);
+  --ag-text-2:    var(--text-2);
+  --ag-text-3:    var(--text-3);
 
   /* accents */
-  --ag-accent:    #10b981;              /* emerald — live/success      */
-  --ag-accent-2:  #34d399;
-  --ag-accent-soft: rgba(16,185,129,.12);
-  --ag-blue:      #3b82f6;              /* progress / selection        */
-  --ag-gold:      #c5a059;              /* "changed/flagged" markers   */
-  --ag-danger:    #ef4444;
-  --ag-warn:      #f59e0b;
+  --ag-accent:    var(--brand);
+  --ag-accent-2:  var(--brand-hover);
+  --ag-accent-soft: var(--brand-soft);
+  --ag-blue:      var(--brand-text);
+  --ag-gold:      #c5a059;
+  --ag-danger:    var(--error);
+  --ag-warn:      var(--warning);
 
   /* code */
-  --ag-code-bg:   #1a1a1c;
-  --ag-code-head: #101012;
+  --ag-code-bg:   var(--code-bg);
+  --ag-code-head: var(--code-header);
 
   /* type */
-  --ag-font:      'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --ag-mono:      'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --ag-font:      var(--font);
+  --ag-mono:      var(--font-mono);
 
   --ag-r-sm: 10px;
   --ag-r:    14px;
@@ -51,8 +44,7 @@
   font-family: var(--ag-font);
 }
 
-/* ── Buttons (reference: white primary "Approve", bordered secondary
-      "View Plan", dark "Stop" chip) ─────────────────────────────── */
+/* ── Workspace action buttons ─────────────────────────────────── */
 .ag-ui .ag-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
   font-family: var(--ag-font); font-size: 13px; font-weight: 600;
@@ -63,17 +55,17 @@
 }
 .ag-ui .ag-btn:active { transform: scale(.98); }
 .ag-ui .ag-btn.primary {
-  background: #ffffff; color: #101012;
+  background: var(--brand); color: var(--on-brand);
 }
-.ag-ui .ag-btn.primary:hover { background: #ececf0; }
+.ag-ui .ag-btn.primary:hover { background: var(--brand-strong); }
 .ag-ui .ag-btn.secondary {
   background: transparent; color: var(--ag-text); border-color: var(--ag-border-2);
 }
-.ag-ui .ag-btn.secondary:hover { background: rgba(255,255,255,.06); }
+.ag-ui .ag-btn.secondary:hover { background: var(--ag-hover); }
 .ag-ui .ag-btn.stop {
-  background: #2d2d2d; color: #fff; padding: 8px 14px;
+  background: var(--ag-hover); color: var(--ag-text); padding: 8px 14px;
 }
-.ag-ui .ag-btn.stop:hover { background: #3a3a3d; }
+.ag-ui .ag-btn.stop:hover { background: var(--ag-card); }
 .ag-ui .ag-btn.danger-ghost {
   background: transparent; color: #f87171; border-color: rgba(239,68,68,.35);
 }
