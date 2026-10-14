@@ -62,7 +62,7 @@
         <div class="dz-inner">
           <i class="fas fa-cloud-arrow-up"></i>
           <strong>Drop files to attach</strong>
-          <span>Images and documents</span>
+          <span>{{ inAgentComposer ? 'Images, ZIPs, and text/code files' : 'Images and documents' }}</span>
         </div>
       </div>
     </transition>
@@ -77,8 +77,10 @@
           centered
           class="m-agent-composer"
           :disabled="chatStore.sending"
+          :injected-files="droppedFiles"
           @send="handleSend"
           @switch-chat="chatStore.composerMode = 'chat'"
+          @files-consumed="droppedFiles=null"
         />
         <template v-else>
           <h1 class="m-greet">
@@ -169,8 +171,10 @@
           centered
           class="wh-input ag-hero-composer"
           :disabled="chatStore.sending"
+          :injected-files="droppedFiles"
           @send="handleSend"
           @switch-chat="chatStore.composerMode = 'chat'"
+          @files-consumed="droppedFiles=null"
         />
         <InputBox
           v-else
@@ -271,8 +275,10 @@
     <AgentComposer
       v-if="inAgentComposer && hasMessages"
       :disabled="chatStore.sending"
+      :injected-files="droppedFiles"
       @send="handleSend"
       @switch-chat="chatStore.composerMode = 'chat'"
+      @files-consumed="droppedFiles=null"
     />
     <InputBox
       v-else-if="hasMessages || isPhone"

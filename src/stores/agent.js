@@ -593,8 +593,15 @@ export const useAgentStore = defineStore('agent', () => {
   }
 
   async function uploadReferenceImage(file) {
+    if (!agentConfig.value) {
+      await fetchConfig()
+      if (!agentConfig.value) throw new Error('Could not load Agent upload settings. Check your connection and try again.')
+    }
     if (!agentConfig.value?.uploads?.enabled) {
       throw new Error('Reference-image uploads are disabled on this deployment.')
+    }
+    if (!agentConfig.value?.vision?.capable) {
+      throw new Error('This Agent deployment has no vision-capable model configured. Configure GROQ_AGENT_VISION_MODEL or GROQ_VISION_MODEL on the backend, then restart it.')
     }
     const max = agentConfig.value?.uploads?.imageMaxBytes || 6 * 1024 * 1024
     if (!/^image\/(png|jpe?g|webp|gif)$/.test(file?.type || '')) {
@@ -628,6 +635,10 @@ export const useAgentStore = defineStore('agent', () => {
   }
 
   async function uploadProjectZip(file) {
+    if (!agentConfig.value) {
+      await fetchConfig()
+      if (!agentConfig.value) throw new Error('Could not load Agent upload settings. Check your connection and try again.')
+    }
     if (!agentConfig.value?.uploads?.enabled) {
       throw new Error('Project uploads are disabled on this deployment.')
     }

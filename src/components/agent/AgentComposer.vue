@@ -37,6 +37,15 @@
           </button>
         </div>
       </div>
+      <div v-if="contextFiles.length" class="agc-atts" role="group" aria-label="Attached text files">
+        <div v-for="file in contextFiles" :key="file.id" class="agc-att zip">
+          <span class="agc-att-thumb placeholder"><i class="fas fa-file-lines" aria-hidden="true"></i></span>
+          <span class="agc-att-name" :title="file.name">{{ clip(file.name, 22) }}</span>
+          <button class="agc-att-x" :aria-label="`Remove ${file.name}`" title="Remove file" @click="removeContextFile(file.id)">
+            <i class="fas fa-xmark" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
 
       <textarea
         ref="ta"
@@ -99,6 +108,13 @@
             aria-label="Upload an existing project archive"
             @click="pickZip"
           ><i class="fas fa-file-arrow-up" aria-hidden="true"></i></button>
+          <button
+            class="agc-icon-tool"
+            :disabled="disabled || agent.uploadState === 'uploading'"
+            title="Attach a text, code, or data file"
+            aria-label="Attach a text, code, or data file"
+            @click="pickContextFiles"
+          ><i class="fas fa-file-lines" aria-hidden="true"></i></button>
           <span v-if="agent.uploadState === 'uploading'" class="agc-up-spin" role="status">
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i> uploading…
           </span>
@@ -196,29 +212,12 @@
       </p>
     </template>
 
-    <!-- V1.2 §7: task shortcut chips -->
-    <div v-if="!centered && !agent.isActive" class="agc-presets" role="group" aria-label="Task shortcuts">
-      <button
-        v-for="p in PRESETS" :key="p.id"
-        class="agc-preset"
-        :class="{ active: activePreset === p.id }"
-        :title="p.title"
-        @click="applyPreset(p)"
-      >
-        <i class="fas" :class="p.icon" aria-hidden="true"></i>
-        <span>{{ p.label }}</span>
-      </button>
-    </div>
-    <div v-if="activePreset" class="agc-preset-note" role="status">
-      <i class="fas fa-pen" aria-hidden="true"></i>
-      Starter instruction inserted — edit it freely, then press Run. Nothing executes until you send.
-      <button class="ag-icon-btn" aria-label="Clear preset" @click="clearPreset"><i class="fas fa-xmark" aria-hidden="true"></i></button>
-    </div>
   </div>
 
   <!-- hidden pickers (real file inputs, click-triggered) -->
   <input ref="imgInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple class="agc-hidden-input" aria-hidden="true" tabindex="-1" @change="onImagesPicked" />
   <input ref="zipInput" type="file" accept=".zip,application/zip,application/x-zip-compressed" class="agc-hidden-input" aria-hidden="true" tabindex="-1" @change="onZipPicked" />
+  <input ref="contextInput" type="file" accept=".txt,.md,.markdown,.csv,.tsv,.json,.yaml,.yml,.xml,.html,.css,.js,.jsx,.ts,.tsx,.vue,.py,.go,.rs,.java,.c,.h,.cpp,.sql,.sh,.env.example,.log,.diff,.patch" multiple class="agc-hidden-input" aria-hidden="true" tabindex="-1" @change="onContextFilesPicked" />
 </template>
 
 <script setup>
@@ -232,18 +231,18 @@
  *  • existing-project ZIP uploads (§9) — extracted into the task
  *    workspace and MODIFIED, not rebuilt
  *  • Stop while a task is executing (§6)
- *  • task shortcut chips (§7) that insert editable starter prompts —
- *    selecting a preset NEVER auto-starts a costly task
+ *  • attached text/code files are included as bounded task context
  */
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useAgentStore } from '../../stores/agent'
 import '../../assets/agent.css'
 
 const props = defineProps({
   centered: { type: Boolean, default: false },   // empty-state hero variant
   disabled: { type: Boolean, default: false },
+  injectedFiles: { type: [Array, null], default: null },
 })
-const emit = defineEmits(['send', 'switch-chat'])
+const emit = defineEmits(['send', 'switch-chat', 'files-consumed'])
 
 const agent = useAgentStore()
 const ta = ref(null)
@@ -251,32 +250,8 @@ const menuOpen = ref(false)
 const model = reactive({ text: '' })
 const imgInput = ref(null)
 const zipInput = ref(null)
-const activePreset = ref(null)
-
-/* ── §7 presets: compact chips, editable starter instructions ── */
-const PRESETS = [
-  { id: 'web', icon: 'fa-globe', label: 'Web Development', title: 'Build a responsive, polished website',
-    prompt: 'Build a responsive, polished website based on my requirements. Create the required files (HTML, CSS, JS), verify the result, and make it available in the preview.' },
-  { id: 'game', icon: 'fa-gamepad', label: 'Game Development', title: 'Build a playable browser game',
-    prompt: 'Build a playable browser game with clean controls, a visible score/state, and a small win/lose condition. Use plain HTML/CSS/JavaScript unless I ask for a framework.' },
-  { id: 'bug', icon: 'fa-bug', label: 'Bug Fixing', title: 'Fix a bug in existing code',
-    prompt: 'Fix this bug: (describe the broken behavior, the file or the error output). Find the root cause, apply the smallest safe fix, and verify it actually resolves the issue.' },
-  { id: 'refimg', icon: 'fa-clone', label: 'Build from Reference Image', title: 'Reproduce a design from a reference image',
-    prompt: 'Reproduce the attached reference image as a functional web page: match the layout, spacing, colors, typography and components, but write real HTML/CSS/JavaScript (do not just embed the image).',
-    needsImage: true },
-  { id: 'improve', icon: 'fa-wand-magic-sparkles', label: 'Improve Existing Project', title: 'Upload a project and improve it',
-    prompt: 'Improve the attached project: (describe the changes — redesign, responsiveness, performance, code quality). Edit the existing files rather than rebuilding, and verify nothing breaks.',
-    needsZip: true },
-  { id: 'uiux', icon: 'fa-palette', label: 'UI/UX Design', title: 'Design or restyle an interface',
-    prompt: 'Design a modern, accessible UI for this concept: (describe the product). Produce the page(s) with a coherent design system (spacing, type scale, color tokens, states) and explain the key decisions.' },
-  { id: 'api', icon: 'fa-server', label: 'API & Backend', title: 'Build an API or backend service',
-    prompt: 'Build a small backend service with clean endpoints, input validation, and error handling. Include a way to run and test it, and verify each endpoint actually responds.' },
-  { id: 'analyze', icon: 'fa-magnifying-glass-chart', label: 'Project Analysis', title: 'Analyze code or a project',
-    prompt: 'Analyze the attached project and report its structure, frameworks, entry points, code quality issues, and concrete improvement recommendations. Do not change any files — read only.',
-    needsZip: true },
-  { id: 'research', icon: 'fa-book-open', label: 'Research and Build', title: 'Research online, then build',
-    prompt: 'Research this topic online first (current documentation, best practices), then build the result using what you learned, citing which sources you used: (describe the task).' },
-]
+const contextInput = ref(null)
+const contextFiles = ref([])
 
 const CATEGORIES = [
   'Landing Page',
@@ -360,7 +335,8 @@ const placeholder = computed(() =>
   agent.isActive ? 'The agent is working — stop it to start another…' : 'Describe the task — the agent will plan, build and verify it…')
 
 const canAttach = computed(() => agent.agentConfig?.uploads?.enabled !== false && !props.disabled)
-const canSend = computed(() => !props.disabled && !agent.isActive && model.text.trim().length > 0)
+const hasAttachments = computed(() => agent.referenceImages.length > 0 || !!agent.projectZip || contextFiles.value.length > 0)
+const canSend = computed(() => !props.disabled && !agent.isActive && (model.text.trim().length > 0 || hasAttachments.value))
 const sendLabel = computed(() => agent.isActive ? 'A task is already running' : 'Start the agent task')
 
 /* Auto-grow textarea */
@@ -382,8 +358,20 @@ function onKeydown(e) {
 function clip(s, n) { return String(s || '').length > n ? String(s).slice(0, n - 1) + '…' : String(s || '') }
 
 function send() {
-  const content = model.text.trim()
+  const attachments = contextFiles.value.map(file => `--- ${file.name} ---\n${file.content}`).join('\n\n')
+  const prompt = model.text.trim() || (
+    agent.referenceImages.length
+      ? 'Use the attached reference image(s) to guide this task.'
+      : agent.projectZip
+        ? 'Inspect and improve the attached project archive, then verify the result.'
+        : 'Use the attached files as task context and complete the requested work.'
+  )
+  const content = `${prompt}${attachments ? `\n\nAttached file contents (treat as user-provided project context):\n${attachments}` : ''}`
   if (!content || !canSend.value) return
+  if (content.length > 8000) {
+    agent.uploadError = 'Your prompt and attached text exceed the 8,000 character task limit. Shorten the prompt or remove some files.'
+    return
+  }
   const payload = {
     content, mode: 'agent',
     referenceImageIds: agent.referenceImages.map(r => r.id),
@@ -391,7 +379,8 @@ function send() {
   }
   emit('send', payload)
   model.text = ''
-  activePreset.value = null
+  contextFiles.value = []
+  selectedProjectName.value = ''
   requestAnimationFrame(autoGrow)
 }
 
@@ -423,28 +412,6 @@ function menuAction(action) {
   }
 }
 
-/* ── §7: preset selection inserts an EDITABLE starter prompt ── */
-function applyPreset(p) {
-  activePreset.value = p.id
-  model.text = p.prompt
-  requestAnimationFrame(autoGrow)
-  ta.value?.focus()
-  // Guidance when the preset expects an attachment that isn't there yet
-  if (p.needsImage && !agent.referenceImages.length && canAttach.value) {
-    agent.uploadError = 'Tip: attach one or more reference images with the image button — they guide the design.'
-    setTimeout(() => { if (agent.uploadError?.startsWith('Tip:')) agent.uploadError = null }, 6000)
-  }
-  if (p.needsZip && !agent.projectZip && canAttach.value) {
-    agent.uploadError = 'Tip: upload your existing project (.zip) with the archive button so the agent improves it.'
-    setTimeout(() => { if (agent.uploadError?.startsWith('Tip:')) agent.uploadError = null }, 6000)
-  }
-}
-function clearPreset() {
-  activePreset.value = null
-  model.text = ''
-  requestAnimationFrame(autoGrow)
-}
-
 function selectCategory(category) {
   selectedCategory.value = category
   selectedProjectName.value = ''
@@ -452,7 +419,6 @@ function selectCategory(category) {
 
 function selectProject(project) {
   model.text = `${project.prompt}\n\nBuild this as a complete working product, not a static mockup or demo. Make every visible control functional, use realistic content, persist user data where appropriate, follow KinyaBot's indigo, violet, and cyan branding, and verify the key user flows in the preview.`
-  activePreset.value = null
   selectedProjectName.value = project.name
   requestAnimationFrame(() => {
     autoGrow()
@@ -463,19 +429,64 @@ function selectProject(project) {
 /* ── §8/§9: real file pickers + uploads ── */
 function pickImages() { imgInput.value?.click() }
 function pickZip() { zipInput.value?.click() }
+function pickContextFiles() { contextInput.value?.click() }
 
 async function onImagesPicked(e) {
   const files = [...(e.target.files || [])]
   e.target.value = ''
-  for (const f of files) {
-    try { await agent.uploadReferenceImage(f) } catch (err) { break }
-  }
+  await ingestFiles(files)
 }
 async function onZipPicked(e) {
   const f = e.target.files?.[0]
   e.target.value = ''
-  if (f) { try { await agent.uploadProjectZip(f) } catch {} }
+  if (f) await ingestFiles([f])
 }
+async function onContextFilesPicked(e) {
+  const files = [...(e.target.files || [])]
+  e.target.value = ''
+  await ingestFiles(files)
+}
+
+const TEXT_FILE_EXT = /\.(txt|md|markdown|csv|tsv|json|ya?ml|xml|html?|css|jsx?|tsx?|vue|py|go|rs|java|c|h|cpp|sql|sh|log|diff|patch|env\.example)$/i
+async function ingestFiles(files) {
+  for (const file of files) {
+    try {
+      if (/^image\/(png|jpe?g|webp|gif)$/i.test(file.type)) {
+        await agent.uploadReferenceImage(file)
+      } else if (/\.zip$/i.test(file.name)) {
+        await agent.uploadProjectZip(file)
+      } else if (TEXT_FILE_EXT.test(file.name) || file.type.startsWith('text/') || ['application/json', 'application/xml'].includes(file.type)) {
+        await addContextFile(file)
+      } else {
+        throw new Error(`"${file.name}" is not a supported Agent attachment. Use images, .zip projects, or text/code/data files.`)
+      }
+    } catch (err) {
+      agent.uploadError = err?.message || `Could not attach "${file.name}".`
+      break
+    }
+  }
+  emit('files-consumed')
+}
+
+async function addContextFile(file) {
+  const maxFileBytes = 64 * 1024
+  if (file.size > maxFileBytes) throw new Error(`${file.name} is larger than the 64 KB text-file limit.`)
+  if (contextFiles.value.length >= 8) throw new Error('You can attach up to 8 text or code files to one task.')
+  if (contextFiles.value.some(item => item.name === file.name)) throw new Error(`${file.name} is already attached.`)
+  const content = await file.text()
+  if (content.includes('\0')) throw new Error(`${file.name} appears to be a binary file. Attach text, code, or data files instead.`)
+  const totalChars = contextFiles.value.reduce((total, item) => total + item.content.length, 0) + content.length
+  if (totalChars > 6000) throw new Error('Text attachments must total 6,000 characters or less.')
+  contextFiles.value.push({ id: `${file.name}-${file.lastModified}-${file.size}`, name: file.name, content })
+}
+
+function removeContextFile(id) {
+  contextFiles.value = contextFiles.value.filter(file => file.id !== id)
+}
+
+watch(() => props.injectedFiles, files => {
+  if (files?.length) ingestFiles(files)
+}, { deep: false })
 
 /* close the + menu on outside click */
 function onDocClick(e) {
@@ -700,34 +711,6 @@ defineExpose({ focus: () => ta.value?.focus(), setText: (t) => { model.text = t;
   padding: 2px 4px 0;
 }
 
-/* V1.2 §7: task shortcut chips */
-.agc-presets {
-  display: flex; flex-wrap: wrap; gap: 7px;
-  padding: 2px 2px 0;
-}
-.agc-preset {
-  display: inline-flex; align-items: center; gap: 7px;
-  background: #fafafa;
-  border: 1.5px solid #e4e4e7;
-  border-radius: 999px;
-  padding: 7px 12px;
-  font-family: var(--ag-font); font-size: 12.5px; font-weight: 500; color: #3f3f46;
-  cursor: pointer;
-  transition: border-color .12s, background .12s, color .12s;
-}
-.agc-preset i { font-size: 11.5px; color: #71717a; }
-.agc-preset:hover { border-color: #a1a1aa; background: #f4f4f5; }
-.agc-preset.active { border-color: #18181b; color: #18181b; background: #f4f4f5; }
-.agc-preset.active i { color: #18181b; }
-
-.agc-preset-note {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 12px; color: #71717a;
-  padding: 2px 4px 0;
-}
-.agc-preset-note i { flex-shrink: 0; font-size: 11px; }
-.agc-preset-note button { margin-left: auto; flex-shrink: 0; }
-
 .agc-hidden-input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
 
 /* focus visibility (accessibility) */
@@ -742,7 +725,6 @@ defineExpose({ focus: () => ta.value?.focus(), setText: (t) => { model.text = t;
   .agc-bypass { padding: 8px; border-radius: 50%; }
   .agc-attach-group { gap: 4px; }
   .agc-icon-tool { width: 32px; height: 32px; }
-  .agc-preset { font-size: 11.5px; padding: 6px 10px; }
 }
 
 /* Dark build studio and the new-chat project gallery. */
@@ -1001,30 +983,30 @@ defineExpose({ focus: () => ta.value?.focus(), setText: (t) => { model.text = t;
   box-shadow: 0 0 0 20px rgba(255,255,255,.025), 0 0 0 42px rgba(255,255,255,.02);
 }
 .agc-art-foot { justify-content: space-between; opacity: .7; font-size: 6px; }
-.agc-project-art.iron { background: radial-gradient(ellipse at 92% 20%, #4a2011 0, transparent 33%), #111112; }
+.agc-project-art.iron { background: radial-gradient(ellipse at 92% 20%, #4338ca 0, transparent 38%), linear-gradient(145deg, #101a31, #0b1020); }
 .agc-project-art.iron .agc-art-copy strong { font-family: Impact, 'Arial Narrow', sans-serif; letter-spacing: -.025em; text-transform: uppercase; }
-.agc-project-art.iron .agc-art-kicker, .agc-project-art.iron .agc-art-cta { color: #f47a3d; }
-.agc-project-art.retreat { background: linear-gradient(180deg, #8a8980 0%, #c3b6a0 43%, #514e43 70%, #242824 100%); }
-.agc-project-art.retreat::before { opacity: .9; background: linear-gradient(180deg, transparent 32%, rgba(22,29,27,.18) 53%, #151b19 100%); }
+.agc-project-art.iron .agc-art-kicker, .agc-project-art.iron .agc-art-cta { color: #67e8f9; }
+.agc-project-art.retreat { background: radial-gradient(ellipse at 70% 30%, rgba(34,211,238,.44), transparent 40%), linear-gradient(180deg, #344b7c, #111b35 72%, #0b1020); }
+.agc-project-art.retreat::before { opacity: .8; background: linear-gradient(180deg, transparent 32%, rgba(11,16,32,.3) 53%, #0b1020 100%); }
 .agc-project-art.retreat .agc-art-copy { text-align: center; align-self: center; }
 .agc-project-art.retreat .agc-art-copy strong { font-size: clamp(30px, 3vw, 42px); }
 .agc-project-art.retreat .agc-art-cta { justify-content: center; }
-.agc-project-art.atelier { background: radial-gradient(ellipse at 50% 100%, #4b482b 0, transparent 55%), #101911; }
+.agc-project-art.atelier { background: radial-gradient(ellipse at 50% 100%, #6d28d9 0, transparent 55%), #111329; }
 .agc-project-art.atelier .agc-art-copy { text-align: center; align-self: center; max-width: 100%; }
-.agc-project-art.atelier .agc-art-copy strong { color: #e6dfc5; font-size: clamp(27px, 2.8vw, 39px); }
-.agc-project-art.atelier .agc-art-kicker, .agc-project-art.atelier .agc-art-cta { color: #c8b84b; }
-.agc-project-art.knowledge, .agc-project-art.lab, .agc-project-art.language { background: linear-gradient(145deg, #172b34, #284c52 55%, #142326); }
-.agc-project-art.lab { background: radial-gradient(ellipse at 80% 25%, #deab5a 0, transparent 28%), linear-gradient(145deg, #463c2e, #9b7447); }
-.agc-project-art.language { background: linear-gradient(145deg, #3d3248, #69536f 55%, #211d2e); }
-.agc-project-art.model, .agc-project-art.orbit, .agc-project-art.archive { background: radial-gradient(circle at 68% 56%, #8f6e58 0, #4d3e39 17%, transparent 18%), linear-gradient(145deg, #27252a, #111114); }
-.agc-project-art.orbit { background: radial-gradient(circle at 72% 54%, #d4a553 0, #8d562c 12%, transparent 13%), radial-gradient(ellipse at 70% 80%, #39336c, transparent 55%), #11121c; }
-.agc-project-art.archive { background: radial-gradient(circle at 66% 57%, #c6b89b 0, #63594c 18%, transparent 19%), linear-gradient(145deg, #39352c, #191815); }
-.agc-project-art.game, .agc-project-art.arcade, .agc-project-art.words { background: radial-gradient(circle at 80% 54%, #8cc86c 0, #34734c 12%, transparent 13%), linear-gradient(145deg, #142b26, #101713); }
-.agc-project-art.arcade { background: radial-gradient(circle at 75% 52%, #dd6bc3 0, #6048a2 13%, transparent 14%), linear-gradient(145deg, #1d1741, #111023); }
-.agc-project-art.words { background: radial-gradient(circle at 76% 53%, #e1ae48 0, #a46a38 13%, transparent 14%), linear-gradient(145deg, #46301e, #211c19); }
-.agc-project-art.blog, .agc-project-art.travel, .agc-project-art.food { background: radial-gradient(ellipse at 80% 80%, #827154 0, transparent 45%), linear-gradient(145deg, #392f27, #171513); }
-.agc-project-art.travel { background: radial-gradient(ellipse at 80% 65%, #7d9b91 0, transparent 42%), linear-gradient(145deg, #31433d, #151b19); }
-.agc-project-art.food { background: radial-gradient(circle at 78% 58%, #c78e51 0, #77492d 13%, transparent 14%), linear-gradient(145deg, #493527, #211914); }
+.agc-project-art.atelier .agc-art-copy strong { color: #f5f3ff; font-size: clamp(27px, 2.8vw, 39px); }
+.agc-project-art.atelier .agc-art-kicker, .agc-project-art.atelier .agc-art-cta { color: #c4b5fd; }
+.agc-project-art.knowledge, .agc-project-art.lab, .agc-project-art.language { background: linear-gradient(145deg, #172b50, #1e3a5f 55%, #101a31); }
+.agc-project-art.lab { background: radial-gradient(ellipse at 80% 25%, rgba(34,211,238,.4) 0, transparent 30%), linear-gradient(145deg, #172b50, #0b1020); }
+.agc-project-art.language { background: linear-gradient(145deg, #30204f, #493675 55%, #17152f); }
+.agc-project-art.model, .agc-project-art.orbit, .agc-project-art.archive { background: radial-gradient(circle at 68% 56%, #8b5cf6 0, #4f46e5 13%, transparent 14%), linear-gradient(145deg, #272552, #0b1020); }
+.agc-project-art.orbit { background: radial-gradient(circle at 72% 54%, #22d3ee 0, #4f46e5 12%, transparent 13%), radial-gradient(ellipse at 70% 80%, #39336c, transparent 55%), #11121c; }
+.agc-project-art.archive { background: radial-gradient(circle at 66% 57%, #a5b4fc 0, #4f46e5 14%, transparent 15%), linear-gradient(145deg, #29264e, #111827); }
+.agc-project-art.game, .agc-project-art.arcade, .agc-project-art.words { background: radial-gradient(circle at 80% 54%, #22d3ee 0, #4f46e5 12%, transparent 13%), linear-gradient(145deg, #142b50, #101329); }
+.agc-project-art.arcade { background: radial-gradient(circle at 75% 52%, #c4b5fd 0, #8b5cf6 13%, transparent 14%), linear-gradient(145deg, #261c54, #111023); }
+.agc-project-art.words { background: radial-gradient(circle at 76% 53%, #67e8f9 0, #0891b2 13%, transparent 14%), linear-gradient(145deg, #17334b, #101a31); }
+.agc-project-art.blog, .agc-project-art.travel, .agc-project-art.food { background: radial-gradient(ellipse at 80% 80%, #4f46e5 0, transparent 45%), linear-gradient(145deg, #25244f, #101329); }
+.agc-project-art.travel { background: radial-gradient(ellipse at 80% 65%, #22d3ee 0, transparent 42%), linear-gradient(145deg, #1d4260, #101a31); }
+.agc-project-art.food { background: radial-gradient(circle at 78% 58%, #8b5cf6 0, #4f46e5 13%, transparent 14%), linear-gradient(145deg, #31264e, #151329); }
 .agc-project-caption {
   display: flex;
   align-items: center;
@@ -1042,14 +1024,6 @@ defineExpose({ focus: () => ta.value?.focus(), setText: (t) => { model.text = t;
   font-size: 12px;
   text-align: right;
 }
-.agc-preset { background: var(--surface-secondary); border-color: var(--border); color: var(--text-2); }
-.agc-preset i { color: var(--text-2); }
-.agc-preset:hover { border-color: var(--brand-text); background: var(--brand-soft); }
-.agc-preset.active { background: var(--brand-soft); border-color: var(--brand-text); color: var(--text-1); }
-.agc-preset.active i { color: var(--brand-text); }
-.agc-preset-note { color: #b4b4b8; }
-.agc-preset-note :deep(.ag-icon-btn) { color: #b4b4b8; }
-
 @media (max-width: 760px) {
   .agc { gap: 18px; }
   .agc-hero-heading h1 { font-size: clamp(1.2rem, 6vw, 3.2rem); }

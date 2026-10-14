@@ -7,7 +7,7 @@
       </transition>
       <!-- Backdrop for the right panel when it becomes a drawer on mobile -->
       <transition name="fade">
-        <div v-if="rightOpen && isMobile" class="mob-overlay rp-overlay" @click="rightOpen=false" aria-hidden="true"></div>
+        <div v-if="rightOpen && isMobile && !agentModeActive" class="mob-overlay rp-overlay" @click="rightOpen=false" aria-hidden="true"></div>
       </transition>
     </template>
     <transition name="fade">
@@ -116,6 +116,7 @@
               <AnimatedIcon icon="fas fa-share-nodes" animation="subtle-hover" />
             </button>
             <button
+              v-if="!agentModeActive"
               class="topbar-action"
               :class="{ active: rightOpen }"
               type="button"
@@ -169,7 +170,7 @@
         @toggle-sidebar="mobileSidebarOpen=!mobileSidebarOpen"
         @auth-required="handleAuthRequired"
         @draft-consumed="onDraftConsumed"
-        @artifact-ready="rightOpen=true"
+        @artifact-ready="openChatDetails"
       />
     </div>
 
@@ -183,7 +184,7 @@
 
     <template v-if="!isGuest">
       <transition name="slide-r">
-        <RightPanel v-if="rightOpen" @load-chat="handleLoadChat" @close="rightOpen=false" />
+        <RightPanel v-if="rightOpen && !agentModeActive" @load-chat="handleLoadChat" @close="rightOpen=false" />
       </transition>
     </template>
     <SettingsModal v-if="showSettings" @close="showSettings=false" />
@@ -350,9 +351,10 @@ const mqMobile = window.matchMedia('(max-width: 900px)')
 const isMobile = ref(mqMobile.matches)
 function onMqChange(e) {
   isMobile.value = e.matches
-  if (!e.matches) rightOpen.value = window.innerWidth > 1200
+  if (!e.matches && !agentModeActive.value) rightOpen.value = window.innerWidth > 1200
 }
 const rightOpen = ref(!mqMobile.matches && window.innerWidth > 1200)
+const agentModeActive = computed(() => chatStore.composerMode === 'agent' && !isGuest.value)
 
 /* ═══ V1.2 §4: CHAT ↔ AGENT PANEL SWITCHING ═════════════════════
    Selecting Agent mode CLOSES the Chat details/settings sidebar and
@@ -370,7 +372,11 @@ watch(() => chatStore.composerMode, (mode) => {
   } else if (mode === 'chat') {
     if (agentStore.panelOpen) agentStore.closePanel()
   }
-})
+}, { immediate: true })
+
+function openChatDetails() {
+  if (!agentModeActive.value) rightOpen.value = true
+}
 
 // Reactive theme state — shared with the rest of the app (src/theme.js)
 const isLightMode = sharedIsLightMode
@@ -491,7 +497,7 @@ function handleGlobalKeys(e) {
   const ctrl = e.ctrlKey || e.metaKey
   if (ctrl && e.key === 'k') { e.preventDefault(); handleNewChat() }
   if (ctrl && e.key === 'b') { e.preventDefault(); mobileSidebarOpen.value = !mobileSidebarOpen.value }
-  if (!isPhone.value && ctrl && e.key === '.') { e.preventDefault(); rightOpen.value = !rightOpen.value }
+  if (!isPhone.value && ctrl && e.key === '.' && !agentModeActive.value) { e.preventDefault(); rightOpen.value = !rightOpen.value }
 }
 
 async function handleNewChat() {
