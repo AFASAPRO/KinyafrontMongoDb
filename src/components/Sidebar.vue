@@ -514,9 +514,9 @@ async function handleLogout() {
   chatStore.resetChatState()
   sub.reset()
   auth.logout()
-  // Chat-first: after logout the user lands back on the chat
-  // interface in guest mode (Sign In / Sign Up become visible).
-  router.push('/')
+  // After signing out the user is taken to the LOGIN form — not to
+  // the marketing landing page and not to guest chat mode.
+  router.push('/login')
 }
 
 // Global keyboard shortcuts

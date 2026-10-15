@@ -1,10 +1,10 @@
 # KinyaBot AI – https://www.kinyabotai.online/
-# Allow all crawlers to index the marketing landing page
+# Allow all crawlers to index public pages
 
 User-agent: *
 Allow: /
 
-# Chat app: index only the public entry points, block private/admin areas
+# Block private areas from indexing
 Disallow: /chat/admin
 Disallow: /chat/admin/
 Disallow: /chat/onboarding

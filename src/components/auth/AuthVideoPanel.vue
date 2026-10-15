@@ -5,6 +5,7 @@
       ref="videoRef"
       class="auth-video"
       :src="videoUrl"
+      :poster="posterUrl"
       autoplay
       muted
       loop
@@ -33,7 +34,17 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 
-const videoUrl = '/media/kinya-mascot-auth.mp4'
+// Video fix: this panel previously pointed at '/media/kinya-mascot-auth.mp4',
+// a file that does not exist anywhere in the project — the <video> element
+// always errored and the panel fell back to the static logo + caption.
+// The real mascot animation shipped with the app is 'kinya-companion.webm'
+// (public/media/ → dist/chat/media/ in production). The URL MUST be built
+// from BASE_URL ('/chat/'): an absolute '/media/…' path resolves against
+// the domain root, where the landing page lives, and 404s in dev or
+// returns the landing HTML through the prod rewrite catch-all.
+const BASE = import.meta.env.BASE_URL || '/'
+const videoUrl = `${BASE}media/kinya-companion.webm`
+const posterUrl = `${BASE}media/kinya-poster.jpg`
 const videoRef = ref(null)
 const mediaFailed = ref(false)
 const playbackBlocked = ref(false)
