@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import DotText from './DotText.vue'
+import { support } from '../config'
 import { subscribe } from '../chat/subscribe'
 const cols = { Company:['About','Contact','Blog','Story'], Products:['Company','Product','Press','More'], Resources:['Press','Careers','Newsletters','More'] }
 const email = ref(''), state = ref('idle'), msg = ref('')
@@ -22,7 +23,7 @@ async function submit() {
             <input id="sub-email" v-model="email" type="email" autocomplete="email" placeholder="you@company.com" class="min-w-0 flex-1 bg-transparent px-4 text-sm outline-none placeholder:text-[var(--muted)]" :aria-invalid="state==='err'" aria-describedby="sub-msg"/>
             <button type="submit" :disabled="state==='loading'" class="pill !py-2 disabled:opacity-60">{{ state==='loading' ? 'Subscribing…' : 'Subscribe' }}</button></div>
           <p id="sub-msg" aria-live="polite" class="mt-2 min-h-5 text-xs" :class="state==='ok' ? 'text-emerald-500' : 'text-red-400'">{{ msg }}</p></form></div>
-      <div v-for="(l,h) in cols" :key="h" class="text-sm"><p class="mb-2 font-semibold">{{ h }}</p><a v-for="i in l" :key="i" href="#" class="block py-1 text-[var(--muted)] transition hover:text-[var(--fg)]">{{ i }}</a></div></div>
+      <div v-for="(l,h) in cols" :key="h" class="text-sm"><p class="mb-2 font-semibold">{{ h }}</p><a v-for="i in l" :key="i" :href="i === 'Contact' ? `mailto:${support.email}` : '#'" class="block py-1 text-[var(--muted)] transition hover:text-[var(--fg)]">{{ i }}</a></div></div>
     <div class="mt-10 h-[130px] sm:h-[210px] md:h-[290px]"><DotText text="Streamline your workflow" /></div>
   </footer>
 </template>

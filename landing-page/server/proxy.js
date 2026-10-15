@@ -13,6 +13,11 @@ http.createServer(async (req, res) => {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email || '')) { res.writeHead(400); return res.end('Invalid email') }
       appendFileSync('subscribers.txt', email + '\n'); res.writeHead(200); return res.end('ok')
     }
+    if (req.url === '/support') {
+      const { email, message } = JSON.parse(body)
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email || '') || !message?.trim()) { res.writeHead(400); return res.end('Invalid') }
+      appendFileSync('support.txt', JSON.stringify({ at: new Date().toISOString(), email, message: message.slice(0, 2000) }) + '\n'); res.writeHead(200); return res.end('ok')
+    }
     const { messages } = JSON.parse(body)
     const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST',
       headers: { 'x-api-key': KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },

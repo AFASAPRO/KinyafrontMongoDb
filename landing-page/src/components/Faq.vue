@@ -1,6 +1,6 @@
 <script setup>import { ref } from 'vue'; import { faqs } from '../data'; const open = ref(null)</script>
 <template>
-  <section class="rail px-6 py-16 text-center">
+  <section id="faq" class="rail px-6 py-16 text-center">
     <h2 v-reveal class="text-4xl font-medium md:text-5xl">Frequently Asked Questions</h2>
     <p class="mx-auto mt-3 max-w-md text-sm text-slate-500">Answers to common questions about SkyAgent and its features. If you have any other questions, please don't hesitate to contact us.</p>
     <div class="mx-auto mt-8 max-w-xl divide-y text-left dark:divide-neutral-800">

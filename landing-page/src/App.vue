@@ -8,13 +8,17 @@ import Steps from './components/Steps.vue'
 import Security from './components/Security.vue'
 import Pricing from './components/Pricing.vue'
 import Testimonials from './components/Testimonials.vue'
+import Founder from './components/Founder.vue'
 import Faq from './components/Faq.vue'
+import Support from './components/Support.vue'
+import SupportWidget from './components/SupportWidget.vue'
 import Cta from './components/Cta.vue'
 import Footer from './components/Footer.vue'
 </script>
 <template>
   <Navbar />
   <main class="overflow-x-clip">
-    <Hero /><Logos /><Bento /><Quote /><Steps /><Security /><Pricing /><Testimonials /><Faq /><Cta /><Footer />
+    <Hero /><Logos /><Bento /><Quote /><Steps /><Security /><Pricing /><Testimonials /><Founder /><Faq /><Support /><Cta /><Footer />
   </main>
+  <SupportWidget />
 </template>
