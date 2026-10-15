@@ -21,7 +21,7 @@ async function submit() {
   <div class="fixed bottom-4 right-4 z-[60] flex flex-col items-end gap-3 print:hidden sm:bottom-6 sm:right-6">
     <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="translate-y-3 opacity-0" leave-active-class="transition duration-150 ease-in" leave-to-class="translate-y-3 opacity-0">
       <div v-if="open" id="support-panel" role="dialog" aria-label="Contact support" class="max-h-[78vh] w-[min(360px,calc(100vw-2rem))] overflow-y-auto rounded-2xl border bg-[var(--c-bg)] text-sm shadow-2xl shadow-black/40">
-        <div class="flex items-center gap-3 border-b bg-[#1d5cff] p-4 text-white"><span class="grid h-10 w-10 place-items-center rounded-full bg-white/20 text-sm font-semibold">{{ founder.initials }}</span><div class="leading-tight"><b class="block">SkyAgent Support</b><span class="text-xs text-white/80">How can we help?</span></div></div>
+        <div class="flex items-center gap-3 border-b bg-[#1d5cff] p-4 text-white"><span class="grid h-10 w-10 place-items-center rounded-full bg-white/20 text-sm font-semibold">{{ founder.initials }}</span><div class="leading-tight"><b class="block">Kinyabot AI Support</b><span class="text-xs text-white/80">How can we help?</span></div></div>
         <div class="space-y-2 p-4">
           <a ref="first" :href="wa" target="_blank" rel="noopener" class="flex items-center justify-between rounded-xl border px-4 py-3 transition hover:border-[#1d5cff]">Chat on WhatsApp <span aria-hidden="true">→</span></a>
           <a :href="`mailto:${support.email}`" class="flex items-center justify-between rounded-xl border px-4 py-3 transition hover:border-[#1d5cff]">Email {{ support.email }} <span aria-hidden="true">→</span></a>

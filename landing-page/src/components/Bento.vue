@@ -1,8 +1,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 /* 1. chat: user bubble -> typing dots -> streamed reply, loops */
-const q = 'Hey, I need help scheduling a team meeting that works well for everyone. Any suggestions for finding an optimal time slot?'
-const a = 'Based on your calendar patterns and preferences, I recommend scheduling the team meeting for Tuesday at 2pm. This time slot has historically had the highest attendance rate, and it avoids conflicts with other recurring meetings.'
+const q = 'Muraho Kinyabot! Teach me a quick Kinyarwanda greeting I can use with my team this morning.'
+const a = 'Amakuru! 😊 A warm everyday greeting is “Muraho” — hello. Ask “Amakuru?” for how are you, and reply “Ni meza” — I’m good. Want me to save a short practice list for you?'
 const stage = ref(0), typed = ref(''); let alive = true, timers = []
 const wait = ms => new Promise(r => timers.push(setTimeout(r, ms)))
 async function loop() {
@@ -57,18 +57,18 @@ onUnmounted(() => { alive = false; timers.forEach(clearTimeout); cancelAnimation
     <div class="min-w-0">
       <div class="min-w-0">
         <div class="py-14 text-center md:py-24"><h2 v-reveal class="text-4xl font-medium md:text-5xl">Empower Your Workflow with AI</h2>
-          <p class="mx-auto mt-5 max-w-lg text-lg text-[var(--muted)]">Ask your AI Agent for real-time collaboration, seamless integrations, and actionable insights to streamline your operations.</p></div>
+          <p class="mx-auto mt-5 max-w-lg text-lg text-[var(--muted)]">Chat with Kinyabot AI for instant answers, image generation, code help and voice translation — everything you need in one companion.</p></div>
         <div class="grid overflow-hidden rounded-2xl border md:grid-cols-2 [&>article:last-child]:border-b-0 md:[&>article:nth-last-child(-n+2)]:border-b-0">
           <article class="border-b md:border-r"><div class="relative h-[490px] overflow-hidden p-5 sm:p-10">
-            <div v-if="stage>=1" class="ml-auto flex w-[350px] max-w-[92%] items-end gap-3 transition"><p class="rounded-3xl rounded-br-lg bg-[#1d5cff] px-5 py-4 text-[17px] leading-snug text-white">{{ q }}</p><span class="mb-0 grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-amber-200 to-stone-700 text-xs text-white">SK</span></div>
-            <div v-if="stage>=2" class="mt-3 flex items-start gap-3"><span class="mt-8 grid h-12 w-12 shrink-0 place-items-center rounded-full border bg-[var(--bg2)]"><svg width="22" height="14" viewBox="0 0 40 26" fill="#1d5cff"><path d="M2 14c0-5 4-9 10-9h22l-6 7H14c-3 0-4 1-4 2zM38 12c0 5-4 9-10 9H6l6-7h14c3 0 4-1 4-2z"/></svg></span>
+            <div v-if="stage>=1" class="ml-auto flex w-[350px] max-w-[92%] items-end gap-3 transition"><p class="rounded-3xl rounded-br-lg bg-[#1d5cff] px-5 py-4 text-[17px] leading-snug text-white">{{ q }}</p><span class="mb-0 grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-amber-200 to-stone-700 text-xs text-white">MA</span></div>
+            <div v-if="stage>=2" class="mt-3 flex items-start gap-3"><span class="mt-8 grid h-12 w-12 shrink-0 place-items-center rounded-full border bg-[var(--bg2)]"><img src="/logo.png" alt="" class="h-7 w-7 object-contain"></span>
               <p class="min-w-0 max-w-full rounded-3xl sm:w-[375px] rounded-3xl rounded-bl-lg bg-[var(--panel)] px-5 py-4 text-[17px] leading-snug text-[var(--muted)]"><span v-if="stage===2" class="inline-flex gap-1.5 py-1.5"><i v-for="d in 3" :key="d" class="h-2 w-2 animate-pulse rounded-full bg-[var(--muted)]" :style="{animationDelay:d*.15+'s'}"></i></span><template v-else>{{ typed }}</template></p></div></div>
-            <div class="px-5 pb-6 sm:px-8 sm:pb-8"><h3 class="text-xl font-semibold">Real-time AI Collaboration</h3><p class="mt-1 text-[17px] text-[var(--muted)]">Experience real-time assistance. Ask your AI Agent to coordinate tasks, answer questions, and maintain team alignment.</p></div></article>
+            <div class="px-5 pb-6 sm:px-8 sm:pb-8"><h3 class="text-xl font-semibold">Real-time AI Collaboration</h3><p class="mt-1 text-[17px] text-[var(--muted)]">Experience real-time assistance. Ask Kinyabot AI to answer questions, explain concepts and translate across Kinyarwanda, English and French.</p></div></article>
           <article class="border-b"><div class="relative h-[490px] overflow-hidden max-sm:[&>div]:scale-[.6]" style="mask-image:linear-gradient(#000 82%,transparent)">
             <div v-for="(g,i) in rings" :key="g.r" class="absolute left-1/2 rounded-full border" :style="{width:g.r*2+'px',height:g.r*2+'px',top:'388px',transformOrigin:`50% ${g.r}px`,margin:`-${g.r}px 0 0 -${g.r}px`,background:i===0?'radial-gradient(circle,transparent 55%,color-mix(in srgb,var(--panel) 60%,transparent))':''}">
               <div class="spin absolute inset-0" :style="{'--d':g.d+'s',animationDirection:i%2?'reverse':'normal'}">
                 <div v-for="[ang,k] in g.list" :key="k" class="absolute left-1/2 top-1/2" :style="{transform:`rotate(${ang}deg) translateY(-${g.r}px)`}"><div :style="{transform:`rotate(-${ang}deg)`}"><div class="spin -ml-[27px] -mt-[27px] grid h-[54px] w-[54px] place-items-center rounded-full shadow-lg" :style="{'--d':g.d+'s',animationDirection:i%2?'normal':'reverse',background:ic[k][0]}"><svg viewBox="0 0 24 24" class="h-6 w-6" v-html="ic[k][1]"></svg></div></div></div></div></div>
-            <span class="absolute left-1/2 top-[388px] grid h-20 w-20 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-[#1d5cff] shadow-[0_0_60px_rgba(29,92,255,.45)]"><svg width="44" height="28" viewBox="0 0 40 26" fill="#fff"><path d="M2 14c0-5 4-9 10-9h22l-6 7H14c-3 0-4 1-4 2zM38 12c0 5-4 9-10 9H6l6-7h14c3 0 4-1 4-2z"/></svg></span></div>
+            <span class="absolute left-1/2 top-[388px] grid h-20 w-20 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-[#1d5cff] shadow-[0_0_60px_rgba(29,92,255,.45)]"><img src="/logo.png" alt="Kinyabot AI" class="h-14 w-14 object-contain"></span></div>
             <div class="px-5 pb-6 sm:px-8 sm:pb-8"><h3 class="text-xl font-semibold">Seamless Integrations</h3><p class="mt-1 text-[17px] text-[var(--muted)]">Unite your favorite tools for effortless connectivity. Boost productivity through interconnected workflows.</p></div></article>
           <article class="border-b md:border-r"><div class="flex h-[490px] items-end overflow-hidden" @pointermove="move" @pointerleave="hov=null">
             <svg :viewBox="`0 0 ${W} ${H}`" class="w-full" style="touch-action:pan-y"><defs><linearGradient id="ar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d5cff" stop-opacity=".38"/><stop offset="1" stop-color="#1d5cff" stop-opacity="0"/></linearGradient><linearGradient id="vl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d5cff"/><stop offset="1" stop-color="#1d5cff" stop-opacity="0"/></linearGradient></defs>
@@ -82,7 +82,7 @@ onUnmounted(() => { alive = false; timers.forEach(clearTimeout); cancelAnimation
             <span v-for="[d,l] in days" :key="d" class="absolute top-6 -translate-x-1/2 text-[17px] text-[var(--muted)]" :style="{left:l+'%'}">{{ d }}</span>
             <div class="absolute top-[52px] h-[380px] w-px bg-[var(--fg)]/60" :style="{left:gx+'%'}"><span class="absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg border bg-[var(--bg2)] px-3 py-1.5 text-sm">{{ clock }}</span></div>
             <div v-for="(b,i) in bars" :key="b.n" class="absolute grid h-10 cursor-grab touch-none place-items-center rounded-xl text-[17px] font-medium active:cursor-grabbing" :class="b.c" :style="{left:b.l+'%',width:b.w+'%',top:[130,220,310][i]+'px'}" @pointerdown="down($event,i)">{{ b.n }}</div></div>
-            <div class="px-5 pb-6 sm:px-8 sm:pb-8"><h3 class="text-xl font-semibold">Smart Automation</h3><p class="mt-1 text-[17px] text-[var(--muted)]">Set it, forget it. Your AI Agent tackles repetitive tasks so you can focus on strategy, innovation, and growth.</p></div></article>
+            <div class="px-5 pb-6 sm:px-8 sm:pb-8"><h3 class="text-xl font-semibold">Smart Automation</h3><p class="mt-1 text-[17px] text-[var(--muted)]">Set it, forget it. Kinyabot AI tackles repetitive tasks so you can focus on strategy, innovation, and growth.</p></div></article>
         </div>
       </div>
     </div>

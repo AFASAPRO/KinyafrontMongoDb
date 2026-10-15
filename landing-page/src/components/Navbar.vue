@@ -15,7 +15,7 @@ onMounted(() => { onScroll(); addEventListener('scroll', onScroll, { passive: tr
       :class="scrolled ? 'w-[1000px] backdrop-blur-xl' : 'w-[1360px] border-transparent'"
       :style="scrolled ? { background: 'color-mix(in srgb, var(--bg) 72%, transparent)' } : {}">
       <a href="#home" class="flex items-center gap-2 text-xl font-semibold tracking-tight">
-        <svg width="34" height="22" viewBox="0 0 40 26" fill="#1d5cff"><path d="M2 14c0-5 4-9 10-9h22l-6 7H14c-3 0-4 1-4 2zM38 12c0 5-4 9-10 9H6l6-7h14c3 0 4-1 4-2z"/></svg>SkyAgent</a>
+        <img src="/logo.png" alt="Kinyabot AI logo" class="h-7 w-7 object-contain">Kinyabot AI</a>
       <ul class="hidden items-center gap-1 text-[15px] md:flex">
         <li v-for="[n,h] in links" :key="n"><a :href="h" class="block rounded-full px-4 py-2 transition" :class="active===n ? 'bg-[var(--panel)] text-[var(--fg)]' : 'text-[var(--muted)] hover:text-[var(--fg)]'">{{ n }}</a></li></ul>
       <div class="flex items-center gap-2"><a href="#pricing" class="pill max-sm:!px-3 max-sm:!text-xs">Try for free</a><button class="grid h-10 w-10 place-items-center rounded-full border md:hidden" @click="menu=!menu" aria-label="Menu"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>

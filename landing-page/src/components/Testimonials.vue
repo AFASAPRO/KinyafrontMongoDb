@@ -6,7 +6,7 @@ const render = t => t.replace(/(#\w+|[A-Z][^.]*\.$)/g, '<span class="text-brand"
 <template>
   <section class="rail px-6 py-16 text-center">
     <h2 v-reveal class="text-4xl font-medium md:text-5xl">Empower Your Workflow with AI</h2>
-    <p class="mx-auto mt-3 max-w-md text-sm text-slate-500">Ask your AI Agent for real-time collaboration, seamless integrations, and actionable insights to streamline your operations.</p>
+    <p class="mx-auto mt-3 max-w-md text-sm text-slate-500">Hear how people use Kinyabot AI to learn, create, code and get more done every day.</p>
     <div class="relative mx-auto mt-10 grid h-[460px] max-w-[900px] gap-3 overflow-hidden text-left md:grid-cols-3" style="mask-image:linear-gradient(transparent,#000 15%,#000 85%,transparent)">
       <div v-for="(c,ci) in cols" :key="ci" class="overflow-hidden"><div class="animate-scrollY space-y-3" :style="{animationDuration:(34+ci*8)+'s',animationDirection:ci===1?'reverse':'normal'}">
         <figure v-for="(r,i) in [...c,...c]" :key="i" class="rounded-xl border bg-white p-4 text-xs dark:bg-neutral-900 dark:border-neutral-800">

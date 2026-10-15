@@ -2,7 +2,7 @@
 <template>
   <section id="pricing" class="rail px-6 py-16 text-center">
     <h2 v-reveal class="text-4xl font-medium md:text-5xl">Pricing that scale with you</h2>
-    <p class="mt-3 text-sm text-slate-500">Whichever plan you pick, it's free until you love your docs. That's our promise.</p>
+    <p class="mt-3 text-sm text-slate-500">Whichever plan you pick, you start free until you love Kinyabot. That's our promise.</p>
     <div class="mx-auto mt-6 inline-flex rounded-full border bg-white p-0.5 text-xs dark:bg-neutral-900 dark:border-neutral-800">
       <button @click="yearly=false" class="rounded-full px-3 py-1" :class="!yearly && 'bg-slate-100 dark:bg-neutral-700'">Monthly</button>
       <button @click="yearly=true" class="rounded-full px-3 py-1" :class="yearly && 'bg-slate-100 dark:bg-neutral-700'">Yearly <span class="rounded bg-blue-100 px-1 text-brand">-20%</span></button></div>

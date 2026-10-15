@@ -5,7 +5,7 @@ const wa = `https://wa.me/${support.whatsapp}?text=${encodeURIComponent(support.
 <template>
   <section id="founder" class="rail px-4 py-16 sm:px-6 md:py-24" aria-labelledby="founder-h">
     <p class="text-center text-sm font-medium text-[#1d5cff]">A note from the founder</p>
-    <h2 id="founder-h" v-reveal class="mx-auto mt-3 max-w-2xl text-center text-3xl font-medium sm:text-4xl md:text-5xl">Why we’re building SkyAgent</h2>
+    <h2 id="founder-h" v-reveal class="mx-auto mt-3 max-w-2xl text-center text-3xl font-medium sm:text-4xl md:text-5xl">Why we’re building Kinyabot AI</h2>
     <figure class="mx-auto mt-12 grid max-w-[980px] gap-8 rounded-3xl bg-[var(--panel)] p-6 sm:p-10 md:grid-cols-[auto_1fr] md:gap-12">
       <div class="flex items-center gap-4 md:flex-col md:items-start">
         <img v-if="founder.photo" :src="founder.photo" :alt="founder.name" class="h-20 w-20 rounded-full object-cover md:h-28 md:w-28"/>

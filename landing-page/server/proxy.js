@@ -21,7 +21,7 @@ http.createServer(async (req, res) => {
     const { messages } = JSON.parse(body)
     const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST',
       headers: { 'x-api-key': KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({ model: MODEL, max_tokens: 1024, stream: true, system: 'You are SkyAgent, a concise, friendly AI workflow assistant.', messages }) })
+      body: JSON.stringify({ model: MODEL, max_tokens: 1024, stream: true, system: 'You are Kinyabot AI, a friendly, concise AI companion.', messages }) })
     if (!r.ok) { res.writeHead(502); return res.end(await r.text()) }
     res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' })
     const dec = new TextDecoder(); let buf = ''
@@ -31,4 +31,4 @@ http.createServer(async (req, res) => {
     }
     res.end()
   } catch (e) { res.writeHead(500); res.end(String(e)) }
-}).listen(process.env.PORT || 8787, () => console.log('SkyAgent chat proxy on :' + (process.env.PORT || 8787)))
+}).listen(process.env.PORT || 8787, () => console.log('Kinyabot AI chat proxy on :' + (process.env.PORT || 8787)))

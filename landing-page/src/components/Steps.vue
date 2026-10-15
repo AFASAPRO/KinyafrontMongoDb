@@ -9,7 +9,7 @@ const pos = ['30% 40%','70% 50%','50% 70%','20% 60%']
 <template>
   <section id="how" class="rail px-6 py-24">
     <div class="text-center"><h2 v-reveal class="text-4xl font-medium md:text-5xl">Simple. Seamless. Smart.</h2>
-      <p class="mx-auto mt-4 max-w-sm text-[var(--muted)]">Discover how SkyAgent transforms your commands into action in four easy steps</p></div>
+      <p class="mx-auto mt-4 max-w-sm text-[var(--muted)]">Discover how Kinyabot AI transforms your requests into results in four easy steps</p></div>
     <div class="mx-auto mt-14 grid max-w-[1100px] gap-8 md:grid-cols-[1fr_1.7fr]">
       <ul class="space-y-1">
         <li v-for="(s,i) in steps" :key="s.t"><button @click="pick(i)" class="w-full rounded-xl p-5 text-left transition" :class="cur===i ? 'bg-[var(--panel)]' : 'text-[var(--muted)]'">

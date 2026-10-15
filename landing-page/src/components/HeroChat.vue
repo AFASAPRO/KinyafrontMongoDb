@@ -15,7 +15,7 @@ const I = {
 let uid = 1
 const mk = (t, g, m = []) => ({ id: uid++, t, g, m })
 const chats = ref([
-  mk('Build SkyAgent Workspa…','Today'), mk('Build SkyAgent for Creat…','Today'), mk('Build SkyAgent Workspa…','Today'),
+  mk('Practice Kinyarwanda wi…','Today'), mk('Generate an image of Kig…','Today'), mk('Debug my Python code','Today'),
   mk('create for me a modern …','Yesterday'), mk('Create a modern single-…','Yesterday'), mk('What about this image','Yesterday'), mk('Tell me a fun fact I prob…','Yesterday'),
   mk('Build an online store. Pr…','Previous 7 days'),
   mk('hello step by step','Previous 7 days',[{ r:'user', c:'hello step by step' },{ r:'ai', c:'Hello 👋!\nCould you let me know what you’d like a step-by-step guide for? That way I can help you best.' }])
@@ -28,7 +28,7 @@ const groups = computed(() => ['Today','Yesterday','Previous 7 days'].map(g => (
 const draft = ref(''), busy = ref(false), used = ref(1), box = ref(null), fileIn = ref(null), scroller = ref(null)
 const files = ref([]), deep = ref(false), mode = ref('Chat'), modeMenu = ref(false), banner = ref(true), listening = ref(false)
 const side = ref(typeof innerWidth === 'undefined' || innerWidth >= 768)
-const hints = ['Schedule a team meeting','Summarize my week','Draft a status update']
+const hints = ['Teach me a Kinyarwanda phrase','Generate an image of Kigali','Help me debug my code']
 /* auto-playing demo: a user types + sends, the AI replies; loops until the visitor takes over */
 const emit = defineEmits(['state', 'pulse'])
 const root = ref(null), pressed = ref(false), demoOn = ref(false), demoStream = ref(false)
@@ -37,9 +37,9 @@ watch(phase, v => emit('state', v), { immediate: true })
 let demoRun = 0, typing = false, started = false, io
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 const script = [
-  ['Hey, I need help scheduling a team meeting that works well for everyone. Any suggestions?', 'Based on your calendar patterns and preferences, I recommend Tuesday at 2pm. That slot has historically had the highest attendance and avoids conflicts with recurring meetings. Want me to send the invite?'],
-  ['Yes, send it and attach last week’s agenda.', 'Done ✅ I’ve sent the invite to all 8 attendees for Tuesday at 2pm with last week’s agenda attached. I’ll remind everyone an hour before and post the notes to your workspace afterwards.'],
-  ['Perfect. Can you also summarize last week’s action items?', 'Sure. 3 items are complete, 2 are in progress (landing page and onboarding emails), and 1 is blocked waiting on design review. Want me to nudge the owner of the blocked task?']]
+  ['Muraho! Can you teach me a common Kinyarwanda greeting?', 'Murakoze for asking! 😊 A great one is “Amakuru?” — it means “How are you?” You can reply “Ni meza”, which means “I’m good”. Want me to add a few more everyday phrases?'],
+  ['Yes! And can you generate an image of Kigali’s hills at sunset?', 'Done 🎨 I’ve created a warm illustration of Kigali’s rolling hills at sunset and saved it to your gallery. I can restyle it or make a poster version whenever you like.'],
+  ['Nice. Can you also help me fix a bug in my code?', 'Of course. Paste the snippet or describe the error and I’ll walk through it line by line, explain what’s wrong and suggest a fix — in English, Kinyarwanda or French.']]
 async function playDemo() {
   const run = ++demoRun, alive = () => run === demoRun
   demoOn.value = true
@@ -100,7 +100,7 @@ function mic() {
 <template>
   <div ref="root" @pointerdown.capture="stopDemo" @focusin="stopDemo" class="relative flex h-full w-full overflow-hidden rounded-[inherit] border bg-[var(--c-bg)] text-left text-[13px] shadow-2xl shadow-black/30 2xl:text-sm">
     <aside v-show="side" class="z-20 flex w-[250px] shrink-0 flex-col border-r bg-[var(--c-side)] max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:shadow-2xl">
-      <div class="flex items-center justify-between px-4 py-4"><span class="flex items-center gap-2 text-sm font-semibold"><svg width="22" height="14" viewBox="0 0 40 26" fill="#1d5cff"><path d="M2 14c0-5 4-9 10-9h22l-6 7H14c-3 0-4 1-4 2zM38 12c0 5-4 9-10 9H6l6-7h14c3 0 4-1 4-2z"/></svg>SkyAgent</span>
+      <div class="flex items-center justify-between px-4 py-4"><span class="flex items-center gap-2 text-sm font-semibold"><img src="/logo.png" alt="" class="h-5 w-5 object-contain">Kinyabot AI</span>
         <span class="flex gap-3 text-[var(--muted)]"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" v-html="I.search"/><button @click="side=false" aria-label="Collapse sidebar"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="I.left"/></button></span></div>
       <nav class="space-y-0.5 px-2 text-sm font-medium">
         <button @click="newChat" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 hover:bg-[var(--panel)]"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" v-html="I.plus"/>New chat</button>
@@ -119,17 +119,17 @@ function mic() {
     <section class="flex min-w-0 flex-1 flex-col">
       <header class="flex items-center justify-between gap-3 border-b px-4 py-3">
         <div class="flex min-w-0 items-center gap-3"><button v-if="!side" @click="side=true" aria-label="Open sidebar" class="text-[var(--muted)]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" v-html="I.menu"/></button>
-          <b class="truncate text-sm">{{ active.t }}</b><span class="hidden text-[11px] text-[var(--muted)] sm:inline">SkyAgent AI{{ isDemo ? ' · demo replies' : '' }}</span></div>
+          <b class="truncate text-sm">{{ active.t }}</b><span class="hidden text-[11px] text-[var(--muted)] sm:inline">Kinyabot AI{{ isDemo ? ' · demo replies' : '' }}</span></div>
         <div class="flex items-center gap-3 text-[var(--muted)]"><svg class="hidden h-4 w-4 sm:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" v-html="I.bell"/>
           <button @click="mic" class="flex items-center gap-1.5 rounded-lg bg-indigo-500/15 px-3 py-1.5 text-xs font-medium text-indigo-400"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" v-html="I.mic"/>{{ listening ? 'Listening…' : 'Voice' }}</button>
           <svg class="hidden h-4 w-4 sm:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" v-html="I.share"/><svg class="hidden h-4 w-4 sm:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" v-html="I.sliders"/></div></header>
-      <div v-if="banner" class="flex items-center gap-3 border-b bg-emerald-500/10 px-4 py-2.5 text-xs"><svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke-width="2.500" stroke-linecap="round" v-html="I.ok"/><span class="min-w-0 flex-1 truncate"><b>Welcome to SkyAgent</b> <span class="ml-1 text-[var(--muted)]">Thank you for choosing your daily companion</span></span><button @click="banner=false" aria-label="Dismiss" class="text-emerald-500"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.500" stroke-linecap="round" v-html="I.x"/></button></div>
+      <div v-if="banner" class="flex items-center gap-3 border-b bg-emerald-500/10 px-4 py-2.5 text-xs"><svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke-width="2.500" stroke-linecap="round" v-html="I.ok"/><span class="min-w-0 flex-1 truncate"><b>Welcome to Kinyabot AI</b> <span class="ml-1 text-[var(--muted)]">Your AI companion, always ready</span></span><button @click="banner=false" aria-label="Dismiss" class="text-emerald-500"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.500" stroke-linecap="round" v-html="I.x"/></button></div>
       <div ref="scroller" class="thin min-h-0 flex-1 space-y-6 overflow-y-auto px-4 py-5 sm:px-5 lg:px-[max(1.25rem,calc((100%_-_880px)_/_2))]">
         <div v-if="!active.m.length" class="grid h-full place-items-center text-center"><div><p class="text-lg font-medium">How can I help you today?</p>
           <div class="mt-4 flex flex-wrap justify-center gap-2"><button v-for="h in hints" :key="h" @click="send(h)" class="rounded-full border px-3 py-1.5 text-xs hover:bg-[var(--panel)]">{{ h }}</button></div></div></div>
         <template v-for="(m,i) in active.m" :key="i">
           <div v-if="m.r==='user'" class="flex items-start justify-end gap-3"><span class="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-amber-700 to-stone-900 text-[10px] font-semibold text-white">MA</span><p class="max-w-[80%] whitespace-pre-wrap rounded-xl border bg-[var(--c-bubble)] px-4 py-3 text-sm">{{ m.c }}</p></div>
-          <div v-else class="flex items-start gap-3"><span class="grid h-8 w-8 shrink-0 place-items-center rounded-full border bg-[var(--c-bubble)]"><svg width="16" height="10" viewBox="0 0 40 26" fill="#1d5cff"><path d="M2 14c0-5 4-9 10-9h22l-6 7H14c-3 0-4 1-4 2zM38 12c0 5-4 9-10 9H6l6-7h14c3 0 4-1 4-2z"/></svg></span>
+          <div v-else class="flex items-start gap-3"><span class="grid h-8 w-8 shrink-0 place-items-center rounded-full border bg-[var(--c-bubble)]"><img src="/logo.png" alt="" class="h-5 w-5 object-contain"></span>
             <p class="max-w-[85%] whitespace-pre-wrap text-sm leading-relaxed"><span v-if="!m.c" class="inline-flex gap-1 py-2"><i v-for="d in 3" :key="d" class="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--muted)]" :style="{animationDelay:d*.15+'s'}"></i></span>{{ m.c }}</p></div>
         </template>
       </div>
@@ -145,7 +145,7 @@ function mic() {
             <button @click="deep=!deep" class="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs" :class="deep && 'border-indigo-400/60 bg-indigo-500/15 text-indigo-300'"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="I.brain"/>Deep Think</button></div>
             <div class="flex items-center gap-3 text-[var(--muted)]"><button @click="mic" aria-label="Dictate" :class="listening && 'text-indigo-400'"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" v-html="I.mic"/></button>
               <button @click="send()" :disabled="busy||(!draft.trim()&&!files.length)" aria-label="Send" class="grid h-9 w-9 place-items-center rounded-full bg-indigo-500 text-white transition disabled:bg-indigo-500/30" :class="pressed && 'scale-90 ring-4 ring-indigo-400/40'"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="I.send"/></button></div></div></div>
-        <p class="pt-2 text-center text-[10px] text-[var(--muted)]">{{ demoOn ? 'Live demo playing · click anywhere to chat yourself' : 'SkyAgent may make mistakes. Verify important info. · POWERED BY SKYAGENT' }}</p></div>
+        <p class="pt-2 text-center text-[10px] text-[var(--muted)]">{{ demoOn ? 'Live demo playing · click anywhere to chat yourself' : 'Kinyabot AI may make mistakes. Verify important info. · POWERED BY KINYABOT AI' }}</p></div>
     </section>
   </div>
 </template>

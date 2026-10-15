@@ -7,6 +7,6 @@ export async function sendSupport({ email, message }) {
     if (!r.ok) throw new Error('Support failed ' + r.status)
     return
   }
-  try { const k = 'skyagent:support', l = JSON.parse(localStorage.getItem(k) || '[]'); l.push({ email, message, at: Date.now() }); localStorage.setItem(k, JSON.stringify(l)) } catch {}
+  try { const k = 'kinyabot:support', l = JSON.parse(localStorage.getItem(k) || '[]'); l.push({ email, message, at: Date.now() }); localStorage.setItem(k, JSON.stringify(l)) } catch {}
   await new Promise(r => setTimeout(r, 600))
 }

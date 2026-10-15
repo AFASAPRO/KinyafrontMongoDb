@@ -32,10 +32,10 @@ onUnmounted(() => { removeEventListener('scroll', onScroll); removeEventListener
   <section id="home" ref="root" class="relative px-4 pb-20 pt-32 sm:px-6 sm:pt-40" :style="{ '--p': prog }" :data-phase="phase" :data-off="!vis">
     <div class="relative z-10 text-center">
       <span class="mb-6 inline-flex items-center gap-2 rounded-full border bg-[var(--panel)] px-4 py-2 text-sm">
-        <span class="relative flex h-2 w-2"><span class="absolute inset-0 animate-ping rounded-full bg-[#1d5cff] opacity-60"></span><span class="relative h-2 w-2 rounded-full bg-[#1d5cff]"></span></span>Introducing custom automations</span>
-      <h1 v-reveal class="grad-text text-4xl font-medium leading-[1.06] sm:text-5xl md:text-[72px]">Meet your AI Agent<br/>Streamline your workflow</h1>
-      <p class="mx-auto mt-6 max-w-xl text-base leading-relaxed text-[var(--muted)] sm:text-xl">AI assistant designed to streamline your digital workflows and handle mundane tasks, so you can focus on what truly matters</p>
-      <div class="mt-8 flex flex-wrap justify-center gap-3"><a href="#pricing" class="pill cta-glow !px-7 !py-3 !text-base">Try for Free</a><a href="#" class="rounded-full border bg-[var(--bg)]/40 px-8 py-3 text-base backdrop-blur transition hover:bg-[var(--panel)]">Log in</a></div></div>
+        <span class="relative flex h-2 w-2"><span class="absolute inset-0 animate-ping rounded-full bg-[#1d5cff] opacity-60"></span><span class="relative h-2 w-2 rounded-full bg-[#1d5cff]"></span></span>Your AI companion, always ready</span>
+      <h1 v-reveal class="grad-text text-4xl font-medium leading-[1.06] sm:text-5xl md:text-[72px]">Meet Kinyabot AI<br/>Your companion, always ready</h1>
+      <p class="mx-auto mt-6 max-w-xl text-base leading-relaxed text-[var(--muted)] sm:text-xl">Kinyabot AI is your friendly companion — chat and ask anything, generate images, write and debug code, and talk with voice &amp; translation in Kinyarwanda, English, French and more</p>
+      <div class="mt-8 flex flex-wrap justify-center gap-3"><a href="#pricing" class="pill cta-glow !px-7 !py-3 !text-base">Try for Free</a><a href="/chat/login" class="rounded-full border bg-[var(--bg)]/40 px-8 py-3 text-base backdrop-blur transition hover:bg-[var(--panel)]">Log in</a></div></div>
     <div ref="outer" class="relative left-1/2 mt-24 flex w-screen -translate-x-1/2 justify-center sm:mt-32">
       <div class="pointer-events-none absolute inset-x-0 z-0" style="top:-125px" aria-hidden="true"><HorizonArc :pulse="pulseN" /></div>
       <div class="relative z-10 overflow-hidden will-change-transform" :style="st"><HeroChat @state="phase = $event" @pulse="pulseN++" /></div></div>

@@ -1,18 +1,17 @@
-// Edit these before launch. The email and WhatsApp number below are reserved placeholders, not real contacts.
+// Kinyabot AI — site contacts & founder info.
 export const support = {
-  email: 'support@example.com',
-  whatsapp: '15555550100', // digits only, with country code, no + or spaces
-  whatsappText: 'Hi SkyAgent team, I need help with…'
+  email: 'mugishaafani@gmail.com',
+  whatsapp: '250798628366', // digits only, with country code (Rwanda), no + or spaces
+  whatsappText: 'Hi Kinyabot AI team, I need help with…'
 }
-// Draft copy: rewrite in your own words with your real story.
 export const founder = {
   name: 'Mugisha Afani',
-  role: 'Founder, SkyAgent',
+  role: 'Founder, Kinyabot AI',
   initials: 'MA',
   photo: '', // optional: put an image in /public and set e.g. '/founder.jpg'
   note: [
-    'I built SkyAgent because too much of a good team’s week disappears into scheduling, status updates and follow-ups.',
-    'The goal is simple: tell your agent what you need in plain language, and it handles the busywork across the tools you already use, so your time goes to work that actually needs you.',
-    'SkyAgent is young and I read every message that comes in. If something is missing or confusing, tell me. Your feedback decides what we build next.'
+    'I built Kinyabot AI because getting instant, helpful answers shouldn’t depend on where you live or which language you speak.',
+    'The idea is simple: chat with Kinyabot in Kinyarwanda, English or French, and it answers your questions, generates images, writes and debugs code, and talks with you — all in one friendly place.',
+    'Kinyabot is young and I read every message that comes in. If something is missing or confusing, tell me. Your feedback decides what we build next.'
   ]
 }
