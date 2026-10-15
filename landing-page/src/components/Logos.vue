@@ -2,7 +2,7 @@
 const L = [
  {n:'OpenAI',c:'text-2xl font-medium',i:'<g fill="none" stroke="currentColor" stroke-width="1.5"><rect x="7.500" y="2.500" width="9" height="19" rx="4.500"/><rect x="7.500" y="2.500" width="9" height="19" rx="4.500" transform="rotate(60 12 12)"/><rect x="7.500" y="2.500" width="9" height="19" rx="4.500" transform="rotate(120 12 12)"/></g>'},
  {n:'Retool',c:'text-2xl font-bold',i:'<rect x="3" y="3" width="18" height="6" rx="2" fill="currentColor"/><rect x="3" y="11" width="10" height="4" rx="2" fill="currentColor"/><rect x="11" y="17" width="10" height="4" rx="2" fill="currentColor"/>'},
- {n:'stripe',c:'text-4xl font-bold tracking-tighter',i:''},
+ {n:'CardNova',c:'text-2xl font-bold tracking-tight',i:'<g fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 9.5h19" stroke-linecap="round"/><path d="M6 15h4" stroke-linecap="round"/></g><path d="M17.2 11.2l.9 1.9 2.1.3-1.5 1.5.4 2.1-1.9-1-1.9 1 .4-2.1-1.5-1.5 2.1-.3z" fill="currentColor"/>'},
  {n:'WISE',c:'text-3xl font-black italic tracking-tighter',i:''},
  {n:'loom',c:'text-3xl font-medium',i:'<g stroke="currentColor" stroke-width="2.200" stroke-linecap="round"><path d="M12 2v20M2 12h20M5 5l14 14M19 5 5 19"/></g>'},
  {n:'Medium',c:'font-serif text-3xl font-bold tracking-tight',i:'<circle cx="7" cy="12" r="5" fill="currentColor"/><ellipse cx="16" cy="12" rx="2.600" ry="5" fill="currentColor"/><rect x="21" y="7" width="1.800" height="10" fill="currentColor"/>'},

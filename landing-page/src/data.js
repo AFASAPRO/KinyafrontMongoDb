@@ -1,4 +1,4 @@
-export const logos=['OpenAI','Retool','Stripe','Wise','Loom','Medium','Cash App','Linear']
+export const logos=['OpenAI','Retool','CardNova','Wise','Loom','Medium','Cash App','Linear']
 export const steps=[
  {t:'Ask Kinyabot Anything',d:'Type or speak your request—let Kinyabot AI capture your intent. Your request instantly sets the conversation in motion.'},
  {t:'Let Kinyabot Process It',d:'Kinyabot AI understands what you need and draws on chat, images, code and translation to prepare the answer.'},

@@ -123,7 +123,7 @@ import axios from 'axios'
 import { usePwaInstall } from '../../composables/usePwaInstall'
 
 const router = useRouter()
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const API = import.meta.env.VITE_API_URL || '/api'
 
 /* ── Admin PWA install ─────────────────────────────────────────── */
 const { canInstall, installed, isIOS, promptInstall } = usePwaInstall()

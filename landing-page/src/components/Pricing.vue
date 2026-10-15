@@ -1,4 +1,21 @@
-<script setup>import { ref } from 'vue'; import { plans } from '../data'; const yearly = ref(false)</script>
+<script setup>
+import { ref } from 'vue'
+import { plans } from '../data'
+import EnterpriseModal from './EnterpriseModal.vue'
+
+const yearly = ref(false)
+const enterprise = ref(null)
+
+/* Where each plan's CTA leads:
+   • Free      → the register form so new users can start instantly
+   • Startup   → the authenticated upgrade-request page reviewed by the superadmin
+   • Enterprise→ popup form collected for the superadmin (shown below)            */
+function onCta(p) {
+  if (p.n === 'Free') window.location.href = '/chat/register'
+  else if (p.n === 'Startup') window.location.href = '/chat/plans/request?plan=pro'
+  else if (p.n === 'Enterprise') enterprise.value?.show()
+}
+</script>
 <template>
   <section id="pricing" class="rail px-6 py-16 text-center">
     <h2 v-reveal class="text-4xl font-medium md:text-5xl">Pricing that scale with you</h2>
@@ -11,9 +28,10 @@
         <p class="text-xs">{{ p.n }} <span v-if="p.pop" class="ml-1 rounded-full bg-brand px-2 py-0.5 text-[10px] text-white">Popular</span></p>
         <p class="mt-3 text-4xl font-medium md:text-5xl">${{ yearly ? p.y : p.m }}<span class="ml-1 text-xs text-slate-500">/month</span></p>
         <p class="mt-1 text-xs text-slate-500">{{ p.d }}</p>
-        <button class="mt-4 w-full rounded-full py-2 text-xs font-medium" :class="p.style">{{ p.cta }}</button>
+        <button class="mt-4 w-full rounded-full py-2 text-xs font-medium transition hover:opacity-90" :class="p.style" @click="onCta(p)">{{ p.cta }}</button>
         <p class="mt-4 text-xs font-medium">Everything in Pro +</p>
         <ul class="mt-2 space-y-1.5 text-xs"><li v-for="f in p.f" :key="f" class="flex gap-2"><span class="text-brand">✓</span>{{ f }}</li></ul></article>
     </div>
+    <EnterpriseModal ref="enterprise" />
   </section>
 </template>

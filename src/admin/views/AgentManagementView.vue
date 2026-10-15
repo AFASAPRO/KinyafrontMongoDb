@@ -166,7 +166,7 @@
           </tbody>
         </table>
       </div>
-      <Pagination v-if="pages > 1" :page="page" :pages="pages" @go="loadTasks($event)" />
+      <Pagination v-if="pages > 1" :page="page" :pages="pages" @change="loadTasks($event)" />
     </SectionCard>
 
     <!-- Task detail drawer: safe execution metadata + recent events -->
@@ -256,21 +256,21 @@ function fmtDuration(ms) {
 function fmtDate(d) { return d ? new Date(d).toLocaleString() : '—' }
 
 async function loadOverview() {
-  try { overview.value = (await api.get('/agent/overview', { params: { range: '7d' } })).data } catch {}
+  try { overview.value = (await api.get('/admin/agent/overview', { params: { range: '7d' } })).data } catch {}
 }
 async function loadHealth() {
-  try { health.value = (await api.get('/agent/health')).data } catch {}
+  try { health.value = (await api.get('/admin/agent/health')).data } catch {}
 }
 async function loadConfig() {
   try {
-    config.value = (await api.get('/agent/config')).data
+    config.value = (await api.get('/admin/agent/config')).data
     configMsg.value = null
   } catch {}
 }
 async function loadTasks(p = page.value) {
   tasksLoading.value = true
   try {
-    const res = await api.get('/agent/tasks', {
+    const res = await api.get('/admin/agent/tasks', {
       params: { page: p, limit: 25, status: filters.status || undefined, search: filters.q || undefined, range: filters.range || undefined },
     })
     tasks.value = res.data?.tasks || []
@@ -284,13 +284,13 @@ async function loadTasks(p = page.value) {
 }
 
 async function openDetail(t) {
-  try { detail.value = (await api.get(`/agent/tasks/${t.id}`)).data } catch { toast.error('Task detail could not be loaded') }
+  try { detail.value = (await api.get(`/admin/agent/tasks/${t.id}`)).data } catch { toast.error('Task detail could not be loaded') }
 }
 
 async function cancelTask(t) {
   if (!confirm(`Cancel agent task "${t.title || t.task_ref}"? Partial work remains in its workspace.`)) return
   try {
-    await api.post(`/agent/tasks/${t.id}/cancel`)
+    await api.post(`/admin/agent/tasks/${t.id}/cancel`)
     toast.success('Task cancelled')
     loadTasks()
     loadOverview()
@@ -304,7 +304,7 @@ async function saveConfig() {
   configMsg.value = null
   try {
     const r = agentRuntimePatch.value
-    await api.put('/agent/config', r)
+    await api.put('/admin/agent/config', r)
     configOk.value = true
     configMsg.value = 'Configuration saved — validated server-side and recorded in the audit log.'
     toast.success('Agent configuration saved')

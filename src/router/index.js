@@ -91,6 +91,7 @@ const routes = [
       { path: 'analytics',     name: 'admin-analytics', component: () => import('../admin/views/AnalyticsView.vue') },
       { path: 'users',         name: 'admin-users',     component: () => import('../admin/views/UsersView.vue') },
       { path: 'plan-requests', name: 'admin-plan-requests', component: () => import('../admin/views/PlanRequestsView.vue') },
+      { path: 'enterprise-requests', name: 'admin-enterprise-requests', component: () => import('../admin/views/EnterpriseRequestsView.vue') },
       { path: 'chats',         name: 'admin-chats',     component: () => import('../admin/views/ChatsView.vue') },
       { path: 'knowledge',     name: 'admin-knowledge', component: () => import('../admin/views/KnowledgeView.vue') },
       { path: 'files',         name: 'admin-files',     component: () => import('../admin/views/FilesView.vue') },
@@ -104,6 +105,7 @@ const routes = [
       { path: 'usage',         name: 'admin-usage',     component: () => import('../admin/views/UsageView.vue') },
       { path: 'security',      name: 'admin-security',  component: () => import('../admin/views/SecurityView.vue') },
       { path: 'audit',         name: 'admin-audit',     component: () => import('../admin/views/AuditView.vue') },
+      { path: 'admins',        name: 'admin-admins',    component: () => import('../admin/views/AdminUsersView.vue') },
       { path: 'settings',      name: 'admin-settings',  component: () => import('../admin/views/SettingsView.vue') },
     ]
   },
@@ -166,6 +168,10 @@ router.beforeEach(async (to) => {
   // during local development. In dev, keep them in the SPA on /login.
   if (to.meta.requiresAuth && !authed) {
     if (isPwaContext() || import.meta.env.DEV) return '/login'
+    // Plans pages are app destinations linked from the marketing landing
+    // ("Upgrade to Pro") — send visitors to the login form instead of
+    // bouncing them back to the landing page they just came from.
+    if (to.path.startsWith('/plans')) return '/login'
     gotoLanding()
     return false
   }

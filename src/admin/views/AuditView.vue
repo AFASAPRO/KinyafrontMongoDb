@@ -18,23 +18,25 @@
       <table>
         <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Resource</th><th>Result</th><th></th></tr></thead>
         <tbody>
-          <tr v-for="a in items" :key="a.id" class="arow" @click="expanded = expanded === a.id ? null : a.id">
-            <td class="muted nowrap">{{ timeAgo(a.created_at) }}</td>
-            <td><b>{{ a.actor_username || 'system' }}</b></td>
-            <td><code class="action">{{ a.action }}</code></td>
-            <td class="muted">
-              <template v-if="a.resource_label">{{ a.resource_type }} · {{ a.resource_label }}</template>
-              <template v-else-if="a.resource_type">{{ a.resource_type }} {{ a.resource_id ? '· ' + shortId(a.resource_id) : '' }}</template>
-              <template v-else>—</template>
-            </td>
-            <td><span class="badge" :class="a.result === 'success' ? 'green' : 'red'">{{ a.result }}</span></td>
-            <td><i class="fas" :class="expanded === a.id ? 'fa-chevron-up' : 'fa-chevron-down'"></i></td>
-          </tr>
-          <tr v-if="expanded === a.id" class="meta-row" :key="a.id + '-meta'">
-            <td colspan="6">
-              <pre class="meta">{{ JSON.stringify({ id: a.id, actor: a.actor_id, ip: a.ip, meta: a.meta, at: a.created_at }, null, 2) }}</pre>
-            </td>
-          </tr>
+          <template v-for="a in items" :key="a.id">
+            <tr class="arow" @click="expanded = expanded === a.id ? null : a.id">
+              <td class="muted nowrap">{{ timeAgo(a.created_at) }}</td>
+              <td><b>{{ a.actor_username || 'system' }}</b></td>
+              <td><code class="action">{{ a.action }}</code></td>
+              <td class="muted">
+                <template v-if="a.resource_label">{{ a.resource_type }} · {{ a.resource_label }}</template>
+                <template v-else-if="a.resource_type">{{ a.resource_type }} {{ a.resource_id ? '· ' + shortId(a.resource_id) : '' }}</template>
+                <template v-else>—</template>
+              </td>
+              <td><span class="badge" :class="a.result === 'success' ? 'green' : 'red'">{{ a.result }}</span></td>
+              <td><i class="fas" :class="expanded === a.id ? 'fa-chevron-up' : 'fa-chevron-down'"></i></td>
+            </tr>
+            <tr v-if="expanded === a.id" class="meta-row">
+              <td colspan="6">
+                <pre class="meta">{{ JSON.stringify({ id: a.id, actor: a.actor_id, ip: a.ip, meta: a.meta, at: a.created_at }, null, 2) }}</pre>
+              </td>
+            </tr>
+          </template>
         </tbody>
       </table>
       <EmptyState v-if="isEmpty" icon="fas fa-clipboard-list" title="No audit records yet"
